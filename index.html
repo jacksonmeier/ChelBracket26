@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChelBracket26 — NHL Playoff Pool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-brand" data-view="home" style="cursor:pointer">
+    <span class="nav-puck">🏒</span>
+    <span class="nav-title">ChelBracket<span class="nav-accent">26</span></span>
+  </div>
+  <div class="nav-links" id="navLinks">
+    <button class="nav-btn" data-view="home">Home</button>
+    <button class="nav-btn" data-view="entry">Enter Bracket</button>
+    <button class="nav-btn" data-view="viewer">View Brackets</button>
+    <button class="nav-btn" data-view="leaderboard">Leaderboard</button>
+    <button class="nav-btn" data-view="commissioner">Commissioner</button>
+  </div>
+  <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <button class="nav-btn" data-view="home">Home</button>
+  <button class="nav-btn" data-view="entry">Enter Bracket</button>
+  <button class="nav-btn" data-view="viewer">View Brackets</button>
+  <button class="nav-btn" data-view="leaderboard">Leaderboard</button>
+  <button class="nav-btn" data-view="commissioner">Commissioner</button>
+</div>
+
+<main id="appMain">
+
+  <!-- ═══════════════════════════════ HOME ═══════════════════════════════ -->
+  <section class="view" id="view-home">
+    <div class="hero">
+      <h1 class="hero-title">ChelBracket<span class="accent">26</span></h1>
+      <p class="hero-sub">NHL Playoff Bracket Pool</p>
+      <div id="homeCountdown" class="countdown-wrap"></div>
+      <div class="hero-btns">
+        <button class="btn btn-primary btn-lg" data-view="entry">Enter My Bracket</button>
+        <button class="btn btn-outline btn-lg" data-view="leaderboard">View Standings</button>
+      </div>
+    </div>
+    <div class="home-standings">
+      <div class="section-header">
+        <h2 class="section-title">Current Standings</h2>
+        <button class="btn btn-sm btn-outline" data-view="leaderboard">Full Leaderboard →</button>
+      </div>
+      <div id="homeLeaderboard"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════ ENTRY ══════════════════════════════ -->
+  <section class="view" id="view-entry">
+    <div class="view-header">
+      <h2 class="view-title">Enter Your Bracket</h2>
+      <p class="view-sub">Pick the winner and series length (in games) for all 15 series</p>
+    </div>
+    <div id="entryLockedMsg" class="alert alert-warning" style="display:none">
+      <strong>🔒 Bracket entry is locked.</strong> The deadline has passed — no new entries accepted.
+    </div>
+    <div id="entryFormWrap">
+      <div class="name-section">
+        <label class="form-label" for="entryName">Your Name</label>
+        <input type="text" id="entryName" class="form-input" placeholder="e.g. Gretzky99" maxlength="40" autocomplete="off">
+        <p class="field-note">This is how you'll appear on the leaderboard.</p>
+      </div>
+      <div id="entryRounds"></div>
+      <div class="entry-footer">
+        <button class="btn btn-primary btn-lg" id="submitBracketBtn">Submit Bracket</button>
+        <p class="entry-warning">⚠️ Once submitted, your bracket cannot be edited.</p>
+      </div>
+    </div>
+    <div id="entrySuccessMsg" class="success-card" style="display:none">
+      <div class="success-icon">🏆</div>
+      <h3>Bracket Submitted!</h3>
+      <p>Good luck — may your picks be mighty.</p>
+      <div class="success-btns">
+        <button class="btn btn-primary" id="viewMyBracketBtn">View My Bracket</button>
+        <button class="btn btn-outline" data-view="leaderboard">See Standings</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════ VIEWER ══════════════════════════════ -->
+  <section class="view" id="view-viewer">
+    <div class="view-header">
+      <h2 class="view-title">Bracket Viewer</h2>
+    </div>
+    <div class="viewer-controls">
+      <select id="viewerSelect" class="form-select">
+        <option value="">— Select a participant —</option>
+      </select>
+    </div>
+    <div id="viewerContent">
+      <div class="empty-state">Select a participant above to view their bracket.</div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════ LEADERBOARD ════════════════════════════ -->
+  <section class="view" id="view-leaderboard">
+    <div class="view-header">
+      <h2 class="view-title">Leaderboard</h2>
+      <button class="btn btn-sm btn-outline" id="exportCsvBtn">Export CSV</button>
+    </div>
+    <div id="leaderboardContent"></div>
+  </section>
+
+  <!-- ══════════════════════════ COMMISSIONER ══════════════════════════════ -->
+  <section class="view" id="view-commissioner">
+
+    <div id="commLogin">
+      <div class="auth-card">
+        <div class="auth-icon">🔐</div>
+        <h2 class="view-title">Commissioner Panel</h2>
+        <p style="color:var(--text-muted);margin-bottom:1.5rem">Enter the password to manage the pool.</p>
+        <input type="password" id="commPasswordInput" class="form-input" placeholder="Password" style="margin-bottom:0.75rem">
+        <button class="btn btn-primary btn-block" id="commLoginBtn">Unlock</button>
+        <div id="commLoginError" class="alert alert-error" style="display:none;margin-top:1rem">Incorrect password.</div>
+      </div>
+    </div>
+
+    <div id="commPanel" style="display:none">
+      <div class="view-header">
+        <h2 class="view-title">Commissioner Panel</h2>
+        <button class="btn btn-sm btn-ghost" id="commLogoutBtn">Log out</button>
+      </div>
+      <div class="comm-tabs" id="commTabs">
+        <button class="comm-tab active" data-tab="teams">Teams</button>
+        <button class="comm-tab" data-tab="results">Results</button>
+        <button class="comm-tab" data-tab="settings">Settings</button>
+        <button class="comm-tab" data-tab="manage">Manage</button>
+      </div>
+
+      <!-- Teams -->
+      <div class="comm-pane active" id="commPane-teams">
+        <h3 class="pane-title">Edit Playoff Teams</h3>
+        <p class="pane-desc">Enter the actual team names for each seed before the bracket opens.</p>
+        <div id="teamsGrid" class="teams-grid"></div>
+        <div class="pane-actions">
+          <button class="btn btn-primary" id="saveTeamsBtn">Save Teams</button>
+          <span id="teamsSavedMsg" class="save-msg" style="display:none">✓ Saved</span>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="comm-pane" id="commPane-results">
+        <h3 class="pane-title">Enter Series Results</h3>
+        <p class="pane-desc">Update completed series — all brackets will be rescored automatically.</p>
+        <div id="resultsGrid"></div>
+        <div class="pane-actions">
+          <button class="btn btn-primary" id="saveResultsBtn">Save Results</button>
+          <span id="resultsSavedMsg" class="save-msg" style="display:none">✓ Saved</span>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="comm-pane" id="commPane-settings">
+        <h3 class="pane-title">Pool Settings</h3>
+        <div class="settings-form">
+          <div class="form-group">
+            <label class="form-label">Bracket Lock Date &amp; Time</label>
+            <input type="datetime-local" id="lockDateInput" class="form-input" style="max-width:320px">
+            <p class="field-note">After this time, no new entries will be accepted.</p>
+          </div>
+          <div class="pane-actions">
+            <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+            <span id="settingsSavedMsg" class="save-msg" style="display:none">✓ Saved</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manage -->
+      <div class="comm-pane" id="commPane-manage">
+        <h3 class="pane-title">Manage Entries</h3>
+        <p class="pane-desc">Review or delete submitted brackets.</p>
+        <div id="manageEntriesGrid"></div>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<footer class="app-footer">
+  <p>ChelBracket26 &copy; 2026 &mdash; Max possible score: <strong>390 pts</strong></p>
+</footer>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
