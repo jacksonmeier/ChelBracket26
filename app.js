@@ -17,12 +17,7 @@ const SK = {
   MY_ID:    'chelb26_my_bracket_id',
 };
 
-const DATA_PATH = {
-  brackets: 'data/brackets.json',
-  results:  'data/results.json',
-  teams:    'data/teams.json',
-  settings: 'data/settings.json',
-};
+const DB_DOCS = ['brackets', 'results', 'teams', 'settings'];
 
 const SERIES = [
   { id:'E1',  round:1, conf:'East',  t1:'atlantic1',  t2:'ewildcard2', abbr:'Atl 1 vs E-WC2' },
@@ -102,7 +97,7 @@ const state = {
   commLoggedIn: false,
   entryPicks:   {},
   viewingId:    null,
-  ghConfigured: false,
+  dbConfigured: false,
 };
 
 // In-memory data store (loaded from GitHub on startup)
@@ -113,65 +108,37 @@ const appData = {
   settings: { ...DEFAULT_SETTINGS },
 };
 
-// ── GitHub API ─────────────────────────────────────────────
+// ── Firebase Firestore API ─────────────────────────────────
 
-function ghCfg() { return window.CHELB_CONFIG || null; }
-
-function isGitHubConfigured() {
-  const c = ghCfg();
-  return !!(c && c.owner && c.owner !== 'YOUR_GITHUB_USERNAME'
-               && c.token && c.token !== 'YOUR_FINE_GRAINED_PAT'
-               && c.repo);
+function isDbConfigured() {
+  const c = window.CHELB_CONFIG;
+  return !!(c && c.apiKey && c.apiKey !== 'YOUR_API_KEY'
+               && c.projectId && c.projectId !== 'YOUR_PROJECT_ID');
 }
 
-// Unicode-safe base64
-function toB64(str) {
-  return btoa(unescape(encodeURIComponent(str)));
-}
-function fromB64(str) {
-  return decodeURIComponent(escape(atob(str)));
+function fsUrl(doc) {
+  const c = window.CHELB_CONFIG;
+  return `https://firestore.googleapis.com/v1/projects/${c.projectId}/databases/(default)/documents/pool/${doc}?key=${c.apiKey}`;
 }
 
-async function ghRead(path) {
-  const c = ghCfg();
-  const url = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}?ref=${c.branch}&nocache=${Date.now()}`;
-  const headers = { 'Accept': 'application/vnd.github+json' };
-  if (c.token) headers['Authorization'] = `Bearer ${c.token}`;
-
-  const res = await fetch(url, { headers });
+async function dbRead(doc) {
+  const res = await fetch(fsUrl(doc), { cache: 'no-store' });
   if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`GitHub read ${path}: ${res.status}`);
+  if (!res.ok) throw new Error(`DB read failed (${res.status})`);
   const json = await res.json();
-  return { data: JSON.parse(fromB64(json.content.replace(/\n/g,''))), sha: json.sha };
+  return JSON.parse(json.fields.data.stringValue);
 }
 
-async function ghWrite(path, data, message) {
-  const c = ghCfg();
-  if (!c || !c.token) throw new Error('No GitHub token configured.');
-
-  const url = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`;
-  const headers = {
-    'Accept':        'application/vnd.github+json',
-    'Authorization': `Bearer ${c.token}`,
-    'Content-Type':  'application/json',
-  };
-
-  // Always fetch fresh SHA before writing to avoid conflicts
-  let sha = null;
-  const current = await ghRead(path).catch(() => null);
-  if (current) sha = current.sha;
-
-  const body = {
-    message,
-    content: toB64(JSON.stringify(data, null, 2)),
-    branch:  c.branch,
-    ...(sha ? { sha } : {}),
-  };
-
-  const res = await fetch(url, { method:'PUT', headers, body: JSON.stringify(body) });
+async function dbWrite(doc, data) {
+  const url = fsUrl(doc) + '&updateMask.fieldPaths=data';
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: { data: { stringValue: JSON.stringify(data) } } }),
+  });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `GitHub write failed (${res.status})`);
+    throw new Error((err.error && err.error.message) || `DB write failed (${res.status})`);
   }
 }
 
@@ -183,13 +150,13 @@ function getResults()  { return appData.results; }
 function getTeams()    { return appData.teams; }
 function getSettings() { return appData.settings; }
 
-// Writes: update memory + localStorage backup + async GitHub sync
+// Writes: update memory + localStorage backup + async Firebase sync
 function saveBrackets(v) {
   appData.brackets = v;
   localStorage.setItem(SK.BRACKETS, JSON.stringify(v));
-  if (isGitHubConfigured()) {
+  if (isDbConfigured()) {
     setSyncStatus('saving');
-    ghWrite(DATA_PATH.brackets, v, 'Update brackets')
+    dbWrite('brackets', v)
       .then(() => setSyncStatus('ok'))
       .catch(e => { setSyncStatus('error'); toast('Sync error: ' + e.message, 'error'); });
   }
@@ -198,9 +165,9 @@ function saveBrackets(v) {
 function saveResults(v) {
   appData.results = v;
   localStorage.setItem(SK.RESULTS, JSON.stringify(v));
-  if (isGitHubConfigured()) {
+  if (isDbConfigured()) {
     setSyncStatus('saving');
-    ghWrite(DATA_PATH.results, v, 'Update results')
+    dbWrite('results', v)
       .then(() => setSyncStatus('ok'))
       .catch(e => { setSyncStatus('error'); toast('Sync error: ' + e.message, 'error'); });
   }
@@ -209,9 +176,9 @@ function saveResults(v) {
 function saveTeams(v) {
   appData.teams = v;
   localStorage.setItem(SK.TEAMS, JSON.stringify(v));
-  if (isGitHubConfigured()) {
+  if (isDbConfigured()) {
     setSyncStatus('saving');
-    ghWrite(DATA_PATH.teams, v, 'Update teams')
+    dbWrite('teams', v)
       .then(() => setSyncStatus('ok'))
       .catch(e => { setSyncStatus('error'); toast('Sync error: ' + e.message, 'error'); });
   }
@@ -220,17 +187,17 @@ function saveTeams(v) {
 function saveSettings(v) {
   appData.settings = v;
   localStorage.setItem(SK.SETTINGS, JSON.stringify(v));
-  if (isGitHubConfigured()) {
+  if (isDbConfigured()) {
     setSyncStatus('saving');
-    ghWrite(DATA_PATH.settings, v, 'Update settings')
+    dbWrite('settings', v)
       .then(() => setSyncStatus('ok'))
       .catch(e => { setSyncStatus('error'); toast('Sync error: ' + e.message, 'error'); });
   }
 }
 
 async function loadAllData() {
-  if (!isGitHubConfigured()) {
-    // Fall back to localStorage — no GitHub config found
+  if (!isDbConfigured()) {
+    // Fall back to localStorage — no Firebase config found
     appData.brackets = JSON.parse(localStorage.getItem(SK.BRACKETS)) || [];
     appData.results  = JSON.parse(localStorage.getItem(SK.RESULTS))  || {};
     appData.teams    = JSON.parse(localStorage.getItem(SK.TEAMS))    || { ...DEFAULT_TEAMS };
@@ -240,15 +207,15 @@ async function loadAllData() {
 
   try {
     const [b, r, t, s] = await Promise.all([
-      ghRead(DATA_PATH.brackets),
-      ghRead(DATA_PATH.results),
-      ghRead(DATA_PATH.teams),
-      ghRead(DATA_PATH.settings),
+      dbRead('brackets'),
+      dbRead('results'),
+      dbRead('teams'),
+      dbRead('settings'),
     ]);
-    appData.brackets = (b && b.data) ? b.data : (JSON.parse(localStorage.getItem(SK.BRACKETS)) || []);
-    appData.results  = (r && r.data) ? r.data : (JSON.parse(localStorage.getItem(SK.RESULTS))  || {});
-    appData.teams    = (t && t.data) ? t.data : (JSON.parse(localStorage.getItem(SK.TEAMS))    || { ...DEFAULT_TEAMS });
-    appData.settings = (s && s.data) ? s.data : (JSON.parse(localStorage.getItem(SK.SETTINGS)) || { ...DEFAULT_SETTINGS });
+    appData.brackets = b ?? (JSON.parse(localStorage.getItem(SK.BRACKETS)) || []);
+    appData.results  = r ?? (JSON.parse(localStorage.getItem(SK.RESULTS))  || {});
+    appData.teams    = t ?? (JSON.parse(localStorage.getItem(SK.TEAMS))    || { ...DEFAULT_TEAMS });
+    appData.settings = s ?? (JSON.parse(localStorage.getItem(SK.SETTINGS)) || { ...DEFAULT_SETTINGS });
 
     // Refresh localStorage cache
     localStorage.setItem(SK.BRACKETS, JSON.stringify(appData.brackets));
@@ -256,33 +223,33 @@ async function loadAllData() {
     localStorage.setItem(SK.TEAMS,    JSON.stringify(appData.teams));
     localStorage.setItem(SK.SETTINGS, JSON.stringify(appData.settings));
 
-    state.ghConfigured = true;
+    state.dbConfigured = true;
     setSyncStatus('ok');
   } catch (e) {
-    console.warn('GitHub load failed, using localStorage cache:', e.message);
+    console.warn('Firebase load failed, using localStorage cache:', e.message);
     appData.brackets = JSON.parse(localStorage.getItem(SK.BRACKETS)) || [];
     appData.results  = JSON.parse(localStorage.getItem(SK.RESULTS))  || {};
     appData.teams    = JSON.parse(localStorage.getItem(SK.TEAMS))    || { ...DEFAULT_TEAMS };
     appData.settings = JSON.parse(localStorage.getItem(SK.SETTINGS)) || { ...DEFAULT_SETTINGS };
     setSyncStatus('error');
-    toast('Could not reach GitHub — showing cached data.', 'error');
+    toast('Could not reach Firebase — showing cached data.', 'error');
   }
 }
 
-// Reload data from GitHub in the background and refresh current view
+// Reload data from Firebase in the background and refresh current view
 async function refreshData() {
-  if (!isGitHubConfigured()) return;
+  if (!isDbConfigured()) return;
   try {
     const [b, r, t, s] = await Promise.all([
-      ghRead(DATA_PATH.brackets),
-      ghRead(DATA_PATH.results),
-      ghRead(DATA_PATH.teams),
-      ghRead(DATA_PATH.settings),
+      dbRead('brackets'),
+      dbRead('results'),
+      dbRead('teams'),
+      dbRead('settings'),
     ]);
-    if (b) appData.brackets = b.data;
-    if (r) appData.results  = r.data;
-    if (t) appData.teams    = t.data;
-    if (s) appData.settings = s.data;
+    if (b) appData.brackets = b;
+    if (r) appData.results  = r;
+    if (t) appData.teams    = t;
+    if (s) appData.settings = s;
     localStorage.setItem(SK.BRACKETS, JSON.stringify(appData.brackets));
     localStorage.setItem(SK.RESULTS,  JSON.stringify(appData.results));
     localStorage.setItem(SK.TEAMS,    JSON.stringify(appData.teams));
@@ -603,11 +570,11 @@ async function submitBracket() {
   submitBtn.textContent = 'Submitting…';
 
   try {
-    // Always fetch the latest brackets from GitHub before writing to avoid overwrites
+    // Always fetch the latest brackets from Firebase before writing to avoid overwrites
     let brackets;
-    if (isGitHubConfigured()) {
-      const fresh = await ghRead(DATA_PATH.brackets).catch(() => null);
-      brackets = (fresh && fresh.data) ? fresh.data : getBrackets();
+    if (isDbConfigured()) {
+      const fresh = await dbRead('brackets').catch(() => null);
+      brackets = fresh ?? getBrackets();
       appData.brackets = brackets; // sync memory
     } else {
       brackets = getBrackets();
@@ -886,19 +853,19 @@ function renderCommSettings() {
   const el = document.getElementById('lockDateInput');
   if (lockDate) el.value = lockDate.slice(0,16);
 
-  // Show GitHub sync status in settings
+  // Show Firebase sync status in settings
   const statusEl = document.getElementById('ghSyncInfo');
   if (!statusEl) return;
-  if (isGitHubConfigured()) {
-    const c = ghCfg();
+  if (isDbConfigured()) {
+    const c = window.CHELB_CONFIG;
     statusEl.innerHTML = `<div class="alert alert-success" style="margin-top:1rem">
-      ✓ GitHub sync active — <strong>${c.owner}/${c.repo}</strong><br>
-      <small>All bracket data is stored in your repository and shared across devices.</small>
+      ✓ Firebase sync active — <strong>${c.projectId}</strong><br>
+      <small>All bracket data is stored in Firestore and shared across devices.</small>
     </div>`;
   } else {
     statusEl.innerHTML = `<div class="alert alert-warning" style="margin-top:1rem">
-      ⚠ GitHub sync not configured — data is local to this browser only.<br>
-      <small>Edit <code>config.js</code> with your GitHub username, repo, and token, then commit and push.</small>
+      ⚠ Firebase not configured — data is local to this browser only.<br>
+      <small>Edit <code>config.js</code> with your Firebase <code>apiKey</code> and <code>projectId</code>, then commit and push.</small>
     </div>`;
   }
 }
@@ -1057,7 +1024,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setInterval(() => { refreshData(); }, 60000);
 
   // ── Boot ──────────────────────────────────────────────────
-  if (isGitHubConfigured()) showLoading();
+  if (isDbConfigured()) showLoading();
   try {
     await loadAllData();
   } finally {
