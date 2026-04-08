@@ -20,5 +20,5 @@ window.CHELB_CONFIG = {
   owner:  'jacksonmeier',
   repo:   'ChelBracket26',
   branch: 'main',
-  token:  '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',  // github_pat_...
+  token:  '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',  // github_pat_...
 };
