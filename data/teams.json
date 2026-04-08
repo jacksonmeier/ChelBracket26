@@ -1,0 +1,18 @@
+{
+  "atlantic1":  "Atlantic 1st",
+  "atlantic2":  "Atlantic 2nd",
+  "atlantic3":  "Atlantic 3rd",
+  "ewildcard1": "E Wildcard 1",
+  "ewildcard2": "E Wildcard 2",
+  "metro1":     "Metro 1st",
+  "metro2":     "Metro 2nd",
+  "metro3":     "Metro 3rd",
+  "central1":   "Central 1st",
+  "central2":   "Central 2nd",
+  "central3":   "Central 3rd",
+  "wwildcard1": "W Wildcard 1",
+  "wwildcard2": "W Wildcard 2",
+  "pacific1":   "Pacific 1st",
+  "pacific2":   "Pacific 2nd",
+  "pacific3":   "Pacific 3rd"
+}
