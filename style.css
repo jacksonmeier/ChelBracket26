@@ -644,18 +644,21 @@ body {
 .bk-team {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  justify-content: space-between;
+  gap: 0.35rem;
+  justify-content: flex-start;
   padding: 0.22rem 0;
   border-radius: 4px;
   font-weight: 500;
   color: var(--text-dim);
-  font-size: 0.77rem;
-  line-height: 1.2;
+  font-size: 0.74rem;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .bk-logo {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   object-fit: contain;
   flex-shrink: 0;
 }
