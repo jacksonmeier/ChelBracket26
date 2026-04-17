@@ -88,17 +88,18 @@ const DEFAULT_TEAMS = {
 const DEFAULT_SETTINGS = { lockDate: null };
 
 // Bracket canvas layout
-const BW = 150, BH = 92, YGAP = 150, YTOP = 20, CW = 1350, CH = 600;
+const BW = 165, BH = 92, YGAP = 150, YTOP = 20, CW = 1420, CH = 600;
+const COL = BW + 25; // horizontal step between rounds (box width + gap)
 const POSITIONS = {
-  E1:{ x:0,   y:YTOP+0*YGAP }, E2:{ x:0,   y:YTOP+1*YGAP },
-  E3:{ x:0,   y:YTOP+2*YGAP }, E4:{ x:0,   y:YTOP+3*YGAP },
-  E5:{ x:180, y:YTOP+0.5*YGAP }, E6:{ x:180, y:YTOP+2.5*YGAP },
-  ECF:{ x:360, y:YTOP+1.5*YGAP },
+  E1:{ x:0,         y:YTOP+0*YGAP }, E2:{ x:0,         y:YTOP+1*YGAP },
+  E3:{ x:0,         y:YTOP+2*YGAP }, E4:{ x:0,         y:YTOP+3*YGAP },
+  E5:{ x:COL,       y:YTOP+0.5*YGAP }, E6:{ x:COL,     y:YTOP+2.5*YGAP },
+  ECF:{ x:2*COL,    y:YTOP+1.5*YGAP },
   SCF:{ x:Math.round((CW-BW)/2), y:YTOP+1.5*YGAP },
-  WCF:{ x:CW-360-BW, y:YTOP+1.5*YGAP },
-  W5:{ x:CW-180-BW, y:YTOP+0.5*YGAP }, W6:{ x:CW-180-BW, y:YTOP+2.5*YGAP },
-  W1:{ x:CW-BW, y:YTOP+0*YGAP }, W2:{ x:CW-BW, y:YTOP+1*YGAP },
-  W3:{ x:CW-BW, y:YTOP+2*YGAP }, W4:{ x:CW-BW, y:YTOP+3*YGAP },
+  WCF:{ x:CW-2*COL-BW, y:YTOP+1.5*YGAP },
+  W5:{ x:CW-COL-BW, y:YTOP+0.5*YGAP }, W6:{ x:CW-COL-BW, y:YTOP+2.5*YGAP },
+  W1:{ x:CW-BW,    y:YTOP+0*YGAP }, W2:{ x:CW-BW,     y:YTOP+1*YGAP },
+  W3:{ x:CW-BW,    y:YTOP+2*YGAP }, W4:{ x:CW-BW,     y:YTOP+3*YGAP },
 };
 const CONNECTORS = [
   ['E1','E5','r','l'],['E2','E5','r','l'],['E3','E6','r','l'],['E4','E6','r','l'],
