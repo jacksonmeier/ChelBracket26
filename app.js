@@ -67,7 +67,24 @@ const TEAM_SLOTS = [
   { key:'pacific3',   label:'Pacific 3rd',   conf:'Western', div:'Pacific' },
 ];
 
-const DEFAULT_TEAMS    = Object.fromEntries(TEAM_SLOTS.map(s => [s.key, s.label]));
+const DEFAULT_TEAMS = {
+  atlantic1:  'Buffalo Sabres',
+  atlantic2:  'Tampa Bay Lightning',
+  atlantic3:  'Montreal Canadiens',
+  ewildcard1: 'Boston Bruins',
+  ewildcard2: 'Ottawa Senators',
+  metro1:     'Carolina Hurricanes',
+  metro2:     'Pittsburgh Penguins',
+  metro3:     'Philadelphia Flyers',
+  central1:   'Colorado Avalanche',
+  central2:   'Dallas Stars',
+  central3:   'Minnesota Wild',
+  wwildcard1: 'Utah Mammoth',
+  wwildcard2: 'Los Angeles Kings',
+  pacific1:   'Vegas Golden Knights',
+  pacific2:   'Edmonton Oilers',
+  pacific3:   'Anaheim Ducks',
+};
 const DEFAULT_SETTINGS = { lockDate: null };
 
 // Bracket canvas layout
