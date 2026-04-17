@@ -88,7 +88,7 @@ const DEFAULT_TEAMS = {
 const DEFAULT_SETTINGS = { lockDate: null };
 
 // Bracket canvas layout
-const BW = 145, BH = 80, YGAP = 110, YTOP = 15, CW = 1350, CH = 460;
+const BW = 150, BH = 92, YGAP = 150, YTOP = 20, CW = 1350, CH = 600;
 const POSITIONS = {
   E1:{ x:0,   y:YTOP+0*YGAP }, E2:{ x:0,   y:YTOP+1*YGAP },
   E3:{ x:0,   y:YTOP+2*YGAP }, E4:{ x:0,   y:YTOP+3*YGAP },
