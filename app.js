@@ -107,6 +107,46 @@ const CONNECTORS = [
   ['W5','WCF','l','r'],['W6','WCF','l','r'],['WCF','SCF','l','r'],
 ];
 
+// ── Team Logos ─────────────────────────────────────────────
+
+const TEAM_ABBR = {
+  'Buffalo Sabres':       'BUF',
+  'Tampa Bay Lightning':  'TBL',
+  'Montreal Canadiens':   'MTL',
+  'Boston Bruins':        'BOS',
+  'Ottawa Senators':      'OTT',
+  'Carolina Hurricanes':  'CAR',
+  'Pittsburgh Penguins':  'PIT',
+  'Philadelphia Flyers':  'PHI',
+  'Colorado Avalanche':   'COL',
+  'Dallas Stars':         'DAL',
+  'Minnesota Wild':       'MIN',
+  'Utah Mammoth':         'UTA',
+  'Los Angeles Kings':    'LAK',
+  'Vegas Golden Knights': 'VGK',
+  'Edmonton Oilers':      'EDM',
+  'Anaheim Ducks':        'ANA',
+};
+
+function logoUrl(name) {
+  const abbr = TEAM_ABBR[name];
+  return abbr ? `https://assets.nhle.com/logos/nhl/svg/${abbr}_light.svg` : '';
+}
+
+function logoImg(name, cls) {
+  const url = logoUrl(name);
+  if (!url) return '';
+  return `<img class="${cls}" src="${url}" alt="" onerror="this.style.display='none'">`;
+}
+
+// Update a team-pick button's logo + text in place
+function setTeamBtn(btn, name) {
+  if (!btn) return;
+  const img = btn.querySelector('.team-logo-sm');
+  if (img) { const u = logoUrl(name); img.src = u; img.style.display = u ? '' : 'none'; }
+  btn.querySelector('.team-name-txt').textContent = name;
+}
+
 // ── App State ──────────────────────────────────────────────
 
 const state = {
@@ -508,10 +548,10 @@ function buildEntrySeriesCard(s, teams) {
       <div class="series-card-label">${s.abbr}</div>
       <div class="team-picks">
         <button class="team-pick-btn" data-sid="${s.id}" data-team="t1" ${dis}>
-          <span class="team-name-txt">${esc(t1)}</span><span class="pick-check"></span>
+          ${logoImg(t1,'team-logo-sm')}<span class="team-name-txt">${esc(t1)}</span><span class="pick-check"></span>
         </button>
         <button class="team-pick-btn" data-sid="${s.id}" data-team="t2" ${dis}>
-          <span class="team-name-txt">${esc(t2)}</span><span class="pick-check"></span>
+          ${logoImg(t2,'team-logo-sm')}<span class="team-name-txt">${esc(t2)}</span><span class="pick-check"></span>
         </button>
       </div>
       <div class="games-label">Series length (games)</div>
@@ -529,8 +569,8 @@ function syncEntryPicksToDOM() {
     const card = document.getElementById('ecard-' + s.id);
     if (!card) continue;
     const btns = card.querySelectorAll('.team-pick-btn');
-    if (btns[0]) btns[0].querySelector('.team-name-txt').textContent = t1;
-    if (btns[1]) btns[1].querySelector('.team-name-txt').textContent = t2;
+    setTeamBtn(btns[0], t1);
+    setTeamBtn(btns[1], t2);
   }
   for (const [sid, pick] of Object.entries(state.entryPicks)) {
     const card = document.getElementById('ecard-' + sid);
@@ -566,8 +606,8 @@ function clearDependentPicks(changedSid) {
       if (card) {
         const [t1, t2] = getSeriesTeams(s.id, state.entryPicks, teams);
         const btns = card.querySelectorAll('.team-pick-btn');
-        if (btns[0]) btns[0].querySelector('.team-name-txt').textContent = t1;
-        if (btns[1]) btns[1].querySelector('.team-name-txt').textContent = t2;
+        setTeamBtn(btns[0], t1);
+        setTeamBtn(btns[1], t2);
         btns.forEach(b => { b.classList.remove('selected'); b.querySelector('.pick-check').textContent=''; });
         card.querySelectorAll('.game-btn').forEach(b => b.classList.remove('selected'));
         card.classList.remove('complete');
@@ -748,8 +788,8 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
       }
     }
 
-    const t1Html = t1==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t1Class}">${esc(t1)}</span>`;
-    const t2Html = t2==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t2Class}">${esc(t2)}</span>`;
+    const t1Html = t1==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t1Class}">${logoImg(t1,'bk-logo')}${esc(t1)}</span>`;
+    const t2Html = t2==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t2Class}">${logoImg(t2,'bk-logo')}${esc(t2)}</span>`;
     const pickedGames = pick ? pick.games : null;
     const actualGames = (result && result.completed) ? result.games : null;
     const gamesInfo = pickedGames ? `Picked: ${pickedGames}g${actualGames?' · Actual: '+actualGames+'g':''}` : '';
