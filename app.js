@@ -231,8 +231,13 @@ async function loadAllData() {
     ]);
     appData.brackets = b ?? (JSON.parse(localStorage.getItem(SK.BRACKETS)) || []);
     appData.results  = r ?? (JSON.parse(localStorage.getItem(SK.RESULTS))  || {});
-    appData.teams    = t ?? (JSON.parse(localStorage.getItem(SK.TEAMS))    || { ...DEFAULT_TEAMS });
+    // When Firestore has no teams doc, always use DEFAULT_TEAMS (not stale localStorage)
+    appData.teams    = t ?? { ...DEFAULT_TEAMS };
     appData.settings = s ?? (JSON.parse(localStorage.getItem(SK.SETTINGS)) || { ...DEFAULT_SETTINGS });
+
+    // If teams or settings weren't in Firestore yet, seed them now
+    if (!t) dbWrite('teams',    appData.teams).catch(() => {});
+    if (!s) dbWrite('settings', appData.settings).catch(() => {});
 
     // Refresh localStorage cache
     localStorage.setItem(SK.BRACKETS, JSON.stringify(appData.brackets));
