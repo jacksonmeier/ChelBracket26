@@ -444,7 +444,11 @@ function buildLeaderboardTable(ranked, results, mini = false) {
                 : rank===2?'<span class="prize-badge prize-2nd">🥈 Entry Back</span>':'';
     html += `<tr class="${rank===1?'rank-1':rank===2?'rank-2':''}">
       <td class="lb-rank"><span class="rank-badge ${badgeClass}">${rank}</span></td>
-      <td class="lb-name">${esc(b.name)}${prize}</td>
+      <td class="lb-name">
+        <span class="lb-bracket-name">${esc(b.bracketName || b.name)}</span>
+        ${b.playerName ? `<span class="lb-player-name">${esc(b.playerName)}</span>` : ''}
+        ${prize}
+      </td>
       <td class="lb-pts">${b.pts}</td>
       ${hasResults ? `<td>${b.correct} <span style="color:var(--text-muted);font-size:0.8em">series</span></td>` : ''}
       <td class="lb-proj">${b.proj}</td>
@@ -573,8 +577,10 @@ function clearDependentPicks(changedSid) {
 }
 
 async function submitBracket() {
-  const name = document.getElementById('entryName').value.trim();
-  if (!name)     { toast('Please enter your name.', 'error'); return; }
+  const playerName  = document.getElementById('entryPlayerName').value.trim();
+  const bracketName = document.getElementById('entryBracketName').value.trim();
+  if (!playerName)  { toast('Please enter your name.', 'error'); return; }
+  if (!bracketName) { toast('Please enter a bracket name.', 'error'); return; }
   if (isLocked()) { toast('Bracket entry is locked.', 'error'); return; }
 
   const missing = SERIES.filter(s => { const p = state.entryPicks[s.id]; return !p||!p.winner||!p.games; });
@@ -602,15 +608,18 @@ async function submitBracket() {
       brackets = getBrackets();
     }
 
-    if (brackets.find(b => b.name.toLowerCase() === name.toLowerCase())) {
-      toast('A bracket with that name already exists.', 'error');
+    if (brackets.find(b => b.bracketName.toLowerCase() === bracketName.toLowerCase())) {
+      toast('A bracket with that name already exists. Pick a different bracket name.', 'error');
       submitBtn.disabled = false; submitBtn.textContent = 'Submit Bracket';
       return;
     }
 
     const bracket = {
       id: genId(),
-      name,
+      playerName,
+      bracketName,
+      // keep legacy `name` field so old display code still works
+      name: `${bracketName} (${playerName})`,
       timestamp: new Date().toISOString(),
       picks: JSON.parse(JSON.stringify(state.entryPicks)),
     };
@@ -636,7 +645,12 @@ function renderViewer(bracketId) {
   const saved = localStorage.getItem(SK.MY_ID);
 
   sel.innerHTML = '<option value="">— Select a participant —</option>' +
-    brackets.map(b => `<option value="${b.id}">${esc(b.name)}${b.id===saved?' (you)':''}</option>`).join('');
+    brackets.map(b => {
+      const label = b.bracketName
+        ? `${esc(b.bracketName)} — ${esc(b.playerName || '')}${b.id===saved?' (you)':''}`
+        : `${esc(b.name)}${b.id===saved?' (you)':''}`;
+      return `<option value="${b.id}">${label}</option>`;
+    }).join('');
 
   const bid = bracketId || state.viewingId;
   if (bid) { sel.value = bid; state.viewingId = bid; drawBracket(bid); }
@@ -653,7 +667,12 @@ function drawBracket(bid) {
   const proj = maxPossible(bracket, results);
   const doneSeries = SERIES.filter(s => results[s.id] && results[s.id].completed).length;
 
+  const displayName = bracket.bracketName
+    ? `<span class="viewer-bracket-name">${esc(bracket.bracketName)}</span><span class="viewer-player-name">by ${esc(bracket.playerName || '')}</span>`
+    : `<span class="viewer-bracket-name">${esc(bracket.name)}</span>`;
+
   document.getElementById('viewerContent').innerHTML = `
+    <div class="viewer-heading">${displayName}</div>
     <div class="viewer-score-bar">
       <div class="vsb-item"><span class="vsb-val">${pts}</span><span class="vsb-lbl">Points</span></div>
       <div class="vsb-item"><span class="vsb-val">${correct}</span><span class="vsb-lbl">Correct Series</span></div>
@@ -905,10 +924,11 @@ function renderCommManage() {
   const brackets = getBrackets(), el = document.getElementById('manageEntriesGrid');
   if (!brackets.length) { el.innerHTML = '<div class="empty-state">No entries submitted yet.</div>'; return; }
   let html = `<div class="manage-table-wrap"><table class="manage-table">
-    <thead><tr><th>Name</th><th>Submitted</th><th></th></tr></thead><tbody>`;
+    <thead><tr><th>Bracket</th><th>Player</th><th>Submitted</th><th></th></tr></thead><tbody>`;
   brackets.forEach(b => {
     html += `<tr>
-      <td><strong>${esc(b.name)}</strong></td>
+      <td><strong>${esc(b.bracketName || b.name)}</strong></td>
+      <td style="color:var(--text-muted)">${esc(b.playerName || '—')}</td>
       <td style="color:var(--text-muted);font-size:0.82rem">${new Date(b.timestamp).toLocaleString()}</td>
       <td>
         <button class="btn btn-sm btn-ghost" onclick="viewBracketFromComm('${b.id}')">View</button>

@@ -374,7 +374,9 @@ body {
 .lb-table tr:hover td { background: var(--bg-card2); }
 
 .lb-rank { font-weight: 700; width: 40px; text-align: center; }
-.lb-name { font-weight: 600; }
+.lb-name { font-weight: 600; line-height: 1.3; }
+.lb-bracket-name { display: block; font-weight: 700; }
+.lb-player-name  { display: block; font-size: 0.8rem; color: var(--text-muted); font-weight: 400; }
 .lb-pts  { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; color: var(--accent); }
 .lb-proj { color: var(--text-dim); font-size: 0.85rem; }
 
@@ -699,6 +701,24 @@ body {
 .viewer-controls {
   max-width: 360px;
   margin-bottom: 1.75rem;
+}
+
+.viewer-heading {
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+.viewer-bracket-name {
+  display: block;
+  font-family: var(--font-head);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.viewer-player-name {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
 }
 
 .viewer-score-bar {

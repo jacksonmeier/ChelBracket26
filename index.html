@@ -74,9 +74,11 @@
     </div>
     <div id="entryFormWrap">
       <div class="name-section">
-        <label class="form-label" for="entryName">Your Name</label>
-        <input type="text" id="entryName" class="form-input" placeholder="e.g. Gretzky99" maxlength="40" autocomplete="off">
-        <p class="field-note">This is how you'll appear on the leaderboard.</p>
+        <label class="form-label" for="entryPlayerName">Your Name</label>
+        <input type="text" id="entryPlayerName" class="form-input" placeholder="e.g. Jackson" maxlength="40" autocomplete="off">
+        <label class="form-label" for="entryBracketName" style="margin-top:0.85rem">Bracket Name</label>
+        <input type="text" id="entryBracketName" class="form-input" placeholder="e.g. Bold Picks, Safe Route…" maxlength="40" autocomplete="off">
+        <p class="field-note">Give your bracket a unique name — you can submit multiple brackets.</p>
       </div>
       <div id="entryRounds"></div>
       <div class="entry-footer">
@@ -211,6 +213,6 @@
 </div>
 
 <script src="config.js"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
