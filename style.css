@@ -104,6 +104,7 @@ body {
   font-weight: 700;
   color: var(--text);
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 .nav-accent, .accent { color: var(--accent); }
 

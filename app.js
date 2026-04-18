@@ -1149,7 +1149,7 @@ function exportCSV() {
   const csv = rows.map(r => r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download = 'ChelBracket26_Leaderboard.csv';
+  a.download = 'BracketChallenge26_Leaderboard.csv';
   a.click(); URL.revokeObjectURL(a.href);
 }
 
