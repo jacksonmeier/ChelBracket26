@@ -142,7 +142,7 @@ body {
   border: none;
   cursor: pointer;
   padding: 6px;
-  margin-left: auto;
+  margin-left: auto; /* pushes hamburger right on mobile */
 }
 .nav-hamburger span {
   display: block;
@@ -1263,6 +1263,12 @@ body {
 
 /* Settings form */
 .settings-form { max-width: 520px; }
+.comm-sync-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
 
 /* ── Toast ────────────────────────────────────────────────── */
 .toast-container {

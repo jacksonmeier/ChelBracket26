@@ -28,7 +28,6 @@
     <button class="nav-btn" data-view="schedule">Schedule</button>
     <button class="nav-btn" data-view="commissioner">Commissioner</button>
   </div>
-  <span id="syncStatus" class="sync-badge sync-local" style="margin-left:auto;margin-right:0.5rem">Local only</span>
   <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
     <span></span><span></span><span></span>
   </button>
@@ -203,6 +202,10 @@
           <div class="pane-actions">
             <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
             <span id="settingsSavedMsg" class="save-msg" style="display:none">✓ Saved</span>
+          </div>
+          <div class="comm-sync-row">
+            <span class="form-label" style="margin:0">Sync Status</span>
+            <span id="syncStatus" class="sync-badge sync-local">Local only</span>
           </div>
           <div id="ghSyncInfo"></div>
         </div>
