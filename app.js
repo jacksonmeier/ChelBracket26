@@ -580,18 +580,21 @@ function gameCard(g) {
     statusHtml = `<span class="tg-badge tg-future">${timeStr}</span>`;
   }
 
-  // ── Series record ──
+  // ── Series info ──
   const ss = g.seriesStatus;
-  let seriesHtml = '';
+  const gameNum = ss?.gameNumberOfSeries ?? null;
+  const gameNumHtml = gameNum ? `<span class="tg-game-num">Game ${gameNum}</span>` : '';
+
+  let seriesRecord = '';
   if (ss && ss.seriesTitle) {
-    seriesHtml = `<div class="tg-series">${esc(ss.seriesTitle)}</div>`;
+    seriesRecord = esc(ss.seriesTitle);
   } else {
     const aw = away.seriesWins ?? 0, hw = home.seriesWins ?? 0;
-    const seriesStr = aw === hw
+    seriesRecord = aw === hw
       ? `Series tied ${aw}-${hw}`
       : aw > hw ? `${away.abbrev} leads ${aw}-${hw}` : `${home.abbrev} leads ${hw}-${aw}`;
-    seriesHtml = `<div class="tg-series">${seriesStr}</div>`;
   }
+  const seriesHtml = `<div class="tg-series">${seriesRecord}</div>`;
 
   // ── Team rows ──
   const awayLead = !isFut && away.score > home.score;
@@ -608,7 +611,7 @@ function gameCard(g) {
   }
 
   return `<div class="tg-card">
-    <div class="tg-card-header">${statusHtml}</div>
+    <div class="tg-card-header">${statusHtml}${gameNumHtml}</div>
     <div class="tg-teams">
       ${teamRow(away, awayLead)}
       ${teamRow(home, homeLead)}

@@ -511,6 +511,13 @@ body {
 }
 .tg-lead .tg-name  { color: var(--text); font-weight: 600; }
 .tg-score-lead     { color: var(--accent); }
+.tg-game-num {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
 .tg-series {
   font-size: 0.72rem;
   color: var(--text-muted);
