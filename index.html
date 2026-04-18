@@ -6,7 +6,7 @@
   <title>Bracket Challenge 26 — NHL Playoff Pool</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=14">
+  <link rel="stylesheet" href="style.css?v=15">
   <style>
     /* Critical: loading overlay — inlined to avoid cache issues */
     #loadingOverlay { position:fixed; inset:0; background:#080c18; display:flex; align-items:center; justify-content:center; z-index:9000; }
@@ -25,6 +25,7 @@
     <button class="nav-btn" data-view="entry">Enter Bracket</button>
     <button class="nav-btn" data-view="viewer">View Brackets</button>
     <button class="nav-btn" data-view="leaderboard">Leaderboard</button>
+    <button class="nav-btn" data-view="schedule">Schedule</button>
     <button class="nav-btn" data-view="commissioner">Commissioner</button>
   </div>
   <span id="syncStatus" class="sync-badge sync-local" style="margin-left:auto;margin-right:0.5rem">Local only</span>
@@ -38,6 +39,7 @@
   <button class="nav-btn" data-view="entry">Enter Bracket</button>
   <button class="nav-btn" data-view="viewer">View Brackets</button>
   <button class="nav-btn" data-view="leaderboard">Leaderboard</button>
+  <button class="nav-btn" data-view="schedule">Schedule</button>
   <button class="nav-btn" data-view="commissioner">Commissioner</button>
 </div>
 
@@ -127,6 +129,18 @@
       <button class="btn btn-sm btn-outline" id="exportCsvBtn">Export CSV</button>
     </div>
     <div id="leaderboardContent"></div>
+  </section>
+
+  <!-- ════════════════════════════ SCHEDULE ══════════════════════════════ -->
+  <section class="view" id="view-schedule">
+    <div class="view-header">
+      <h2 class="view-title">Playoff Schedule</h2>
+      <span id="scheduleRefreshBadge" class="scores-refresh-badge"></span>
+    </div>
+    <div class="schedule-date-wrap">
+      <div class="schedule-date-strip" id="scheduleDateStrip"></div>
+    </div>
+    <div id="scheduleGames"><div class="scores-loading">Loading games…</div></div>
   </section>
 
   <!-- ══════════════════════════ COMMISSIONER ══════════════════════════════ -->
@@ -221,6 +235,6 @@
 </div>
 
 <script src="config.js"></script>
-<script src="app.js?v=15"></script>
+<script src="app.js?v=16"></script>
 </body>
 </html>

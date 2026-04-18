@@ -152,11 +152,12 @@ function setTeamBtn(btn, name) {
 // ── App State ──────────────────────────────────────────────
 
 const state = {
-  view:         'home',
-  commLoggedIn: false,
-  entryPicks:   {},
-  viewingId:    null,
-  dbConfigured: false,
+  view:          'home',
+  commLoggedIn:  false,
+  entryPicks:    {},
+  viewingId:     null,
+  dbConfigured:  false,
+  scheduleDate:  new Date().toISOString().slice(0, 10),
 };
 
 // In-memory data store (loaded from GitHub on startup)
@@ -424,6 +425,7 @@ function showView(name) {
   if (name === 'entry')        renderEntry();
   if (name === 'viewer')       renderViewer();
   if (name === 'leaderboard')  renderLeaderboard();
+  if (name === 'schedule')     renderSchedule();
   if (name === 'commissioner') renderCommissioner();
 }
 
@@ -475,6 +477,78 @@ async function renderTodayGames() {
     const now = new Date();
     document.getElementById('scoresRefreshBadge').textContent =
       'Updated ' + now.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+  } catch (e) {
+    el.innerHTML = '<div class="scores-empty">Could not load games — check back soon.</div>';
+  }
+}
+
+// ── Schedule ────────────────────────────────────────────────
+
+// 2026 playoff window: April 18 – June 30
+const PLAYOFF_START = '2026-04-18';
+const PLAYOFF_END   = '2026-06-30';
+
+function scheduleDates() {
+  const dates = [];
+  const cur = new Date(PLAYOFF_START + 'T12:00:00Z');
+  const end = new Date(PLAYOFF_END   + 'T12:00:00Z');
+  while (cur <= end) {
+    dates.push(cur.toISOString().slice(0, 10));
+    cur.setUTCDate(cur.getUTCDate() + 1);
+  }
+  return dates;
+}
+
+function renderSchedule() {
+  renderDateStrip(state.scheduleDate);
+  fetchScheduleGames(state.scheduleDate);
+}
+
+function renderDateStrip(selected) {
+  const strip = document.getElementById('scheduleDateStrip');
+  if (!strip) return;
+  const dates = scheduleDates();
+  strip.innerHTML = dates.map(d => {
+    const dt = new Date(d + 'T12:00:00Z');
+    const mon = dt.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+    const day = dt.toLocaleString('en-US', { weekday: 'short', timeZone: 'UTC' });
+    const num = dt.getUTCDate();
+    const active = d === selected ? ' active' : '';
+    return `<button class="sched-date-btn${active}" data-date="${d}">
+      <span class="sched-day">${day}</span>
+      <span class="sched-num">${num}</span>
+      <span class="sched-mon">${mon}</span>
+    </button>`;
+  }).join('');
+
+  // Scroll selected into view
+  strip.querySelector('.sched-date-btn.active')
+    ?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+
+  strip.addEventListener('click', e => {
+    const btn = e.target.closest('.sched-date-btn');
+    if (!btn) return;
+    state.scheduleDate = btn.dataset.date;
+    renderSchedule();
+  }, { once: true });
+}
+
+async function fetchScheduleGames(date) {
+  const el = document.getElementById('scheduleGames');
+  if (!el) return;
+  el.innerHTML = '<div class="scores-loading">Loading games…</div>';
+  try {
+    const res = await fetchWithProxy(`https://api-web.nhle.com/v1/score/${date}`);
+    const data = await res.json();
+    const games = (data.games || []).filter(g => g.gameType === 3);
+    const badge = document.getElementById('scheduleRefreshBadge');
+    if (!games.length) {
+      el.innerHTML = '<div class="scores-empty">No playoff games on this date.</div>';
+      if (badge) badge.textContent = '';
+      return;
+    }
+    el.innerHTML = `<div class="tg-grid tg-grid-wide">${games.map(gameCard).join('')}</div>`;
+    if (badge) badge.textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   } catch (e) {
     el.innerHTML = '<div class="scores-empty">Could not load games — check back soon.</div>';
   }
@@ -1261,8 +1335,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   setInterval(() => { if (state.view==='home') renderCountdown(); }, 1000);
 
-  // Refresh NHL scores every 30s while on home view
-  setInterval(() => { if (state.view==='home') renderTodayGames(); }, 30000);
+  // Refresh NHL scores every 30s while on home or schedule view
+  setInterval(() => {
+    if (state.view === 'home') renderTodayGames();
+    if (state.view === 'schedule') fetchScheduleGames(state.scheduleDate);
+  }, 30000);
 
   // Auto-refresh bracket data every 60 seconds
   setInterval(() => { refreshData(); }, 60000);

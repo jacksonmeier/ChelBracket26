@@ -519,6 +519,74 @@ body {
   margin-top: 0.05rem;
 }
 
+/* ── Schedule ──────────────────────────────────────────────── */
+.schedule-date-wrap {
+  overflow-x: auto;
+  margin-bottom: 1.75rem;
+  padding-bottom: 0.25rem;
+  /* hide scrollbar but keep scrollable */
+  scrollbar-width: none;
+}
+.schedule-date-wrap::-webkit-scrollbar { display: none; }
+
+.schedule-date-strip {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.25rem 0.1rem;
+  min-width: max-content;
+}
+
+.sched-date-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+  cursor: pointer;
+  min-width: 58px;
+  transition: all 0.15s;
+  color: var(--text-dim);
+}
+.sched-date-btn:hover {
+  border-color: var(--border-lite);
+  color: var(--text);
+  background: var(--bg-card2);
+}
+.sched-date-btn.active {
+  background: var(--accent);
+  border-color: var(--accent-dark);
+  color: #fff;
+  box-shadow: var(--shadow-red);
+}
+.sched-day {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.75;
+}
+.sched-date-btn.active .sched-day { opacity: 0.85; }
+.sched-num {
+  font-family: var(--font-head);
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.sched-mon {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+/* Wider grid for schedule page (more breathing room) */
+.tg-grid-wide {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
 /* ── Home Standings ────────────────────────────────────────── */
 .home-standings {
   max-width: 760px;
