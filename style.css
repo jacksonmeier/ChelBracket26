@@ -699,9 +699,77 @@ body {
   color: var(--text-muted);
 }
 
-.bk-box.scf {
-  border-color: var(--accent);
-  background: linear-gradient(135deg, var(--bg-card2), var(--bg-card));
+.bk-box.scf-box {
+  border-color: var(--gold, #f59e0b);
+  border-width: 2px;
+  background: linear-gradient(160deg, #0f1a2e 0%, #1a1200 100%);
+  box-shadow: 0 0 24px rgba(245,158,11,0.18), 0 0 6px rgba(245,158,11,0.12);
+  padding: 0.5rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.scf-label {
+  color: var(--gold, #f59e0b);
+  letter-spacing: 0.06em;
+}
+
+.scf-champion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.35rem 0 0.25rem;
+  gap: 0.15rem;
+}
+
+.scf-champ-logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.scf-champ-name {
+  font-family: var(--font-head);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.15;
+}
+
+.scf-champ-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--gold, #f59e0b);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.scf-champ-tbd {
+  font-size: 2rem;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.scf-champion.scf-correct .scf-champ-name { color: var(--accent); }
+.scf-champion.scf-wrong   .scf-champ-name { color: var(--error); text-decoration: line-through; }
+.scf-champion.scf-correct .scf-champ-label { color: var(--accent); }
+.scf-champion.scf-wrong   .scf-champ-label { color: var(--error); }
+
+.scf-finalists {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-top: 1px solid rgba(245,158,11,0.2);
+  padding-top: 0.3rem;
+  margin-top: auto;
+}
+
+.scf-vs {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .bracket-conf-label {

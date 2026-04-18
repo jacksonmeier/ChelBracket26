@@ -90,12 +90,13 @@ const DEFAULT_SETTINGS = { lockDate: null };
 // Bracket canvas layout
 const BW = 165, BH = 92, YGAP = 150, YTOP = 20, CW = 1420, CH = 600;
 const COL = BW + 25; // horizontal step between rounds (box width + gap)
+const SCF_W = 230, SCF_H = 175; // Stanley Cup Final box is bigger
 const POSITIONS = {
   E1:{ x:0,         y:YTOP+0*YGAP }, E2:{ x:0,         y:YTOP+1*YGAP },
   E3:{ x:0,         y:YTOP+2*YGAP }, E4:{ x:0,         y:YTOP+3*YGAP },
   E5:{ x:COL,       y:YTOP+0.5*YGAP }, E6:{ x:COL,     y:YTOP+2.5*YGAP },
   ECF:{ x:2*COL,    y:YTOP+1.5*YGAP },
-  SCF:{ x:Math.round((CW-BW)/2), y:YTOP+1.5*YGAP },
+  SCF:{ x:Math.round((CW-SCF_W)/2), y:Math.round(YTOP+1.5*YGAP-(SCF_H-BH)/2) },
   WCF:{ x:CW-2*COL-BW, y:YTOP+1.5*YGAP },
   W5:{ x:CW-COL-BW, y:YTOP+0.5*YGAP }, W6:{ x:CW-COL-BW, y:YTOP+2.5*YGAP },
   W1:{ x:CW-BW,    y:YTOP+0*YGAP }, W2:{ x:CW-BW,     y:YTOP+1*YGAP },
@@ -739,11 +740,13 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
   canvas.style.height = CH + 'px';
 
   const svg = createSVG(CW, CH);
+  const nodeW = id => id==='SCF' ? SCF_W : BW;
+  const nodeH = id => id==='SCF' ? SCF_H : BH;
   CONNECTORS.forEach(([fid, tid, fside, tside]) => {
     const fp = POSITIONS[fid], tp = POSITIONS[tid];
     if (!fp || !tp) return;
-    const fx = fside==='r' ? fp.x+BW : fp.x, fy = fp.y+BH/2;
-    const tx = tside==='r' ? tp.x+BW : tp.x, ty = tp.y+BH/2;
+    const fx = fside==='r' ? fp.x+nodeW(fid) : fp.x, fy = fp.y+nodeH(fid)/2;
+    const tx = tside==='r' ? tp.x+nodeW(tid) : tp.x, ty = tp.y+nodeH(tid)/2;
     const mx = (fx+tx)/2;
     const line = document.createElementNS('http://www.w3.org/2000/svg','polyline');
     line.setAttribute('points',`${fx},${fy} ${mx},${fy} ${mx},${ty} ${tx},${ty}`);
@@ -794,20 +797,53 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
       }
     }
 
-    const t1Html = t1==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t1Class}">${logoImg(t1,'bk-logo')}${esc(t1)}</span>`;
-    const t2Html = t2==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t2Class}">${logoImg(t2,'bk-logo')}${esc(t2)}</span>`;
     const pickedGames = pick ? pick.games : null;
     const actualGames = (result && result.completed) ? result.games : null;
     const gamesInfo = pickedGames ? `Picked: ${pickedGames}g${actualGames?' · Actual: '+actualGames+'g':''}` : '';
 
     const box = document.createElement('div');
-    box.className = 'bk-box' + (s.id==='SCF'?' scf':'');
-    box.style.left = pos.x+'px'; box.style.top = pos.y+'px'; box.style.width = BW+'px';
-    box.innerHTML = `
-      <div class="bk-label">${esc(s.abbr)}</div>
-      ${t1Html}${t2Html}
-      ${statusBadge ? `<div style="margin-top:0.2rem">${statusBadge}</div>` : ''}
-      ${gamesInfo ? `<div class="bk-games">${gamesInfo}</div>` : ''}`;
+    const isSCF = s.id === 'SCF';
+
+    if (isSCF) {
+      // ── Stanley Cup Final — large hero card ──
+      const champTeam = pick && pick.winner;
+      const confirmed = result && result.completed;
+      const isCorrect = confirmed && champTeam === result.winner;
+      const isWrong   = confirmed && champTeam && champTeam !== result.winner;
+      let champHtml;
+      if (champTeam) {
+        const champStateClass = isCorrect ? 'scf-correct' : isWrong ? 'scf-wrong' : '';
+        const champLabel = isCorrect ? '🏆 Champion!' : isWrong ? '❌ Eliminated' : '🏆 Your Pick';
+        champHtml = `
+          <div class="scf-champion ${champStateClass}">
+            <img class="scf-champ-logo" src="${logoUrl(champTeam)}" alt="" onerror="this.style.display='none'">
+            <div class="scf-champ-name">${esc(champTeam)}</div>
+            <div class="scf-champ-label">${champLabel}</div>
+          </div>`;
+      } else {
+        champHtml = `<div class="scf-champion"><div class="scf-champ-tbd">?</div><div class="scf-champ-label">Make your picks!</div></div>`;
+      }
+      const t1Html = t1==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t1Class}">${logoImg(t1,'bk-logo')}${esc(t1)}</span>`;
+      const t2Html = t2==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t2Class}">${logoImg(t2,'bk-logo')}${esc(t2)}</span>`;
+      box.className = 'bk-box scf-box';
+      box.style.left = pos.x+'px'; box.style.top = pos.y+'px';
+      box.style.width = SCF_W+'px'; box.style.height = SCF_H+'px';
+      box.innerHTML = `
+        <div class="bk-label scf-label">Stanley Cup Final</div>
+        ${champHtml}
+        <div class="scf-finalists">${t1Html}<span class="scf-vs">vs</span>${t2Html}</div>
+        ${gamesInfo ? `<div class="bk-games">${gamesInfo}</div>` : ''}`;
+    } else {
+      const t1Html = t1==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t1Class}">${logoImg(t1,'bk-logo')}${esc(t1)}</span>`;
+      const t2Html = t2==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t2Class}">${logoImg(t2,'bk-logo')}${esc(t2)}</span>`;
+      box.className = 'bk-box';
+      box.style.left = pos.x+'px'; box.style.top = pos.y+'px'; box.style.width = BW+'px';
+      box.innerHTML = `
+        <div class="bk-label">${esc(s.abbr)}</div>
+        ${t1Html}${t2Html}
+        ${statusBadge ? `<div style="margin-top:0.2rem">${statusBadge}</div>` : ''}
+        ${gamesInfo ? `<div class="bk-games">${gamesInfo}</div>` : ''}`;
+    }
     canvas.appendChild(box);
   }
 }
