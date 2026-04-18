@@ -431,59 +431,98 @@ function showView(name) {
 
 // ── Actual NHL Bracket ─────────────────────────────────────
 
-const ROUND_NAMES_BRACKET = { 1:'First Round', 2:'Second Round', 3:'Conference Finals', 4:'Stanley Cup Final' };
-
 function renderActualBracket() {
   const el = document.getElementById('actualBracket');
   if (!el) return;
-  const teams   = getTeams();
-  const results = getResults();
+  el.innerHTML = `<div class="bracket-scroll-wrap"><div class="bracket-canvas" id="actualBracketCanvas"></div></div>`;
+  buildActualBracketCanvas();
+}
 
-  function seriesCard(s) {
+function buildActualBracketCanvas() {
+  const canvas = document.getElementById('actualBracketCanvas');
+  if (!canvas) return;
+  const results = getResults(), teams = getTeams();
+  canvas.style.width  = CW + 'px';
+  canvas.style.height = CH + 'px';
+
+  const svg = createSVG(CW, CH);
+  const nodeW = id => id === 'SCF' ? SCF_W : BW;
+  const nodeH = id => id === 'SCF' ? SCF_H : BH;
+  CONNECTORS.forEach(([fid, tid, fside, tside]) => {
+    const fp = POSITIONS[fid], tp = POSITIONS[tid];
+    if (!fp || !tp) return;
+    const fx = fside==='r' ? fp.x+nodeW(fid) : fp.x, fy = fp.y+nodeH(fid)/2;
+    const tx = tside==='r' ? tp.x+nodeW(tid) : tp.x, ty = tp.y+nodeH(tid)/2;
+    const mx = (fx+tx)/2;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+    line.setAttribute('points',`${fx},${fy} ${mx},${fy} ${mx},${ty} ${tx},${ty}`);
+    line.setAttribute('fill','none'); line.setAttribute('stroke','#1e3060'); line.setAttribute('stroke-width','2');
+    svg.appendChild(line);
+  });
+  canvas.appendChild(svg);
+
+  [['EASTERN','0'],['WESTERN','auto']].forEach(([label, left]) => {
+    const lbl = document.createElement('div');
+    lbl.className = 'bracket-conf-label';
+    lbl.style.left = left === 'auto' ? 'auto' : left+'px';
+    if (left === 'auto') lbl.style.right = '0';
+    lbl.style.top = '-2px'; lbl.textContent = label;
+    canvas.appendChild(lbl);
+  });
+
+  for (const s of SERIES) {
+    const pos = POSITIONS[s.id];
+    if (!pos) continue;
+
     const [t1, t2] = getActualTeams(s.id, results, teams);
-    const res = results[s.id];
-    const t1Won = res?.completed && res.winner === t1;
-    const t2Won = res?.completed && res.winner === t2;
-    const loserWins = res?.completed ? (res.games - 4) : null;
+    const result    = results[s.id];
+    const winner    = result?.completed ? result.winner : null;
+    const loserWins = result?.completed ? result.games - 4 : null;
 
-    function teamRow(name, won, lost) {
-      const logo = logoImg(name, 'ab-logo');
-      const winsLabel = won ? `<span class="ab-wins ab-wins-w">4</span>`
-                       : lost ? `<span class="ab-wins ab-wins-l">${loserWins}</span>` : '';
-      return `<div class="ab-team${won ? ' ab-winner' : lost ? ' ab-loser' : ''}">
-        ${logo}<span class="ab-name">${esc(name)}</span>${winsLabel}
-      </div>`;
+    let t1Class = '', t2Class = '';
+    if (winner) {
+      t1Class = t1 === winner ? 'winner' : 'eliminated';
+      t2Class = t2 === winner ? 'winner' : 'eliminated';
     }
 
-    const done = res?.completed;
-    return `<div class="ab-card${done ? ' ab-done' : ''}">
-      ${teamRow(t1, t1Won, t2Won)}
-      ${teamRow(t2, t2Won, t1Won)}
-    </div>`;
-  }
+    const seriesScore = result?.completed
+      ? `<div class="bk-games">4–${loserWins} series</div>` : '';
 
-  let html = '';
-  for (let round = 1; round <= 4; round++) {
-    const roundSeries = SERIES.filter(s => s.round === round);
-    const eastSeries  = roundSeries.filter(s => s.conf === 'East');
-    const westSeries  = roundSeries.filter(s => s.conf === 'West');
-    const finalSeries = roundSeries.filter(s => s.conf === 'Final');
+    const box = document.createElement('div');
 
-    html += `<div class="ab-round">
-      <div class="ab-round-label">${ROUND_NAMES_BRACKET[round]}</div>
-      <div class="ab-round-body">`;
-
-    if (finalSeries.length) {
-      html += `<div class="ab-conf ab-conf-final">${finalSeries.map(seriesCard).join('')}</div>`;
+    if (s.id === 'SCF') {
+      let champHtml;
+      if (winner) {
+        champHtml = `<div class="scf-champion">
+          <img class="scf-champ-logo" src="${logoUrl(winner)}" alt="" onerror="this.style.display='none'">
+          <div class="scf-champ-name">${esc(winner)}</div>
+          <div class="scf-champ-label">🏆 Stanley Cup Champions</div>
+        </div>`;
+      } else {
+        champHtml = `<div class="scf-champion"><div class="scf-champ-tbd">?</div><div class="scf-champ-label">To Be Determined</div></div>`;
+      }
+      const t1Html = t1==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t1Class}">${logoImg(t1,'bk-logo')}${esc(t1)}</span>`;
+      const t2Html = t2==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t2Class}">${logoImg(t2,'bk-logo')}${esc(t2)}</span>`;
+      box.className = 'bk-box scf-box';
+      box.style.left = pos.x+'px'; box.style.top = pos.y+'px';
+      box.style.width = SCF_W+'px';
+      box.innerHTML = `
+        <div class="bk-label scf-label">Stanley Cup Final</div>
+        ${champHtml}
+        <div class="scf-finalists">${t1Html}<span class="scf-vs">vs</span>${t2Html}</div>
+        ${seriesScore}`;
     } else {
-      html += `<div class="ab-conf"><div class="ab-conf-label">Eastern</div>${eastSeries.map(seriesCard).join('')}</div>`;
-      html += `<div class="ab-conf"><div class="ab-conf-label">Western</div>${westSeries.map(seriesCard).join('')}</div>`;
+      const t1Html = t1==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t1Class}">${logoImg(t1,'bk-logo')}${esc(t1)}</span>`;
+      const t2Html = t2==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t2Class}">${logoImg(t2,'bk-logo')}${esc(t2)}</span>`;
+      box.className = 'bk-box';
+      box.style.left = pos.x+'px'; box.style.top = pos.y+'px'; box.style.width = BW+'px';
+      box.innerHTML = `
+        <div class="bk-label">${esc(s.abbr)}</div>
+        ${t1Html}${t2Html}
+        ${seriesScore}`;
     }
-
-    html += `</div></div>`;
+    canvas.appendChild(box);
   }
-
-  el.innerHTML = html;
 }
 
 // ── Home ───────────────────────────────────────────────────
