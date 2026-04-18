@@ -6,7 +6,7 @@
   <title>ChelBracket26 — NHL Playoff Pool</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=12">
+  <link rel="stylesheet" href="style.css?v=13">
   <style>
     /* Critical: loading overlay — inlined to avoid cache issues */
     #loadingOverlay { position:fixed; inset:0; background:#080c18; display:flex; align-items:center; justify-content:center; z-index:9000; }
@@ -17,7 +17,7 @@
 
 <nav class="navbar">
   <div class="nav-brand" data-view="home" style="cursor:pointer">
-    <span class="nav-puck">🏒</span>
+    <img src="logo.png" class="nav-logo" alt="ChelBracket26">
     <span class="nav-title">ChelBracket<span class="nav-accent">26</span></span>
   </div>
   <div class="nav-links" id="navLinks">
@@ -46,6 +46,7 @@
   <!-- ═══════════════════════════════ HOME ═══════════════════════════════ -->
   <section class="view" id="view-home">
     <div class="hero">
+      <img src="logo.png" class="hero-logo" alt="ChelBracket26">
       <h1 class="hero-title">ChelBracket<span class="accent">26</span></h1>
       <p class="hero-sub">NHL Playoff Bracket Pool</p>
       <div id="homeCountdown" class="countdown-wrap"></div>
