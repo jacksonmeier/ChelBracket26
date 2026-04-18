@@ -743,7 +743,8 @@ function renderHomeLeaderboard() {
     el.innerHTML = '<div class="empty-state">No entries yet. Be the first to submit a bracket!</div>';
     return;
   }
-  el.innerHTML = buildLeaderboardTable(rankBrackets(brackets, results).slice(0, 8), results, true);
+  const ranked = rankBrackets(brackets, results);
+  el.innerHTML = buildLeaderboardTable(ranked.slice(0, 8), results, true, brackets.length);
 }
 
 function rankBrackets(brackets, results) {
@@ -753,10 +754,18 @@ function rankBrackets(brackets, results) {
   }).sort((a,b) => b.pts - a.pts || b.proj - a.proj);
 }
 
-function buildLeaderboardTable(ranked, results, mini = false) {
+function buildLeaderboardTable(ranked, results, mini = false, totalCount = null) {
   if (!ranked.length) return '<div class="empty-state">No entries yet.</div>';
+  const entryCount = totalCount !== null ? totalCount : ranked.length;
+  const prizePool = entryCount * 25;
+  const prizeBanner = `<div class="prize-pool-banner">
+    <span class="prize-pool-icon">💰</span>
+    <span class="prize-pool-label">Prize Pool</span>
+    <span class="prize-pool-amount">$${prizePool.toLocaleString()}</span>
+    <span class="prize-pool-meta">${entryCount} bracket${entryCount !== 1 ? 's' : ''} × $25</span>
+  </div>`;
   const hasResults = Object.values(results).some(r => r.completed);
-  let html = `<div class="lb-table-wrap"><table class="lb-table"><thead><tr>
+  let html = prizeBanner + `<div class="lb-table-wrap"><table class="lb-table"><thead><tr>
     <th>Rank</th><th>Name</th><th>Cup Pick</th><th>Points</th>
     ${hasResults ? '<th>Correct</th>' : ''}
     <th>Max Possible</th>
@@ -1144,7 +1153,7 @@ function renderLeaderboard() {
   const brackets = getBrackets(), results = getResults();
   const el = document.getElementById('leaderboardContent');
   if (!brackets.length) { el.innerHTML = '<div class="empty-state">No entries yet.</div>'; return; }
-  el.innerHTML = buildLeaderboardTable(rankBrackets(brackets, results), results, false);
+  el.innerHTML = buildLeaderboardTable(rankBrackets(brackets, results), results, false, brackets.length);
   el.querySelectorAll('.lb-view-btn').forEach(btn => {
     btn.addEventListener('click', () => { state.viewingId = btn.dataset.bid; showView('viewer'); drawBracket(btn.dataset.bid); });
   });

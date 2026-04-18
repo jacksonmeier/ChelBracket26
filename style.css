@@ -683,6 +683,39 @@ body {
   margin: 0 auto;
 }
 
+/* ── Prize Pool Banner ────────────────────────────────────── */
+.prize-pool-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: linear-gradient(135deg, rgba(200,32,44,0.18) 0%, rgba(200,32,44,0.06) 100%);
+  border: 1px solid rgba(200,32,44,0.35);
+  border-radius: var(--radius-lg);
+  padding: 0.85rem 1.25rem;
+  margin-bottom: 1rem;
+}
+.prize-pool-icon { font-size: 1.4rem; line-height: 1; }
+.prize-pool-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.prize-pool-amount {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 1.6rem;
+  color: var(--accent);
+  line-height: 1;
+}
+.prize-pool-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
 /* ── Leaderboard Table ────────────────────────────────────── */
 .lb-table-wrap {
   overflow-x: auto;
