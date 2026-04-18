@@ -94,10 +94,8 @@ body {
   text-decoration: none;
 }
 .nav-logo {
-  height: 36px;
-  width: 36px;
-  object-fit: contain;
-  border-radius: 8px;
+  height: 38px;
+  width: auto;
   flex-shrink: 0;
 }
 .nav-title {
@@ -319,8 +317,6 @@ body {
   width: 160px;
   height: auto;
   margin: 0 auto 1.25rem;
-  border-radius: 20px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35);
 }
 
 /* red accent strip across the top of the hero */
