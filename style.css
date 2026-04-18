@@ -379,6 +379,9 @@ body {
 .lb-player-name  { display: block; font-size: 0.8rem; color: var(--text-muted); font-weight: 400; }
 .lb-pts  { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; color: var(--accent); }
 .lb-proj { color: var(--text-dim); font-size: 0.85rem; }
+.lb-cup  { white-space: nowrap; }
+.lb-cup-pick { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; }
+.lb-row:hover td { background: var(--bg-hover, rgba(255,255,255,0.04)); }
 
 .rank-1 td:first-child { border-left: 3px solid var(--gold); }
 .rank-2 td:first-child { border-left: 3px solid var(--silver); }

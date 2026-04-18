@@ -473,7 +473,7 @@ function buildLeaderboardTable(ranked, results, mini = false) {
   if (!ranked.length) return '<div class="empty-state">No entries yet.</div>';
   const hasResults = Object.values(results).some(r => r.completed);
   let html = `<div class="lb-table-wrap"><table class="lb-table"><thead><tr>
-    <th>Rank</th><th>Name</th><th>Points</th>
+    <th>Rank</th><th>Name</th><th>Cup Pick</th><th>Points</th>
     ${hasResults ? '<th>Correct</th>' : ''}
     <th>Max Possible</th>
     ${!mini ? '<th></th>' : ''}
@@ -483,13 +483,18 @@ function buildLeaderboardTable(ranked, results, mini = false) {
     const badgeClass = rank===1?'rank-badge-1':rank===2?'rank-badge-2':'rank-badge-n';
     const prize = rank===1?'<span class="prize-badge prize-1st">💰 Winner</span>'
                 : rank===2?'<span class="prize-badge prize-2nd">🥈 Entry Back</span>':'';
-    html += `<tr class="${rank===1?'rank-1':rank===2?'rank-2':''}">
+    const cupWinner = b.picks && b.picks['SCF'] && b.picks['SCF'].winner;
+    const cupCell = cupWinner
+      ? `<span class="lb-cup-pick">${logoImg(cupWinner,'bk-logo')}${esc(cupWinner)}</span>`
+      : `<span style="color:var(--text-muted)">—</span>`;
+    html += `<tr class="lb-row ${rank===1?'rank-1':rank===2?'rank-2':''}" data-bid="${b.id}" style="cursor:pointer">
       <td class="lb-rank"><span class="rank-badge ${badgeClass}">${rank}</span></td>
       <td class="lb-name">
         <span class="lb-bracket-name">${esc(b.bracketName || b.name)}</span>
         ${b.playerName ? `<span class="lb-player-name">${esc(b.playerName)}</span>` : ''}
         ${prize}
       </td>
+      <td class="lb-cup">${cupCell}</td>
       <td class="lb-pts">${b.pts}</td>
       ${hasResults ? `<td>${b.correct} <span style="color:var(--text-muted);font-size:0.8em">series</span></td>` : ''}
       <td class="lb-proj">${b.proj}</td>
@@ -1096,9 +1101,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('saveResultsBtn').addEventListener('click', saveCommResults);
   document.getElementById('saveSettingsBtn').addEventListener('click', saveCommSettings);
 
+  // Full leaderboard view button
   document.getElementById('leaderboardContent').addEventListener('click', e => {
     const btn = e.target.closest('.lb-view-btn'); if (!btn) return;
     state.viewingId = btn.dataset.bid; showView('viewer'); renderViewer(btn.dataset.bid); drawBracket(btn.dataset.bid);
+  });
+
+  // Home leaderboard — click any row to view that bracket
+  document.getElementById('homeLeaderboard').addEventListener('click', e => {
+    const row = e.target.closest('.lb-row[data-bid]'); if (!row) return;
+    const bid = row.dataset.bid;
+    state.viewingId = bid; showView('viewer'); renderViewer(bid); drawBracket(bid);
   });
 
   setInterval(() => { if (state.view==='home') renderCountdown(); }, 1000);
