@@ -594,6 +594,89 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
 
+/* ── Actual NHL Bracket ────────────────────────────────────── */
+.home-bracket {
+  max-width: 960px;
+  margin: 0 auto 2.5rem;
+}
+
+.ab-round {
+  margin-bottom: 1.5rem;
+}
+.ab-round-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 0.65rem;
+}
+.ab-round-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.ab-conf { display: flex; flex-direction: column; gap: 0.5rem; }
+.ab-conf-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-muted);
+  margin-bottom: 0.1rem;
+}
+.ab-conf-final {
+  grid-column: 1 / -1;
+  max-width: 340px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.ab-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.ab-card.ab-done { border-color: rgba(255,255,255,0.12); }
+
+.ab-team {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  min-width: 0;
+}
+.ab-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.ab-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ab-wins {
+  font-family: var(--font-head);
+  font-size: 1rem;
+  font-weight: 700;
+  min-width: 1.2rem;
+  text-align: right;
+}
+.ab-wins-w { color: var(--accent); }
+.ab-wins-l { color: var(--text-muted); }
+
+.ab-team.ab-winner { color: var(--text); font-weight: 700; }
+.ab-team.ab-loser  { color: var(--text-muted); text-decoration: line-through; opacity: 0.6; }
+
 /* ── Home Standings ────────────────────────────────────────── */
 .home-standings {
   max-width: 760px;

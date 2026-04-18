@@ -429,11 +429,69 @@ function showView(name) {
   if (name === 'commissioner') renderCommissioner();
 }
 
+// ── Actual NHL Bracket ─────────────────────────────────────
+
+const ROUND_NAMES_BRACKET = { 1:'First Round', 2:'Second Round', 3:'Conference Finals', 4:'Stanley Cup Final' };
+
+function renderActualBracket() {
+  const el = document.getElementById('actualBracket');
+  if (!el) return;
+  const teams   = getTeams();
+  const results = getResults();
+
+  function seriesCard(s) {
+    const [t1, t2] = getActualTeams(s.id, results, teams);
+    const res = results[s.id];
+    const t1Won = res?.completed && res.winner === t1;
+    const t2Won = res?.completed && res.winner === t2;
+    const loserWins = res?.completed ? (res.games - 4) : null;
+
+    function teamRow(name, won, lost) {
+      const logo = logoImg(name, 'ab-logo');
+      const winsLabel = won ? `<span class="ab-wins ab-wins-w">4</span>`
+                       : lost ? `<span class="ab-wins ab-wins-l">${loserWins}</span>` : '';
+      return `<div class="ab-team${won ? ' ab-winner' : lost ? ' ab-loser' : ''}">
+        ${logo}<span class="ab-name">${esc(name)}</span>${winsLabel}
+      </div>`;
+    }
+
+    const done = res?.completed;
+    return `<div class="ab-card${done ? ' ab-done' : ''}">
+      ${teamRow(t1, t1Won, t2Won)}
+      ${teamRow(t2, t2Won, t1Won)}
+    </div>`;
+  }
+
+  let html = '';
+  for (let round = 1; round <= 4; round++) {
+    const roundSeries = SERIES.filter(s => s.round === round);
+    const eastSeries  = roundSeries.filter(s => s.conf === 'East');
+    const westSeries  = roundSeries.filter(s => s.conf === 'West');
+    const finalSeries = roundSeries.filter(s => s.conf === 'Final');
+
+    html += `<div class="ab-round">
+      <div class="ab-round-label">${ROUND_NAMES_BRACKET[round]}</div>
+      <div class="ab-round-body">`;
+
+    if (finalSeries.length) {
+      html += `<div class="ab-conf ab-conf-final">${finalSeries.map(seriesCard).join('')}</div>`;
+    } else {
+      html += `<div class="ab-conf"><div class="ab-conf-label">Eastern</div>${eastSeries.map(seriesCard).join('')}</div>`;
+      html += `<div class="ab-conf"><div class="ab-conf-label">Western</div>${westSeries.map(seriesCard).join('')}</div>`;
+    }
+
+    html += `</div></div>`;
+  }
+
+  el.innerHTML = html;
+}
+
 // ── Home ───────────────────────────────────────────────────
 
 function renderHome() {
   renderCountdown();
   renderTodayGames();
+  renderActualBracket();
   renderHomeLeaderboard();
 }
 
