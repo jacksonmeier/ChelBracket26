@@ -90,7 +90,7 @@ const DEFAULT_SETTINGS = { lockDate: null };
 // Bracket canvas layout
 const BW = 165, BH = 92, YGAP = 150, YTOP = 20, CW = 1420, CH = 600;
 const COL = BW + 25; // horizontal step between rounds (box width + gap)
-const SCF_W = 230, SCF_H = 175; // Stanley Cup Final box is bigger
+const SCF_W = 255, SCF_H = 185; // Stanley Cup Final box is bigger
 const POSITIONS = {
   E1:{ x:0,         y:YTOP+0*YGAP }, E2:{ x:0,         y:YTOP+1*YGAP },
   E3:{ x:0,         y:YTOP+2*YGAP }, E4:{ x:0,         y:YTOP+3*YGAP },
@@ -813,7 +813,7 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
       let champHtml;
       if (champTeam) {
         const champStateClass = isCorrect ? 'scf-correct' : isWrong ? 'scf-wrong' : '';
-        const champLabel = isCorrect ? '🏆 Champion!' : isWrong ? '❌ Eliminated' : '🏆 Your Pick';
+        const champLabel = isCorrect ? '🏆 Stanley Cup Champions!' : isWrong ? '❌ Eliminated' : 'Stanley Cup Champions';
         champHtml = `
           <div class="scf-champion ${champStateClass}">
             <img class="scf-champ-logo" src="${logoUrl(champTeam)}" alt="" onerror="this.style.display='none'">
