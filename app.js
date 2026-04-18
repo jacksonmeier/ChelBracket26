@@ -431,7 +431,116 @@ function showView(name) {
 
 function renderHome() {
   renderCountdown();
+  renderTodayGames();
   renderHomeLeaderboard();
+}
+
+// ── NHL Live Scores ────────────────────────────────────────
+
+const NHL_SCORE_URL = 'https://api-web.nhle.com/v1/score/now';
+const CORS_PROXIES = [
+  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+];
+
+async function fetchWithProxy(url) {
+  // Try direct first (works if browser/NHL ever allows CORS)
+  try {
+    const r = await fetch(url, { cache: 'no-store' });
+    if (r.ok) return r;
+  } catch (_) {}
+  // Fall back through each proxy
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const r = await fetch(proxy(url), { cache: 'no-store' });
+      if (r.ok) return r;
+    } catch (_) {}
+  }
+  throw new Error('All NHL API attempts failed');
+}
+
+async function renderTodayGames() {
+  const el = document.getElementById('todayGames');
+  if (!el) return;
+  try {
+    const res = await fetchWithProxy(NHL_SCORE_URL);
+    const data = await res.json();
+    const games = (data.games || []).filter(g => g.gameType === 3); // playoffs only
+    if (!games.length) {
+      el.innerHTML = '<div class="scores-empty">No playoff games scheduled today.</div>';
+      document.getElementById('scoresRefreshBadge').textContent = '';
+      return;
+    }
+    el.innerHTML = `<div class="tg-grid">${games.map(gameCard).join('')}</div>`;
+    const now = new Date();
+    document.getElementById('scoresRefreshBadge').textContent =
+      'Updated ' + now.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+  } catch (e) {
+    el.innerHTML = '<div class="scores-empty">Could not load games — check back soon.</div>';
+  }
+}
+
+function gameCard(g) {
+  const away = g.awayTeam, home = g.homeTeam;
+  const state = g.gameState; // FUT PRE LIVE CRIT FINAL OFF
+  const isLive  = state === 'LIVE' || state === 'CRIT';
+  const isFinal = state === 'FINAL' || state === 'OFF';
+  const isFut   = !isLive && !isFinal;
+
+  // ── Status badge ──
+  let statusHtml;
+  if (isLive) {
+    const pd = g.periodDescriptor || {};
+    const pNum = pd.number || g.period || '';
+    const pType = pd.periodType || 'REG';
+    const periodLabel = pType === 'OT' ? 'OT' : pType === 'SO' ? 'SO' : `P${pNum}`;
+    const clock = g.clock?.timeRemaining || '';
+    statusHtml = `<span class="tg-badge tg-live">🔴 LIVE &nbsp;${clock ? clock + ' · ' : ''}${periodLabel}</span>`;
+  } else if (isFinal) {
+    const pType = g.periodDescriptor?.periodType || 'REG';
+    const suffix = pType === 'OT' ? '/OT' : pType === 'SO' ? '/SO' : '';
+    statusHtml = `<span class="tg-badge tg-final">Final${suffix}</span>`;
+  } else {
+    const t = new Date(g.startTimeUTC);
+    const timeStr = t.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', timeZoneName:'short' });
+    statusHtml = `<span class="tg-badge tg-future">${timeStr}</span>`;
+  }
+
+  // ── Series record ──
+  const ss = g.seriesStatus;
+  let seriesHtml = '';
+  if (ss && ss.seriesTitle) {
+    seriesHtml = `<div class="tg-series">${esc(ss.seriesTitle)}</div>`;
+  } else {
+    const aw = away.seriesWins ?? 0, hw = home.seriesWins ?? 0;
+    const seriesStr = aw === hw
+      ? `Series tied ${aw}-${hw}`
+      : aw > hw ? `${away.abbrev} leads ${aw}-${hw}` : `${home.abbrev} leads ${hw}-${aw}`;
+    seriesHtml = `<div class="tg-series">${seriesStr}</div>`;
+  }
+
+  // ── Team rows ──
+  const awayLead = !isFut && away.score > home.score;
+  const homeLead = !isFut && home.score > away.score;
+
+  function teamRow(team, leading) {
+    const logoSrc = team.logo || logoUrl(team.name?.default || '');
+    const name = team.name?.default || team.abbrev;
+    return `<div class="tg-team${leading ? ' tg-lead' : ''}">
+      <img class="tg-logo" src="${logoSrc}" alt="" onerror="this.style.display='none'">
+      <span class="tg-name">${esc(name)}</span>
+      ${!isFut ? `<span class="tg-score${leading ? ' tg-score-lead' : ''}">${team.score}</span>` : ''}
+    </div>`;
+  }
+
+  return `<div class="tg-card">
+    <div class="tg-card-header">${statusHtml}</div>
+    <div class="tg-teams">
+      ${teamRow(away, awayLead)}
+      ${teamRow(home, homeLead)}
+    </div>
+    ${seriesHtml}
+  </div>`;
 }
 
 function renderCountdown() {
@@ -1152,7 +1261,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   setInterval(() => { if (state.view==='home') renderCountdown(); }, 1000);
 
-  // Auto-refresh data from GitHub every 60 seconds
+  // Refresh NHL scores every 30s while on home view
+  setInterval(() => { if (state.view==='home') renderTodayGames(); }, 30000);
+
+  // Auto-refresh bracket data every 60 seconds
   setInterval(() => { refreshData(); }, 60000);
 
   // ── Boot ──────────────────────────────────────────────────

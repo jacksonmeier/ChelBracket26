@@ -6,7 +6,7 @@
   <title>ChelBracket26 — NHL Playoff Pool</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=8">
+  <link rel="stylesheet" href="style.css?v=9">
   <style>
     /* Critical: loading overlay — inlined to avoid cache issues */
     #loadingOverlay { position:fixed; inset:0; background:#080c18; display:flex; align-items:center; justify-content:center; z-index:9000; }
@@ -53,6 +53,13 @@
         <button class="btn btn-primary btn-lg" data-view="entry">Enter My Bracket</button>
         <button class="btn btn-outline btn-lg" data-view="leaderboard">View Standings</button>
       </div>
+    </div>
+    <div class="home-scores">
+      <div class="section-header">
+        <h2 class="section-title">Today's Games</h2>
+        <span id="scoresRefreshBadge" class="scores-refresh-badge"></span>
+      </div>
+      <div id="todayGames"><div class="scores-loading">Loading games…</div></div>
     </div>
     <div class="home-standings">
       <div class="section-header">
@@ -213,6 +220,6 @@
 </div>
 
 <script src="config.js"></script>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=15"></script>
 </body>
 </html>

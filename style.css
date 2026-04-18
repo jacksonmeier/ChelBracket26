@@ -330,6 +330,92 @@ body {
   font-weight: 600;
 }
 
+/* ── Today's Games ─────────────────────────────────────── */
+.home-scores {
+  max-width: 720px;
+  margin: 0 auto 2rem;
+}
+.scores-refresh-badge {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.scores-loading, .scores-empty {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 0.5rem 0;
+}
+.tg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.85rem;
+}
+.tg-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.tg-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tg-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 99px;
+}
+.tg-live   { background: rgba(239,68,68,0.15); color: #f87171; }
+.tg-final  { background: rgba(100,116,139,0.2); color: var(--text-muted); }
+.tg-future { background: rgba(56,189,248,0.1);  color: var(--accent); }
+.tg-teams {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.tg-team {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.tg-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.tg-name {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tg-score {
+  font-family: var(--font-head);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  min-width: 1.5rem;
+  text-align: right;
+}
+.tg-lead .tg-name  { color: var(--text); font-weight: 600; }
+.tg-score-lead     { color: var(--accent); }
+.tg-series {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  padding-top: 0.4rem;
+  margin-top: 0.1rem;
+}
+
 .home-standings {
   max-width: 720px;
   margin: 0 auto;
