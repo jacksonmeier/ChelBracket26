@@ -20,9 +20,9 @@ const SK = {
 const DB_DOCS = ['brackets', 'results', 'teams', 'settings'];
 
 const SERIES = [
-  { id:'E1',  round:1, conf:'East',  t1:'atlantic1',  t2:'ewildcard2', abbr:'Atl 1 vs E-WC2' },
+  { id:'E1',  round:1, conf:'East',  t1:'atlantic1',  t2:'ewildcard1', abbr:'Atl 1 vs E-WC1' },
   { id:'E2',  round:1, conf:'East',  t1:'atlantic2',  t2:'atlantic3',  abbr:'Atl 2 vs Atl 3' },
-  { id:'E3',  round:1, conf:'East',  t1:'metro1',     t2:'ewildcard1', abbr:'Met 1 vs E-WC1' },
+  { id:'E3',  round:1, conf:'East',  t1:'metro1',     t2:'ewildcard2', abbr:'Met 1 vs E-WC2' },
   { id:'E4',  round:1, conf:'East',  t1:'metro2',     t2:'metro3',     abbr:'Met 2 vs Met 3'  },
   { id:'W1',  round:1, conf:'West',  t1:'central1',   t2:'wwildcard2', abbr:'Cen 1 vs W-WC2' },
   { id:'W2',  round:1, conf:'West',  t1:'central2',   t2:'central3',   abbr:'Cen 2 vs Cen 3'  },
