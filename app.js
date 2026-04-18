@@ -90,7 +90,7 @@ const DEFAULT_SETTINGS = { lockDate: null };
 // Bracket canvas layout
 const BW = 165, BH = 92, YGAP = 150, YTOP = 20, CW = 1420, CH = 600;
 const COL = BW + 25; // horizontal step between rounds (box width + gap)
-const SCF_W = 255, SCF_H = 185; // Stanley Cup Final box is bigger
+const SCF_W = 255, SCF_H = 210; // Stanley Cup Final box — height used for connector midpoint
 const POSITIONS = {
   E1:{ x:0,         y:YTOP+0*YGAP }, E2:{ x:0,         y:YTOP+1*YGAP },
   E3:{ x:0,         y:YTOP+2*YGAP }, E4:{ x:0,         y:YTOP+3*YGAP },
@@ -827,7 +827,7 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
       const t2Html = t2==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t2Class}">${logoImg(t2,'bk-logo')}${esc(t2)}</span>`;
       box.className = 'bk-box scf-box';
       box.style.left = pos.x+'px'; box.style.top = pos.y+'px';
-      box.style.width = SCF_W+'px'; box.style.height = SCF_H+'px';
+      box.style.width = SCF_W+'px';
       box.innerHTML = `
         <div class="bk-label scf-label">Stanley Cup Final</div>
         ${champHtml}

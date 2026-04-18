@@ -763,17 +763,22 @@ body {
 
 .scf-finalists {
   display: flex;
-  align-items: center;
-  gap: 0.25rem;
+  flex-direction: column;
+  gap: 0.15rem;
   border-top: 1px solid rgba(245,158,11,0.2);
-  padding-top: 0.3rem;
-  margin-top: auto;
+  padding-top: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+.scf-finalists .bk-team {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.72rem;
 }
 
 .scf-vs {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  flex-shrink: 0;
+  display: none;
 }
 
 .bracket-conf-label {
