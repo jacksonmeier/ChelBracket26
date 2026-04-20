@@ -1022,16 +1022,23 @@ function gameCard(g) {
     </div>`;
   }
 
+  const awayDim = !isFut && !awayLead && home.score > 0;
+  const homeDim = !isFut && !homeLead && away.score > 0;
+  const awayLogoUrl = `https://assets.nhle.com/logos/nhl/svg/${awayAbbr}_light.svg`;
+  const homeLogoUrl = `https://assets.nhle.com/logos/nhl/svg/${homeAbbr}_light.svg`;
+
   return `<div class="mc${isLive ? ' mc-live-card' : ''}">
     <div class="mc-top"><span>${esc(topLine)}</span>${statusHtml}</div>
     <div class="mc-body">
       <div class="mc-team-side">
-        <div class="mc-abbr${(!isFut && !awayLead && home.score > 0) ? ' dim' : ''}">${awayAbbr}</div>
+        <img class="mc-logo${awayDim ? ' dim' : ''}" src="${awayLogoUrl}" onerror="this.style.display='none'" alt="${awayAbbr}">
+        <div class="mc-abbr${awayDim ? ' dim' : ''}">${awayAbbr}</div>
         <div class="mc-city">${esc(awayCity)}</div>
       </div>
       <div class="mc-center">${centerHtml}</div>
       <div class="mc-team-side home">
-        <div class="mc-abbr${(!isFut && !homeLead && away.score > 0) ? ' dim' : ''}">${homeAbbr}</div>
+        <img class="mc-logo${homeDim ? ' dim' : ''}" src="${homeLogoUrl}" onerror="this.style.display='none'" alt="${homeAbbr}">
+        <div class="mc-abbr${homeDim ? ' dim' : ''}">${homeAbbr}</div>
         <div class="mc-city">${esc(homeCity)}</div>
       </div>
     </div>
