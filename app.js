@@ -158,6 +158,7 @@ const state = {
   viewingId:     null,
   dbConfigured:  false,
   scheduleDate:  new Date().toISOString().slice(0, 10),
+  apiSeriesWins: {}, // abbrev → wins, fetched from NHL playoff bracket API
 };
 
 // In-memory data store (loaded from GitHub on startup)
@@ -431,10 +432,11 @@ function showView(name) {
 
 // ── Actual NHL Bracket ─────────────────────────────────────
 
-function renderActualBracket() {
+async function renderActualBracket() {
   const el = document.getElementById('actualBracket');
   if (!el) return;
   el.innerHTML = `<div class="bracket-scroll-wrap"><div class="bracket-canvas" id="actualBracketCanvas"></div></div>`;
+  await fetchApiSeriesWins();
   buildActualBracketCanvas();
 }
 
@@ -485,17 +487,21 @@ function buildActualBracketCanvas() {
       t2Class = t2 === winner ? 'winner' : 'eliminated';
     }
 
-    // Series score: completed shows final, in-progress shows current wins
+    // Series score: completed shows final, in-progress pulls from NHL API
     let seriesScore = '';
     if (result?.completed) {
       seriesScore = `<div class="bk-games bk-series-score">4–${loserWins}</div>`;
-    } else if (result && (result.w1 != null || result.w2 != null)) {
-      const w1 = result.w1 ?? 0, w2 = result.w2 ?? 0;
-      let label;
-      if (w1 === w2) label = w1 === 0 ? '' : `Tied ${w1}–${w2}`;
-      else if (w1 > w2) label = `${t1 !== 'TBD' ? t1.split(' ').pop() : 'Team 1'} leads ${w1}–${w2}`;
-      else              label = `${t2 !== 'TBD' ? t2.split(' ').pop() : 'Team 2'} leads ${w2}–${w1}`;
-      if (label) seriesScore = `<div class="bk-games bk-series-score">${esc(label)}</div>`;
+    } else if (t1 !== 'TBD' && t2 !== 'TBD') {
+      const a1 = TEAM_ABBR[t1], a2 = TEAM_ABBR[t2];
+      const w1 = a1 != null ? (state.apiSeriesWins[a1] ?? null) : null;
+      const w2 = a2 != null ? (state.apiSeriesWins[a2] ?? null) : null;
+      if (w1 != null && w2 != null) {
+        let label;
+        if (w1 === w2) label = w1 === 0 ? 'Series even 0–0' : `Tied ${w1}–${w2}`;
+        else if (w1 > w2) label = `${t1.split(' ').pop()} leads ${w1}–${w2}`;
+        else              label = `${t2.split(' ').pop()} leads ${w2}–${w1}`;
+        seriesScore = `<div class="bk-games bk-series-score">${esc(label)}</div>`;
+      }
     }
 
     const box = document.createElement('div');
@@ -540,17 +546,39 @@ function buildActualBracketCanvas() {
 function renderHome() {
   renderCountdown();
   renderTodayGames();
-  renderActualBracket();
+  renderActualBracket(); // async — fires and updates when done
   renderHomeLeaderboard();
 }
 
 // ── NHL Live Scores ────────────────────────────────────────
 
 const NHL_SCORE_URL = 'https://api-web.nhle.com/v1/score/now';
+const NHL_BRACKET_URL = 'https://api-web.nhle.com/v1/playoff-bracket/20252026';
 const CORS_PROXIES = [
   u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
 ];
+
+// Fetch series wins for all active playoff series from the NHL bracket API.
+// Populates state.apiSeriesWins: { 'TOR': 3, 'BOS': 2, ... }
+async function fetchApiSeriesWins() {
+  try {
+    const res = await fetchWithProxy(NHL_BRACKET_URL);
+    const data = await res.json();
+    const wins = {};
+    (data.rounds || []).forEach(round => {
+      (round.series || []).forEach(series => {
+        (series.matchupTeams || []).forEach(mt => {
+          const abbr = mt.team?.abbrev;
+          if (abbr) wins[abbr] = mt.seriesWins ?? 0;
+        });
+      });
+    });
+    state.apiSeriesWins = wins;
+  } catch (_) {
+    // silently fail — bracket will just not show in-progress scores
+  }
+}
 
 async function fetchWithProxy(url) {
   // Try direct first (works if browser/NHL ever allows CORS)
@@ -1248,14 +1276,6 @@ function renderCommResults() {
             </select>
           </div>
         </div>
-        <div class="result-wins-row">
-          <span class="result-wins-label">Series score:</span>
-          <span class="result-wins-team">${esc(t1.length>10?t1.split(' ').pop():t1)}</span>
-          <input type="number" class="result-wins-input result-w1-input" data-sid="${s.id}" min="0" max="4" value="${r.w1 ?? ''}" placeholder="0">
-          <span class="result-wins-sep">–</span>
-          <input type="number" class="result-wins-input result-w2-input" data-sid="${s.id}" min="0" max="4" value="${r.w2 ?? ''}" placeholder="0">
-          <span class="result-wins-team">${esc(t2.length>10?t2.split(' ').pop():t2)}</span>
-        </div>
         <label class="result-complete-check">
           <input type="checkbox" class="result-done-chk" data-sid="${s.id}" ${r.completed?'checked':''}> Mark as completed
         </label>
@@ -1277,16 +1297,6 @@ function saveCommResults() {
     const sid = sel.dataset.sid;
     if (!results[sid]) results[sid] = {};
     results[sid].games = sel.value ? parseInt(sel.value) : null;
-  });
-  document.querySelectorAll('.result-w1-input').forEach(inp => {
-    const sid = inp.dataset.sid;
-    if (!results[sid]) results[sid] = {};
-    results[sid].w1 = inp.value !== '' ? parseInt(inp.value) : null;
-  });
-  document.querySelectorAll('.result-w2-input').forEach(inp => {
-    const sid = inp.dataset.sid;
-    if (!results[sid]) results[sid] = {};
-    results[sid].w2 = inp.value !== '' ? parseInt(inp.value) : null;
   });
   document.querySelectorAll('.result-done-chk').forEach(chk => {
     const sid = chk.dataset.sid;
