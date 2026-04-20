@@ -158,7 +158,8 @@ const state = {
   viewingId:     null,
   dbConfigured:  false,
   scheduleDate:  new Date().toISOString().slice(0, 10),
-  apiSeriesWins: {}, // abbrev → wins, fetched from NHL playoff bracket API
+  apiSeriesWins: {}, // abbrev → wins
+  apiGames:      {}, // dateStr → [game objects] — cached playoff game data
 };
 
 // In-memory data store (loaded from GitHub on startup)
@@ -537,8 +538,129 @@ function buildActualBracketCanvas() {
         ${t1Html}${t2Html}
         ${seriesScore}`;
     }
+    // Clickable if both teams are known
+    if (t1 !== 'TBD' && t2 !== 'TBD') {
+      box.style.cursor = 'pointer';
+      box.addEventListener('click', () => showSeriesModal(s.id));
+    }
     canvas.appendChild(box);
   }
+}
+
+// ── Series Modal ───────────────────────────────────────────
+
+async function showSeriesModal(sid) {
+  const modal = document.getElementById('seriesModal');
+  const content = document.getElementById('seriesModalContent');
+  if (!modal || !content) return;
+
+  content.innerHTML = '<div class="series-modal-loading">Loading…</div>';
+  modal.classList.add('open');
+
+  await fetchAllPlayoffGames();
+
+  const results = getResults(), teams = getTeams(), brackets = getBrackets();
+  const s = BY_ID[sid];
+  const [t1, t2] = getActualTeams(sid, results, teams);
+  const a1 = TEAM_ABBR[t1], a2 = TEAM_ABBR[t2];
+
+  // All games in this series (match by both team abbrevs)
+  const allGames = Object.entries(state.apiGames)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .flatMap(([, gs]) => gs)
+    .filter(g => {
+      const ga = g.awayTeam?.abbrev, gh = g.homeTeam?.abbrev;
+      return (ga === a1 || ga === a2) && (gh === a1 || gh === a2);
+    });
+
+  // Game-by-game rows
+  const gameRows = allGames.map(g => {
+    const isFinal = g.gameState === 'FINAL' || g.gameState === 'OFF';
+    const isLive  = g.gameState === 'LIVE'  || g.gameState === 'CRIT';
+    const date = new Date(g.startTimeUTC).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    const gNum = g.seriesStatus?.gameNumberOfSeries ?? '?';
+    const ptSuffix = g.periodDescriptor?.periodType === 'OT' ? ' OT' : g.periodDescriptor?.periodType === 'SO' ? ' SO' : '';
+    if (isFinal) {
+      const aW = g.awayTeam.score > g.homeTeam.score;
+      return `<tr>
+        <td class="sm-gnum">Game ${gNum}</td>
+        <td class="sm-date">${date}</td>
+        <td class="sm-score ${aW?'sm-winner':'sm-loser'}">${esc(g.awayTeam.abbrev)} ${g.awayTeam.score}</td>
+        <td class="sm-sep">–</td>
+        <td class="sm-score ${!aW?'sm-winner':'sm-loser'}">${g.homeTeam.score} ${esc(g.homeTeam.abbrev)}</td>
+        <td class="sm-suffix">${ptSuffix}</td>
+      </tr>`;
+    } else if (isLive) {
+      return `<tr>
+        <td class="sm-gnum">Game ${gNum}</td>
+        <td class="sm-date">${date}</td>
+        <td class="sm-score">${esc(g.awayTeam.abbrev)} ${g.awayTeam.score ?? 0}</td>
+        <td class="sm-sep">–</td>
+        <td class="sm-score">${g.homeTeam.score ?? 0} ${esc(g.homeTeam.abbrev)}</td>
+        <td class="sm-suffix sm-live">LIVE</td>
+      </tr>`;
+    } else {
+      const t = new Date(g.startTimeUTC).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+      return `<tr>
+        <td class="sm-gnum">Game ${gNum}</td>
+        <td class="sm-date">${date}</td>
+        <td class="sm-score sm-future" colspan="3">${t}</td>
+        <td></td>
+      </tr>`;
+    }
+  }).join('');
+
+  // Series status line
+  const r = results[sid];
+  const w1 = a1 ? (state.apiSeriesWins[a1] ?? 0) : 0;
+  const w2 = a2 ? (state.apiSeriesWins[a2] ?? 0) : 0;
+  let statusLine = '';
+  if (r?.completed) {
+    statusLine = `<span class="sm-status-done">${esc(r.winner)} wins series ${r.games === 4 ? '4–0' : r.games === 5 ? '4–1' : r.games === 6 ? '4–2' : '4–3'}</span>`;
+  } else if (w1 + w2 > 0) {
+    if (w1 === w2) statusLine = `<span class="sm-status">Tied ${w1}–${w2}</span>`;
+    else if (w1 > w2) statusLine = `<span class="sm-status">${esc(t1)} leads ${w1}–${w2}</span>`;
+    else statusLine = `<span class="sm-status">${esc(t2)} leads ${w2}–${w1}</span>`;
+  }
+
+  // Bracket pick breakdown
+  const t1Pickers = [], t2Pickers = [], noPickers = [];
+  brackets.forEach(b => {
+    const w = b.picks?.[sid]?.winner;
+    const label = b.bracketName ? `${esc(b.bracketName)} <span class="sm-by">by ${esc(b.playerName||b.name)}</span>` : esc(b.name);
+    if (w === t1) t1Pickers.push(label);
+    else if (w === t2) t2Pickers.push(label);
+    else noPickers.push(label);
+  });
+
+  const pickCol = (team, abbr, pickers) => `
+    <div class="sm-pick-col">
+      <div class="sm-pick-header">
+        ${logoImg(team,'sm-pick-logo')}
+        <span class="sm-pick-team">${esc(team)}</span>
+        <span class="sm-pick-count">${pickers.length}</span>
+      </div>
+      <div class="sm-pick-list">${pickers.map(p=>`<div class="sm-pick-name">${p}</div>`).join('') || '<div class="sm-pick-empty">—</div>'}</div>
+    </div>`;
+
+  content.innerHTML = `
+    <div class="sm-header">
+      <div class="sm-title">${esc(s.abbr)}</div>
+      <div class="sm-teams">${logoImg(t1,'sm-logo')}${esc(t1)} <span class="sm-vs">vs</span> ${logoImg(t2,'sm-logo')}${esc(t2)}</div>
+      ${statusLine ? `<div class="sm-status-wrap">${statusLine}</div>` : ''}
+    </div>
+    ${gameRows ? `<table class="sm-games-table">${gameRows}</table>` : '<p class="sm-no-games">No games played yet.</p>'}
+    <div class="sm-picks-section">
+      <div class="sm-picks-title">Bracket Picks</div>
+      <div class="sm-picks-cols">
+        ${pickCol(t1, a1, t1Pickers)}
+        ${pickCol(t2, a2, t2Pickers)}
+      </div>
+    </div>`;
+}
+
+function closeSeriesModal() {
+  document.getElementById('seriesModal')?.classList.remove('open');
 }
 
 // ── Home ───────────────────────────────────────────────────
@@ -588,10 +710,30 @@ async function fetchApiSeriesWins() {
     try {
       const res = await fetchWithProxy(url);
       const data = await res.json();
-      Object.assign(wins, extractSeriesWins(data.games));
+      const games = (data.games || []).filter(g => g.gameType === 3);
+      Object.assign(wins, extractSeriesWins(games));
+      if (!state.apiGames[dateStr]) state.apiGames[dateStr] = games;
     } catch (_) {}
   }
   if (Object.keys(wins).length > 0) state.apiSeriesWins = wins;
+}
+
+// Fetch ALL playoff games from season start to today, caching by date.
+async function fetchAllPlayoffGames() {
+  const start = new Date(PLAYOFF_START);
+  const today = new Date();
+  const missing = [];
+  for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
+    const ds = d.toISOString().slice(0, 10);
+    if (!state.apiGames[ds]) missing.push(ds);
+  }
+  await Promise.all(missing.map(async ds => {
+    try {
+      const res = await fetchWithProxy(`https://api-web.nhle.com/v1/score/${ds}`);
+      const data = await res.json();
+      state.apiGames[ds] = (data.games || []).filter(g => g.gameType === 3);
+    } catch (_) { state.apiGames[ds] = []; }
+  }));
 }
 
 async function fetchWithProxy(url) {
@@ -1462,6 +1604,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Hamburger
   document.getElementById('navHamburger').addEventListener('click', () => {
     document.getElementById('mobileMenu').classList.toggle('open');
+  });
+
+  // Series modal close
+  document.getElementById('seriesModalClose').addEventListener('click', closeSeriesModal);
+  document.getElementById('seriesModal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeSeriesModal();
   });
 
   // Entry picks (delegated)
