@@ -519,11 +519,14 @@ body {
   white-space: nowrap;
 }
 .tg-series {
-  font-size: 0.72rem;
-  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-dim);
   border-top: 1px solid var(--border);
-  padding-top: 0.4rem;
-  margin-top: 0.05rem;
+  padding-top: 0.45rem;
+  margin-top: 0.25rem;
+  text-align: center;
+  letter-spacing: 0.01em;
 }
 
 /* ── Schedule ──────────────────────────────────────────────── */
@@ -1080,6 +1083,16 @@ body {
   margin-top: 0.25rem;
   text-align: right;
 }
+.bk-series-score {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-align: center;
+  background: rgba(200,32,44,0.08);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  margin-top: 0.3rem;
+}
 .bk-series-badge {
   font-size: 0.58rem;
   font-weight: 700;
@@ -1348,6 +1361,42 @@ body {
 .result-fields .form-group { margin-bottom: 0; flex: 1; }
 .result-fields .form-select,
 .result-fields .form-input { padding: 0.35rem 0.6rem; font-size: 0.82rem; }
+.result-wins-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.result-wins-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 0.2rem;
+}
+.result-wins-team {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.result-wins-input {
+  width: 40px;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.8rem;
+  text-align: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border-lite);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+.result-wins-sep {
+  color: var(--text-muted);
+  font-weight: 700;
+}
 .result-complete-check {
   display: flex;
   align-items: center;

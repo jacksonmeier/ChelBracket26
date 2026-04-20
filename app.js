@@ -485,8 +485,18 @@ function buildActualBracketCanvas() {
       t2Class = t2 === winner ? 'winner' : 'eliminated';
     }
 
-    const seriesScore = result?.completed
-      ? `<div class="bk-games">4–${loserWins} series</div>` : '';
+    // Series score: completed shows final, in-progress shows current wins
+    let seriesScore = '';
+    if (result?.completed) {
+      seriesScore = `<div class="bk-games bk-series-score">4–${loserWins}</div>`;
+    } else if (result && (result.w1 != null || result.w2 != null)) {
+      const w1 = result.w1 ?? 0, w2 = result.w2 ?? 0;
+      let label;
+      if (w1 === w2) label = w1 === 0 ? '' : `Tied ${w1}–${w2}`;
+      else if (w1 > w2) label = `${t1 !== 'TBD' ? t1.split(' ').pop() : 'Team 1'} leads ${w1}–${w2}`;
+      else              label = `${t2 !== 'TBD' ? t2.split(' ').pop() : 'Team 2'} leads ${w2}–${w1}`;
+      if (label) seriesScore = `<div class="bk-games bk-series-score">${esc(label)}</div>`;
+    }
 
     const box = document.createElement('div');
 
@@ -1238,6 +1248,14 @@ function renderCommResults() {
             </select>
           </div>
         </div>
+        <div class="result-wins-row">
+          <span class="result-wins-label">Series score:</span>
+          <span class="result-wins-team">${esc(t1.length>10?t1.split(' ').pop():t1)}</span>
+          <input type="number" class="result-wins-input result-w1-input" data-sid="${s.id}" min="0" max="4" value="${r.w1 ?? ''}" placeholder="0">
+          <span class="result-wins-sep">–</span>
+          <input type="number" class="result-wins-input result-w2-input" data-sid="${s.id}" min="0" max="4" value="${r.w2 ?? ''}" placeholder="0">
+          <span class="result-wins-team">${esc(t2.length>10?t2.split(' ').pop():t2)}</span>
+        </div>
         <label class="result-complete-check">
           <input type="checkbox" class="result-done-chk" data-sid="${s.id}" ${r.completed?'checked':''}> Mark as completed
         </label>
@@ -1259,6 +1277,16 @@ function saveCommResults() {
     const sid = sel.dataset.sid;
     if (!results[sid]) results[sid] = {};
     results[sid].games = sel.value ? parseInt(sel.value) : null;
+  });
+  document.querySelectorAll('.result-w1-input').forEach(inp => {
+    const sid = inp.dataset.sid;
+    if (!results[sid]) results[sid] = {};
+    results[sid].w1 = inp.value !== '' ? parseInt(inp.value) : null;
+  });
+  document.querySelectorAll('.result-w2-input').forEach(inp => {
+    const sid = inp.dataset.sid;
+    if (!results[sid]) results[sid] = {};
+    results[sid].w2 = inp.value !== '' ? parseInt(inp.value) : null;
   });
   document.querySelectorAll('.result-done-chk').forEach(chk => {
     const sid = chk.dataset.sid;
