@@ -1660,6 +1660,37 @@ body {
 }
 .sm-pick-none { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
 
+@media (max-width: 480px) {
+  .series-modal { border-radius: var(--radius-lg); }
+  /* Header */
+  .sm-matchup-header { padding: 1.25rem 0.75rem 1rem; gap: 0.4rem; }
+  .sm-team-logo-lg { width: min(80px, 24vw); height: min(80px, 24vw); }
+  .sm-team-name-lg { font-size: 0.72rem; }
+  .sm-matchup-vs { font-size: 1.1rem; }
+  .sm-win-badge { font-size: 0.6rem; padding: 0.1rem 0.45rem; }
+  .sm-status { font-size: 0.65rem; padding: 0.15rem 0.55rem; }
+  /* Section labels + game cards */
+  .sm-section-label { padding: 0.85rem 0.85rem 0.5rem; }
+  .sm-games-list { padding: 0 0.6rem 0.5rem; gap: 0.4rem; }
+  .sm-game-card { padding: 0.55rem 0.7rem; }
+  .sm-game-score { font-size: 1.2rem; }
+  .sm-game-logo { width: 22px; height: 22px; }
+  .sm-game-abbr { font-size: 0.72rem; }
+  /* Picks: stack into single column */
+  .sm-picks-grid {
+    grid-template-columns: 1fr;
+    padding: 0 0.6rem 1.25rem;
+  }
+  .sm-pick-block:first-child {
+    padding-right: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .sm-pick-block:last-child { padding-left: 0; }
+}
+
 /* ── Footer ───────────────────────────────────────────────── */
 .app-footer {
   text-align: center;
