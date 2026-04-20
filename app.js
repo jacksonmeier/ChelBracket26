@@ -1324,20 +1324,20 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
       }
     }
 
+    // Actual teams (from real results, for R2+ propagation) — used for live score + click handler
+    const [at1, at2] = getActualTeams(s.id, results, teams);
+    const actualTeamsKnown = at1 !== 'TBD' && at2 !== 'TBD';
+
     // Live series score from NHL API — only show if this series has actually started.
-    // For R2+ verify via actual results to avoid showing R1 wins on R2 boxes.
     let liveScoreLabel = '';
-    if (!(result && result.completed)) {
-      const [at1, at2] = getActualTeams(s.id, results, teams);
-      if (at1 !== 'TBD' && at2 !== 'TBD') {
-        const a1 = TEAM_ABBR[at1], a2 = TEAM_ABBR[at2];
-        const w1 = a1 != null ? (state.apiSeriesWins[a1] ?? null) : null;
-        const w2 = a2 != null ? (state.apiSeriesWins[a2] ?? null) : null;
-        if (w1 != null && w2 != null) {
-          if (w1 === w2) liveScoreLabel = w1 === 0 ? '0–0' : `Tied ${w1}–${w2}`;
-          else if (w1 > w2) liveScoreLabel = `${at1.split(' ').pop()} ${w1}–${w2}`;
-          else              liveScoreLabel = `${at2.split(' ').pop()} ${w2}–${w1}`;
-        }
+    if (!(result && result.completed) && actualTeamsKnown) {
+      const a1 = TEAM_ABBR[at1], a2 = TEAM_ABBR[at2];
+      const w1 = a1 != null ? (state.apiSeriesWins[a1] ?? null) : null;
+      const w2 = a2 != null ? (state.apiSeriesWins[a2] ?? null) : null;
+      if (w1 != null && w2 != null) {
+        if (w1 === w2) liveScoreLabel = w1 === 0 ? '0–0' : `Tied ${w1}–${w2}`;
+        else if (w1 > w2) liveScoreLabel = `${at1.split(' ').pop()} ${w1}–${w2}`;
+        else              liveScoreLabel = `${at2.split(' ').pop()} ${w2}–${w1}`;
       }
     }
 
@@ -1393,6 +1393,12 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
         ${liveScoreLabel ? `<div class="bk-games bk-series-score">${esc(liveScoreLabel)}</div>` : ''}`;
     }
     canvas.appendChild(box);
+
+    // Make clickable if actual teams are known (same rule as actual bracket)
+    if (actualTeamsKnown) {
+      box.style.cursor = 'pointer';
+      box.addEventListener('click', () => showSeriesModal(s.id));
+    }
   }
 }
 
