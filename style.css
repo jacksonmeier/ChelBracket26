@@ -835,13 +835,14 @@ body {
 .lb-cup, .lb-col-cup {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  font-size: 0.82rem;
-  color: var(--text-2);
+  gap: 0.4rem;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+.lb-cup-logo {
+  height: 28px;
+  width: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .lb-cup-pick, .lb-cup-abbr {
   display: inline-flex;
@@ -856,6 +857,16 @@ body {
   border-radius: var(--r);
   padding: 0.15rem 0.4rem;
   flex-shrink: 0;
+}
+.lb-cup-name {
+  font-family: var(--font-h);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 .bk-logo { height: 16px; margin-right: 2px; vertical-align: middle; }
 .lb-col-correct {
