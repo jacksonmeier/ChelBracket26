@@ -573,89 +573,108 @@ async function showSeriesModal(sid) {
       return (ga === a1 || ga === a2) && (gh === a1 || gh === a2);
     });
 
-  // Game-by-game rows
-  const gameRows = allGames.map(g => {
-    const isFinal = g.gameState === 'FINAL' || g.gameState === 'OFF';
-    const isLive  = g.gameState === 'LIVE'  || g.gameState === 'CRIT';
-    const date = new Date(g.startTimeUTC).toLocaleDateString('en-US', { month:'short', day:'numeric' });
-    const gNum = g.seriesStatus?.gameNumberOfSeries ?? '?';
-    const ptSuffix = g.periodDescriptor?.periodType === 'OT' ? ' OT' : g.periodDescriptor?.periodType === 'SO' ? ' SO' : '';
-    if (isFinal) {
-      const aW = g.awayTeam.score > g.homeTeam.score;
-      return `<tr>
-        <td class="sm-gnum">Game ${gNum}</td>
-        <td class="sm-date">${date}</td>
-        <td class="sm-score ${aW?'sm-winner':'sm-loser'}">${esc(g.awayTeam.abbrev)} ${g.awayTeam.score}</td>
-        <td class="sm-sep">–</td>
-        <td class="sm-score ${!aW?'sm-winner':'sm-loser'}">${g.homeTeam.score} ${esc(g.homeTeam.abbrev)}</td>
-        <td class="sm-suffix">${ptSuffix}</td>
-      </tr>`;
-    } else if (isLive) {
-      return `<tr>
-        <td class="sm-gnum">Game ${gNum}</td>
-        <td class="sm-date">${date}</td>
-        <td class="sm-score">${esc(g.awayTeam.abbrev)} ${g.awayTeam.score ?? 0}</td>
-        <td class="sm-sep">–</td>
-        <td class="sm-score">${g.homeTeam.score ?? 0} ${esc(g.homeTeam.abbrev)}</td>
-        <td class="sm-suffix sm-live">LIVE</td>
-      </tr>`;
-    } else {
-      const t = new Date(g.startTimeUTC).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
-      return `<tr>
-        <td class="sm-gnum">Game ${gNum}</td>
-        <td class="sm-date">${date}</td>
-        <td class="sm-score sm-future" colspan="3">${t}</td>
-        <td></td>
-      </tr>`;
-    }
-  }).join('');
-
-  // Series status line
+  // Series status
   const r = results[sid];
   const w1 = a1 ? (state.apiSeriesWins[a1] ?? 0) : 0;
   const w2 = a2 ? (state.apiSeriesWins[a2] ?? 0) : 0;
   let statusLine = '';
   if (r?.completed) {
-    statusLine = `<span class="sm-status-done">${esc(r.winner)} wins series ${r.games === 4 ? '4–0' : r.games === 5 ? '4–1' : r.games === 6 ? '4–2' : '4–3'}</span>`;
+    const score = r.games === 4 ? '4–0' : r.games === 5 ? '4–1' : r.games === 6 ? '4–2' : '4–3';
+    statusLine = `<span class="sm-status sm-status-done">🏒 ${esc(r.winner)} wins ${score}</span>`;
   } else if (w1 + w2 > 0) {
     if (w1 === w2) statusLine = `<span class="sm-status">Tied ${w1}–${w2}</span>`;
-    else if (w1 > w2) statusLine = `<span class="sm-status">${esc(t1)} leads ${w1}–${w2}</span>`;
-    else statusLine = `<span class="sm-status">${esc(t2)} leads ${w2}–${w1}</span>`;
+    else if (w1 > w2) statusLine = `<span class="sm-status">${esc(t1.split(' ').pop())} leads ${w1}–${w2}</span>`;
+    else statusLine = `<span class="sm-status">${esc(t2.split(' ').pop())} leads ${w2}–${w1}</span>`;
   }
 
-  // Bracket pick breakdown
-  const t1Pickers = [], t2Pickers = [], noPickers = [];
+  // Game cards
+  const gameCards = allGames.map(g => {
+    const isFinal = g.gameState === 'FINAL' || g.gameState === 'OFF';
+    const isLive  = g.gameState === 'LIVE'  || g.gameState === 'CRIT';
+    const date = new Date(g.startTimeUTC).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    const gNum = g.seriesStatus?.gameNumberOfSeries ?? '?';
+    const ptType = g.periodDescriptor?.periodType;
+    const ptSuffix = ptType === 'OT' ? 'OT' : ptType === 'SO' ? 'SO' : '';
+
+    if (isFinal || isLive) {
+      const aScore = g.awayTeam.score ?? 0, hScore = g.homeTeam.score ?? 0;
+      const aWin = aScore > hScore;
+      const stateTag = isLive
+        ? `<span class="sm-game-live">● LIVE</span>`
+        : `<span class="sm-game-final">Final${ptSuffix ? ' / ' + ptSuffix : ''}</span>`;
+      return `<div class="sm-game-card">
+        <div class="sm-game-meta"><span class="sm-game-num">Game ${gNum}</span><span class="sm-game-date">${date}</span>${stateTag}</div>
+        <div class="sm-game-matchup">
+          <div class="sm-game-side ${aWin ? 'sm-side-win' : 'sm-side-loss'}">
+            <img class="sm-game-logo" src="${logoUrl(g.awayTeam.name?.default || g.awayTeam.abbrev)}" onerror="this.style.display='none'" alt="">
+            <span class="sm-game-abbr">${esc(g.awayTeam.abbrev)}</span>
+            <span class="sm-game-score">${aScore}</span>
+          </div>
+          <div class="sm-game-dash">–</div>
+          <div class="sm-game-side ${!aWin ? 'sm-side-win' : 'sm-side-loss'} sm-game-side-home">
+            <span class="sm-game-score">${hScore}</span>
+            <span class="sm-game-abbr">${esc(g.homeTeam.abbrev)}</span>
+            <img class="sm-game-logo" src="${logoUrl(g.homeTeam.name?.default || g.homeTeam.abbrev)}" onerror="this.style.display='none'" alt="">
+          </div>
+        </div>
+      </div>`;
+    } else {
+      const tStr = new Date(g.startTimeUTC).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+      return `<div class="sm-game-card sm-game-upcoming">
+        <div class="sm-game-meta"><span class="sm-game-num">Game ${gNum}</span><span class="sm-game-date">${date}</span></div>
+        <div class="sm-game-time">${tStr}</div>
+      </div>`;
+    }
+  }).join('');
+
+  // Bracket picks
+  const t1Pickers = [], t2Pickers = [];
   brackets.forEach(b => {
     const w = b.picks?.[sid]?.winner;
-    const label = b.bracketName ? `${esc(b.bracketName)} <span class="sm-by">by ${esc(b.playerName||b.name)}</span>` : esc(b.name);
-    if (w === t1) t1Pickers.push(label);
-    else if (w === t2) t2Pickers.push(label);
-    else noPickers.push(label);
+    const bracketLabel = esc(b.bracketName || b.name);
+    const byLabel = (b.bracketName && b.playerName) ? `<span class="sm-pill-by">${esc(b.playerName)}</span>` : '';
+    if (w === t1) t1Pickers.push(`<div class="sm-pill">${bracketLabel}${byLabel}</div>`);
+    else if (w === t2) t2Pickers.push(`<div class="sm-pill">${bracketLabel}${byLabel}</div>`);
   });
 
-  const pickCol = (team, abbr, pickers) => `
-    <div class="sm-pick-col">
-      <div class="sm-pick-header">
-        ${logoImg(team,'sm-pick-logo')}
-        <span class="sm-pick-team">${esc(team)}</span>
-        <span class="sm-pick-count">${pickers.length}</span>
+  const pickBlock = (team, abbr, pickers) => `
+    <div class="sm-pick-block">
+      <div class="sm-pick-hdr">
+        <img class="sm-pick-logo" src="${logoUrl(team)}" onerror="this.style.display='none'" alt="">
+        <span class="sm-pick-team-name">${esc(team)}</span>
+        <span class="sm-pick-badge">${pickers.length}</span>
       </div>
-      <div class="sm-pick-list">${pickers.map(p=>`<div class="sm-pick-name">${p}</div>`).join('') || '<div class="sm-pick-empty">—</div>'}</div>
+      <div class="sm-pill-list">${pickers.join('') || '<span class="sm-pick-none">No picks</span>'}</div>
     </div>`;
 
   content.innerHTML = `
-    <div class="sm-header">
-      <div class="sm-title">${esc(s.abbr)}</div>
-      <div class="sm-teams">${logoImg(t1,'sm-logo')}${esc(t1)} <span class="sm-vs">vs</span> ${logoImg(t2,'sm-logo')}${esc(t2)}</div>
-      ${statusLine ? `<div class="sm-status-wrap">${statusLine}</div>` : ''}
-    </div>
-    ${gameRows ? `<table class="sm-games-table">${gameRows}</table>` : '<p class="sm-no-games">No games played yet.</p>'}
-    <div class="sm-picks-section">
-      <div class="sm-picks-title">Bracket Picks</div>
-      <div class="sm-picks-cols">
-        ${pickCol(t1, a1, t1Pickers)}
-        ${pickCol(t2, a2, t2Pickers)}
+    <div class="sm-matchup-header">
+      <div class="sm-team-side">
+        <img class="sm-team-logo-lg" src="${logoUrl(t1)}" onerror="this.style.display='none'" alt="">
+        <div class="sm-team-name-lg">${esc(t1)}</div>
+        ${w1 > 0 || w2 > 0 ? `<div class="sm-win-badge ${w1 > w2 ? 'sm-win-leading':''}">${w1} ${w1 === 1 ? 'win' : 'wins'}</div>` : ''}
       </div>
+      <div class="sm-matchup-center">
+        <div class="sm-matchup-round">${esc(s.abbr)}</div>
+        <div class="sm-matchup-vs">VS</div>
+        ${statusLine ? `<div class="sm-status-wrap">${statusLine}</div>` : ''}
+      </div>
+      <div class="sm-team-side sm-team-side-right">
+        <img class="sm-team-logo-lg" src="${logoUrl(t2)}" onerror="this.style.display='none'" alt="">
+        <div class="sm-team-name-lg">${esc(t2)}</div>
+        ${w1 > 0 || w2 > 0 ? `<div class="sm-win-badge ${w2 > w1 ? 'sm-win-leading':''}">${w2} ${w2 === 1 ? 'win' : 'wins'}</div>` : ''}
+      </div>
+    </div>
+
+    <div class="sm-section-label">Game Summary</div>
+    <div class="sm-games-list">
+      ${gameCards || '<div class="sm-no-games">No games played yet.</div>'}
+    </div>
+
+    <div class="sm-section-label">Bracket Picks</div>
+    <div class="sm-picks-grid">
+      ${pickBlock(t1, a1, t1Pickers)}
+      ${pickBlock(t2, a2, t2Pickers)}
     </div>`;
 }
 

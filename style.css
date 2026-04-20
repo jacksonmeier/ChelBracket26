@@ -1474,106 +1474,184 @@ body {
 /* ── Series Modal ─────────────────────────────────────────── */
 .series-modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.65);
-  backdrop-filter: blur(4px);
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
   z-index: 8000;
   display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none;
   transition: opacity 0.2s;
 }
-.series-modal-overlay.open {
-  opacity: 1; pointer-events: all;
-}
+.series-modal-overlay.open { opacity: 1; pointer-events: all; }
 .series-modal {
   background: var(--bg-card);
   border: 1.5px solid var(--border-lite);
   border-radius: var(--radius-xl);
-  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
-  width: min(560px, 94vw);
-  max-height: 88vh;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.7);
+  width: min(580px, 95vw);
+  max-height: 90vh;
   overflow-y: auto;
-  padding: 1.75rem;
   position: relative;
 }
 .series-modal-close {
-  position: absolute; top: 1rem; right: 1rem;
+  position: sticky; top: 0.75rem; left: calc(100% - 2.5rem);
+  z-index: 10;
   background: var(--bg-mid); border: 1px solid var(--border);
   color: var(--text-muted); border-radius: 50%;
-  width: 30px; height: 30px; font-size: 0.9rem;
+  width: 30px; height: 30px; font-size: 0.85rem;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; transition: background 0.15s, color 0.15s;
+  float: right; margin: 0.75rem 0.75rem -30px 0;
 }
 .series-modal-close:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
-.series-modal-loading { text-align: center; color: var(--text-muted); padding: 2rem; }
+.series-modal-loading { text-align: center; color: var(--text-muted); padding: 3rem; }
 
-/* Modal header */
-.sm-header { margin-bottom: 1.25rem; }
-.sm-title {
-  font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 0.4rem;
-}
-.sm-teams {
-  display: flex; align-items: center; gap: 0.5rem;
-  font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.15rem; color: var(--text);
-  flex-wrap: wrap;
-}
-.sm-vs { color: var(--text-muted); font-weight: 500; font-size: 0.9rem; }
-.sm-logo { width: 28px; height: 28px; object-fit: contain; }
-.sm-status-wrap { margin-top: 0.5rem; }
-.sm-status {
-  display: inline-block; font-size: 0.8rem; font-weight: 600;
-  color: var(--accent); background: rgba(200,32,44,0.1);
-  border: 1px solid rgba(200,32,44,0.3); border-radius: 20px;
-  padding: 0.2rem 0.75rem;
-}
-.sm-status-done {
-  display: inline-block; font-size: 0.8rem; font-weight: 600;
-  color: var(--success); background: rgba(22,163,74,0.1);
-  border: 1px solid rgba(22,163,74,0.3); border-radius: 20px;
-  padding: 0.2rem 0.75rem;
-}
-
-/* Games table */
-.sm-games-table {
-  width: 100%; border-collapse: collapse;
-  margin-bottom: 1.5rem;
-  font-size: 0.82rem;
-}
-.sm-games-table tr { border-bottom: 1px solid var(--border); }
-.sm-games-table tr:last-child { border-bottom: none; }
-.sm-games-table td { padding: 0.5rem 0.35rem; vertical-align: middle; }
-.sm-gnum { color: var(--text-muted); font-size: 0.72rem; font-weight: 600; white-space: nowrap; width: 52px; }
-.sm-date { color: var(--text-muted); font-size: 0.72rem; white-space: nowrap; width: 52px; }
-.sm-score { font-weight: 600; color: var(--text-dim); white-space: nowrap; }
-.sm-score.sm-winner { color: var(--text); }
-.sm-score.sm-loser { color: var(--text-muted); text-decoration: line-through; text-decoration-color: var(--border-lite); }
-.sm-sep { color: var(--text-muted); text-align: center; width: 16px; }
-.sm-suffix { font-size: 0.68rem; color: var(--text-muted); text-align: right; }
-.sm-live { color: var(--accent); font-weight: 700; }
-.sm-future { color: var(--text-muted); font-size: 0.75rem; font-style: italic; }
-.sm-no-games { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem; }
-
-/* Picks section */
-.sm-picks-section { border-top: 1px solid var(--border); padding-top: 1.1rem; }
-.sm-picks-title {
-  font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 0.85rem;
-}
-.sm-picks-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.sm-pick-header {
-  display: flex; align-items: center; gap: 0.45rem;
-  margin-bottom: 0.6rem; padding-bottom: 0.45rem;
+/* ── Matchup header ── */
+.sm-matchup-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.75rem 1.75rem 1.25rem;
+  background: linear-gradient(180deg, rgba(200,32,44,0.06) 0%, transparent 100%);
   border-bottom: 1px solid var(--border);
 }
-.sm-pick-logo { width: 22px; height: 22px; object-fit: contain; }
-.sm-pick-team { font-size: 0.75rem; font-weight: 700; color: var(--text); flex: 1; }
-.sm-pick-count {
-  font-size: 0.72rem; font-weight: 700; color: var(--accent);
-  background: rgba(200,32,44,0.12); border-radius: 10px; padding: 0.1rem 0.45rem;
+.sm-team-side {
+  display: flex; flex-direction: column; align-items: center; gap: 0.45rem;
+  text-align: center;
 }
-.sm-pick-name { font-size: 0.78rem; color: var(--text-dim); padding: 0.2rem 0; }
-.sm-by { font-size: 0.7rem; color: var(--text-muted); }
-.sm-pick-empty { color: var(--text-muted); font-style: italic; font-size: 0.78rem; }
+.sm-team-side-right { text-align: center; }
+.sm-team-logo-lg {
+  width: 72px; height: 72px; object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+}
+.sm-team-name-lg {
+  font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.9rem;
+  color: var(--text); line-height: 1.2;
+}
+.sm-win-badge {
+  font-size: 0.68rem; font-weight: 600; color: var(--text-muted);
+  background: var(--bg-mid); border: 1px solid var(--border);
+  border-radius: 20px; padding: 0.15rem 0.6rem;
+}
+.sm-win-badge.sm-win-leading {
+  color: var(--accent); border-color: rgba(200,32,44,0.4);
+  background: rgba(200,32,44,0.1);
+}
+.sm-matchup-center {
+  display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+}
+.sm-matchup-round {
+  font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-muted); text-align: center;
+}
+.sm-matchup-vs {
+  font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.4rem;
+  color: var(--border-lite); letter-spacing: 0.05em;
+}
+.sm-status-wrap { margin-top: 0.1rem; }
+.sm-status {
+  display: inline-block; font-size: 0.72rem; font-weight: 700;
+  color: var(--accent); background: rgba(200,32,44,0.12);
+  border: 1px solid rgba(200,32,44,0.35); border-radius: 20px;
+  padding: 0.2rem 0.7rem; white-space: nowrap;
+}
+.sm-status.sm-status-done {
+  color: #4ade80; background: rgba(74,222,128,0.1);
+  border-color: rgba(74,222,128,0.35);
+}
+
+/* ── Section labels ── */
+.sm-section-label {
+  font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--text-muted);
+  padding: 1rem 1.75rem 0.6rem;
+}
+
+/* ── Game cards ── */
+.sm-games-list { padding: 0 1rem 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.sm-game-card {
+  background: var(--bg-mid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.7rem 1rem;
+}
+.sm-game-meta {
+  display: flex; align-items: center; gap: 0.6rem;
+  margin-bottom: 0.55rem;
+}
+.sm-game-num {
+  font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted);
+}
+.sm-game-date { font-size: 0.65rem; color: var(--text-muted); }
+.sm-game-final {
+  margin-left: auto; font-size: 0.62rem; font-weight: 600;
+  color: var(--text-muted); background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: 10px; padding: 0.1rem 0.5rem;
+}
+.sm-game-live {
+  margin-left: auto; font-size: 0.62rem; font-weight: 700;
+  color: var(--accent); background: rgba(200,32,44,0.12);
+  border: 1px solid rgba(200,32,44,0.35); border-radius: 10px; padding: 0.1rem 0.5rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+.sm-game-matchup {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+}
+.sm-game-side {
+  display: flex; align-items: center; gap: 0.5rem; flex: 1;
+}
+.sm-game-side-home { justify-content: flex-end; flex-direction: row-reverse; }
+.sm-game-logo { width: 28px; height: 28px; object-fit: contain; }
+.sm-game-abbr { font-size: 0.8rem; font-weight: 600; color: var(--text-dim); }
+.sm-game-score {
+  font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.5rem;
+  color: var(--text-muted); min-width: 1.5rem; text-align: center;
+}
+.sm-side-win .sm-game-score { color: var(--text); }
+.sm-side-win .sm-game-abbr { color: var(--text); }
+.sm-side-loss .sm-game-score { opacity: 0.45; }
+.sm-side-loss .sm-game-abbr { opacity: 0.55; }
+.sm-game-dash {
+  font-size: 1rem; color: var(--border-lite); font-weight: 300; padding: 0 0.25rem;
+}
+.sm-game-upcoming { opacity: 0.75; }
+.sm-game-time {
+  font-size: 0.8rem; color: var(--text-muted); text-align: center;
+  font-style: italic;
+}
+.sm-no-games { padding: 0 0.75rem 0.5rem; color: var(--text-muted); font-size: 0.85rem; }
+
+/* ── Picks grid ── */
+.sm-picks-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0; border-top: 1px solid var(--border);
+  padding: 0 1rem 1.5rem;
+  margin-top: 0.25rem;
+}
+.sm-pick-block { padding-top: 0.75rem; }
+.sm-pick-block:first-child { padding-right: 0.75rem; border-right: 1px solid var(--border); }
+.sm-pick-block:last-child  { padding-left: 0.75rem; }
+.sm-pick-hdr {
+  display: flex; align-items: center; gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.sm-pick-logo { width: 20px; height: 20px; object-fit: contain; }
+.sm-pick-team-name { font-size: 0.72rem; font-weight: 700; color: var(--text); flex: 1; }
+.sm-pick-badge {
+  font-size: 0.68rem; font-weight: 700; color: var(--accent);
+  background: rgba(200,32,44,0.12); border-radius: 10px; padding: 0.1rem 0.45rem;
+  min-width: 22px; text-align: center;
+}
+.sm-pill-list { display: flex; flex-direction: column; gap: 0.3rem; }
+.sm-pill {
+  font-size: 0.75rem; color: var(--text-dim);
+  background: var(--bg-mid); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.3rem 0.6rem;
+  line-height: 1.3;
+}
+.sm-pill-by { display: block; font-size: 0.65rem; color: var(--text-muted); }
+.sm-pick-none { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
 
 /* ── Footer ───────────────────────────────────────────────── */
 .app-footer {
