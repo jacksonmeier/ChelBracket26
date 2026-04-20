@@ -1108,7 +1108,7 @@ function buildLeaderboardTable(ranked, results, mini = false, totalCount = null)
     const cupCity = cupWinner ? (TEAM_CITY[cupWinner] || cupWinner) : null;
     const cupLogoUrl = cupAbbr ? `https://assets.nhle.com/logos/nhl/svg/${cupAbbr}_light.svg` : '';
     const cupCell = cupAbbr
-      ? `<img class="lb-cup-logo" src="${cupLogoUrl}" onerror="this.style.display='none'" alt="${esc(cupAbbr)}"><span class="lb-cup-abbr">${esc(cupAbbr)}</span><span class="lb-cup-name">${esc(cupCity)}</span>`
+      ? `<img class="lb-cup-logo" src="${cupLogoUrl}" onerror="this.style.display='none'" alt="${esc(cupAbbr)}"><span class="lb-cup-abbr">${esc(cupAbbr)}</span>`
       : `<span style="color:var(--text-3)">—</span>`;
 
     rows += `<div class="lb-row${topClass}" data-bid="${b.id}">
