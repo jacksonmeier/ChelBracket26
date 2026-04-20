@@ -85,7 +85,7 @@ const DEFAULT_TEAMS = {
   pacific2:   'Edmonton Oilers',
   pacific3:   'Anaheim Ducks',
 };
-const DEFAULT_SETTINGS = { lockDate: null };
+const DEFAULT_SETTINGS = { lockDate: null, hideEntryTab: false };
 
 // Bracket canvas layout
 const BW = 165, BH = 92, YGAP = 150, YTOP = 20, CW = 1420, CH = 600;
@@ -799,9 +799,18 @@ function buildLeaderboardTable(ranked, results, mini = false, totalCount = null)
 
 // ── Bracket Entry ──────────────────────────────────────────
 
+function applyEntryTabVisibility() {
+  const { hideEntryTab } = getSettings();
+  const hidden = !!hideEntryTab;
+  document.querySelectorAll('[data-view="entry"]').forEach(el => {
+    el.style.display = hidden ? 'none' : '';
+  });
+}
+
 function renderEntry() {
   const locked = isLocked();
-  document.getElementById('entryLockedMsg').style.display = locked ? '' : 'none';
+  const { hideEntryTab } = getSettings();
+  document.getElementById('entryLockedMsg').style.display = (locked && !hideEntryTab) ? '' : 'none';
   if (document.getElementById('entrySuccessMsg').style.display !== 'none') return;
   document.getElementById('entryFormWrap').style.display = '';
   document.getElementById('entrySuccessMsg').style.display = 'none';
@@ -1264,9 +1273,11 @@ function saveCommResults() {
 }
 
 function renderCommSettings() {
-  const { lockDate } = getSettings();
+  const { lockDate, hideEntryTab } = getSettings();
   const el = document.getElementById('lockDateInput');
   if (lockDate) el.value = lockDate.slice(0,16);
+  const toggle = document.getElementById('hideEntryTabToggle');
+  if (toggle) toggle.checked = !!hideEntryTab;
 
   // Show Firebase sync status in settings
   const statusEl = document.getElementById('ghSyncInfo');
@@ -1287,9 +1298,12 @@ function renderCommSettings() {
 
 function saveCommSettings() {
   const val = document.getElementById('lockDateInput').value;
+  const toggle = document.getElementById('hideEntryTabToggle');
   const settings = getSettings();
   settings.lockDate = val ? new Date(val).toISOString() : null;
+  settings.hideEntryTab = toggle ? toggle.checked : false;
   saveSettings(settings);
+  applyEntryTabVisibility();
   showSaveMsg('settingsSavedMsg');
   toast('Settings saved!', 'success');
 }
@@ -1460,5 +1474,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   } finally {
     hideLoading();
   }
+  applyEntryTabVisibility();
   showView('home');
 });

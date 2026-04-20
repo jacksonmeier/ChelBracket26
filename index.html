@@ -6,7 +6,7 @@
   <title>Bracket Challenge 26 — NHL Playoff Pool</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=18">
+  <link rel="stylesheet" href="style.css?v=19">
   <style>
     /* Critical: loading overlay — inlined to avoid cache issues */
     #loadingOverlay { position:fixed; inset:0; background:#080c18; display:flex; align-items:center; justify-content:center; z-index:9000; }
@@ -205,6 +205,15 @@
             <input type="datetime-local" id="lockDateInput" class="form-input" style="max-width:320px">
             <p class="field-note">After this time, no new entries will be accepted.</p>
           </div>
+          <div class="form-group" style="margin-top:1.25rem">
+            <label class="form-label">Entry Tab Visibility</label>
+            <label class="toggle-row">
+              <input type="checkbox" id="hideEntryTabToggle" class="toggle-checkbox">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-desc">Hide "Enter Bracket" from navbar and home page</span>
+            </label>
+            <p class="field-note">Also hides the "Bracket Entry Locked" banner on the entry page.</p>
+          </div>
           <div class="pane-actions">
             <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
             <span id="settingsSavedMsg" class="save-msg" style="display:none">✓ Saved</span>
@@ -244,6 +253,6 @@
 </div>
 
 <script src="config.js"></script>
-<script src="app.js?v=20"></script>
+<script src="app.js?v=21"></script>
 </body>
 </html>
