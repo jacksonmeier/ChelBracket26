@@ -1156,13 +1156,9 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
       }
     }
 
-    const pickedGames = pick ? pick.games : null;
-    const actualGames = (result && result.completed) ? result.games : null;
-    const gamesInfo = pickedGames ? `Picked: ${pickedGames}g${actualGames?' · Actual: '+actualGames+'g':''}` : '';
-
     // Live series score from NHL API — only show if this series has actually started.
-    // For R2+ we verify using actual results, not just picks, to avoid showing R1 wins on R2 boxes.
-    let liveScore = '';
+    // For R2+ verify via actual results to avoid showing R1 wins on R2 boxes.
+    let liveScoreLabel = '';
     if (!(result && result.completed)) {
       const [at1, at2] = getActualTeams(s.id, results, teams);
       if (at1 !== 'TBD' && at2 !== 'TBD') {
@@ -1170,20 +1166,19 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
         const w1 = a1 != null ? (state.apiSeriesWins[a1] ?? null) : null;
         const w2 = a2 != null ? (state.apiSeriesWins[a2] ?? null) : null;
         if (w1 != null && w2 != null) {
-          let label;
-          if (w1 === w2) label = w1 === 0 ? 'Series even 0–0' : `Tied ${w1}–${w2}`;
-          else if (w1 > w2) label = `${at1.split(' ').pop()} leads ${w1}–${w2}`;
-          else              label = `${at2.split(' ').pop()} leads ${w2}–${w1}`;
-          liveScore = `<div class="bk-games bk-series-score">${esc(label)}</div>`;
+          if (w1 === w2) liveScoreLabel = w1 === 0 ? '0–0' : `Tied ${w1}–${w2}`;
+          else if (w1 > w2) liveScoreLabel = `${at1.split(' ').pop()} ${w1}–${w2}`;
+          else              liveScoreLabel = `${at2.split(' ').pop()} ${w2}–${w1}`;
         }
       }
     }
 
+    // For in-progress: show picked games in the badge; drop separate gamesInfo line.
+    // For completed: badge already says ✓ Perfect / ✓ Correct / ✗ Wrong — no extra line needed.
     const box = document.createElement('div');
     const isSCF = s.id === 'SCF';
 
     if (isSCF) {
-      // ── Stanley Cup Final — large hero card ──
       const champTeam = pick && pick.winner;
       const confirmed = result && result.completed;
       const isCorrect = confirmed && champTeam === result.winner;
@@ -1210,19 +1205,21 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
         <div class="bk-label scf-label">Stanley Cup Final</div>
         ${champHtml}
         <div class="scf-finalists">${t1Html}<span class="scf-vs">vs</span>${t2Html}</div>
-        ${liveScore}
-        ${gamesInfo ? `<div class="bk-games">${gamesInfo}</div>` : ''}`;
+        ${liveScoreLabel ? `<div class="bk-games bk-series-score">${esc(liveScoreLabel)}</div>` : ''}`;
     } else {
       const t1Html = t1==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t1Class}">${logoImg(t1,'bk-logo')}${esc(t1)}</span>`;
       const t2Html = t2==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t2Class}">${logoImg(t2,'bk-logo')}${esc(t2)}</span>`;
+      // Label row: series name left, live score right
+      const labelRow = `<div class="bk-label-row">
+        <span class="bk-label">${esc(s.abbr)}</span>
+        ${liveScoreLabel ? `<span class="bk-live-inline">${esc(liveScoreLabel)}</span>` : ''}
+      </div>`;
       box.className = 'bk-box';
       box.style.left = pos.x+'px'; box.style.top = pos.y+'px'; box.style.width = BW+'px';
       box.innerHTML = `
-        <div class="bk-label">${esc(s.abbr)}</div>
+        ${labelRow}
         ${t1Html}${t2Html}
-        ${statusBadge ? `<div style="margin-top:0.2rem">${statusBadge}</div>` : ''}
-        ${liveScore}
-        ${gamesInfo ? `<div class="bk-games">${gamesInfo}</div>` : ''}`;
+        ${statusBadge ? `<div class="bk-badge-row">${statusBadge}</div>` : ''}`;
     }
     canvas.appendChild(box);
   }
