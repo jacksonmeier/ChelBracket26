@@ -1060,7 +1060,7 @@ function renderViewer(bracketId) {
   if (bid) { sel.value = bid; state.viewingId = bid; drawBracket(bid); }
 }
 
-function drawBracket(bid) {
+async function drawBracket(bid) {
   const brackets = getBrackets(), results = getResults(), teams = getTeams();
   const bracket = brackets.find(b => b.id === bid);
   if (!bracket) {
@@ -1087,6 +1087,8 @@ function drawBracket(bid) {
       <div class="bracket-canvas" id="bracketCanvas"></div>
     </div>`;
 
+  // Ensure series wins are fresh before painting the canvas
+  if (Object.keys(state.apiSeriesWins).length === 0) await fetchApiSeriesWins();
   buildBracketCanvas(bracket.picks, results, teams, breakdown);
 }
 
@@ -1158,6 +1160,21 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
     const actualGames = (result && result.completed) ? result.games : null;
     const gamesInfo = pickedGames ? `Picked: ${pickedGames}g${actualGames?' · Actual: '+actualGames+'g':''}` : '';
 
+    // Live series score from NHL API (only for in-progress series)
+    let liveScore = '';
+    if (!(result && result.completed) && t1 !== 'TBD' && t2 !== 'TBD') {
+      const a1 = TEAM_ABBR[t1], a2 = TEAM_ABBR[t2];
+      const w1 = a1 != null ? (state.apiSeriesWins[a1] ?? null) : null;
+      const w2 = a2 != null ? (state.apiSeriesWins[a2] ?? null) : null;
+      if (w1 != null && w2 != null) {
+        let label;
+        if (w1 === w2) label = w1 === 0 ? 'Series even 0–0' : `Tied ${w1}–${w2}`;
+        else if (w1 > w2) label = `${t1.split(' ').pop()} leads ${w1}–${w2}`;
+        else              label = `${t2.split(' ').pop()} leads ${w2}–${w1}`;
+        liveScore = `<div class="bk-games bk-series-score">${esc(label)}</div>`;
+      }
+    }
+
     const box = document.createElement('div');
     const isSCF = s.id === 'SCF';
 
@@ -1189,6 +1206,7 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
         <div class="bk-label scf-label">Stanley Cup Final</div>
         ${champHtml}
         <div class="scf-finalists">${t1Html}<span class="scf-vs">vs</span>${t2Html}</div>
+        ${liveScore}
         ${gamesInfo ? `<div class="bk-games">${gamesInfo}</div>` : ''}`;
     } else {
       const t1Html = t1==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t1Class}">${logoImg(t1,'bk-logo')}${esc(t1)}</span>`;
@@ -1199,6 +1217,7 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
         <div class="bk-label">${esc(s.abbr)}</div>
         ${t1Html}${t2Html}
         ${statusBadge ? `<div style="margin-top:0.2rem">${statusBadge}</div>` : ''}
+        ${liveScore}
         ${gamesInfo ? `<div class="bk-games">${gamesInfo}</div>` : ''}`;
     }
     canvas.appendChild(box);
