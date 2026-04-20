@@ -553,31 +553,45 @@ function renderHome() {
 // ── NHL Live Scores ────────────────────────────────────────
 
 const NHL_SCORE_URL = 'https://api-web.nhle.com/v1/score/now';
-const NHL_BRACKET_URL = 'https://api-web.nhle.com/v1/playoff-bracket/20252026';
 const CORS_PROXIES = [
   u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
 ];
 
-// Fetch series wins for all active playoff series from the NHL bracket API.
+// Build series wins map from NHL score API games.
+// seriesStatus has topSeedTeamId/topSeedWins/bottomSeedTeamId/bottomSeedWins.
+// Returns { 'TOR': 3, 'BOS': 2, ... }
+function extractSeriesWins(games) {
+  const wins = {};
+  (games || []).filter(g => g.gameType === 3).forEach(g => {
+    const ss = g.seriesStatus;
+    const away = g.awayTeam, home = g.homeTeam;
+    if (!ss || !away || !home) return;
+    const topIsAway = ss.topSeedTeamId === away.id;
+    const awayWins = topIsAway ? (ss.topSeedWins ?? 0) : (ss.bottomSeedWins ?? 0);
+    const homeWins = topIsAway ? (ss.bottomSeedWins ?? 0) : (ss.topSeedWins ?? 0);
+    if (away.abbrev) wins[away.abbrev] = awayWins;
+    if (home.abbrev) wins[home.abbrev] = homeWins;
+  });
+  return wins;
+}
+
+// Fetch series wins for all active playoff series.
+// Tries today + yesterday so series without games today are still covered.
 // Populates state.apiSeriesWins: { 'TOR': 3, 'BOS': 2, ... }
 async function fetchApiSeriesWins() {
-  try {
-    const res = await fetchWithProxy(NHL_BRACKET_URL);
-    const data = await res.json();
-    const wins = {};
-    (data.rounds || []).forEach(round => {
-      (round.series || []).forEach(series => {
-        (series.matchupTeams || []).forEach(mt => {
-          const abbr = mt.team?.abbrev;
-          if (abbr) wins[abbr] = mt.seriesWins ?? 0;
-        });
-      });
-    });
-    state.apiSeriesWins = wins;
-  } catch (_) {
-    // silently fail — bracket will just not show in-progress scores
+  const dates = [new Date(), new Date(Date.now() - 86400000), new Date(Date.now() - 2*86400000)];
+  const wins = {};
+  for (const d of dates) {
+    const dateStr = d.toISOString().slice(0, 10);
+    const url = `https://api-web.nhle.com/v1/score/${dateStr}`;
+    try {
+      const res = await fetchWithProxy(url);
+      const data = await res.json();
+      Object.assign(wins, extractSeriesWins(data.games));
+    } catch (_) {}
   }
+  if (Object.keys(wins).length > 0) state.apiSeriesWins = wins;
 }
 
 async function fetchWithProxy(url) {
@@ -721,15 +735,19 @@ function gameCard(g) {
   const gameNumHtml = gameNum ? `<span class="tg-game-num">Game ${gameNum}</span>` : '';
 
   let seriesRecord = '';
-  if (ss && ss.seriesTitle) {
-    seriesRecord = esc(ss.seriesTitle);
-  } else {
-    const aw = away.seriesWins ?? 0, hw = home.seriesWins ?? 0;
-    seriesRecord = aw === hw
-      ? `Series tied ${aw}-${hw}`
-      : aw > hw ? `${away.abbrev} leads ${aw}-${hw}` : `${home.abbrev} leads ${hw}-${aw}`;
+  if (ss) {
+    const topIsAway = ss.topSeedTeamId === away.id;
+    const aw = topIsAway ? (ss.topSeedWins ?? 0) : (ss.bottomSeedWins ?? 0);
+    const hw = topIsAway ? (ss.bottomSeedWins ?? 0) : (ss.topSeedWins ?? 0);
+    if (aw === hw) {
+      seriesRecord = aw === 0 ? 'Series begins' : `Series tied ${aw}–${hw}`;
+    } else if (aw > hw) {
+      seriesRecord = `${away.abbrev} leads ${aw}–${hw}`;
+    } else {
+      seriesRecord = `${home.abbrev} leads ${hw}–${aw}`;
+    }
   }
-  const seriesHtml = `<div class="tg-series">${seriesRecord}</div>`;
+  const seriesHtml = seriesRecord ? `<div class="tg-series">${seriesRecord}</div>` : '';
 
   // ── Team rows ──
   const awayLead = !isFut && away.score > home.score;
