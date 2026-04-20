@@ -1500,6 +1500,7 @@ body {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
+  justify-items: center;
   gap: 0.75rem;
   padding: 2rem 1.25rem 1.5rem;
   background: linear-gradient(180deg, rgba(200,32,44,0.07) 0%, transparent 100%);
