@@ -1490,6 +1490,7 @@ body {
   width: min(580px, 95vw);
   max-height: 90vh;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
 }
 .series-modal-close {
@@ -1521,7 +1522,7 @@ body {
 }
 .sm-team-side-right { text-align: center; }
 .sm-team-logo-lg {
-  width: 216px; height: 216px; object-fit: contain;
+  width: min(160px, 30vw); height: min(160px, 30vw); object-fit: contain;
   filter: drop-shadow(0 6px 18px rgba(0,0,0,0.45));
 }
 .sm-team-name-lg {
