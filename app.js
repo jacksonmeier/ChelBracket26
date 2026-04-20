@@ -661,7 +661,6 @@ async function showSeriesModal(sid) {
       <div class="sm-team-side">
         <img class="sm-team-logo-lg" src="${logoUrl(t1)}" onerror="this.style.display='none'" alt="">
         <div class="sm-team-name-lg">${esc(t1)}</div>
-        ${w1 > 0 || w2 > 0 ? `<div class="sm-win-badge ${w1 > w2 ? 'sm-win-leading':''}">${w1} ${w1 === 1 ? 'win' : 'wins'}</div>` : ''}
       </div>
       <div class="sm-matchup-center">
         <div class="sm-matchup-round">${esc(s.abbr)}</div>
@@ -671,7 +670,6 @@ async function showSeriesModal(sid) {
       <div class="sm-team-side sm-team-side-right">
         <img class="sm-team-logo-lg" src="${logoUrl(t2)}" onerror="this.style.display='none'" alt="">
         <div class="sm-team-name-lg">${esc(t2)}</div>
-        ${w1 > 0 || w2 > 0 ? `<div class="sm-win-badge ${w2 > w1 ? 'sm-win-leading':''}">${w2} ${w2 === 1 ? 'win' : 'wins'}</div>` : ''}
       </div>
     </div>
 
