@@ -1191,7 +1191,8 @@ function syncEntryPicksToDOM() {
       const teamVal = btn.dataset.team === 't1' ? t1 : t2;
       const sel = teamVal === pick.winner;
       btn.classList.toggle('selected', sel);
-      btn.querySelector('.pick-check').textContent = sel ? '✓' : '';
+      const chk = btn.querySelector('.pick-check');
+      if (chk) chk.textContent = sel ? '✓' : '';
     });
     card.querySelectorAll('.game-btn').forEach(btn => {
       btn.classList.toggle('selected', parseInt(btn.dataset.games) === pick.games);
@@ -1219,7 +1220,7 @@ function clearDependentPicks(changedSid) {
         const btns = card.querySelectorAll('.team-pick-btn');
         setTeamBtn(btns[0], t1);
         setTeamBtn(btns[1], t2);
-        btns.forEach(b => { b.classList.remove('selected'); b.querySelector('.pick-check').textContent=''; });
+        btns.forEach(b => { b.classList.remove('selected'); const chk = b.querySelector('.pick-check'); if (chk) chk.textContent=''; });
         card.querySelectorAll('.game-btn').forEach(b => b.classList.remove('selected'));
         card.classList.remove('complete');
       }
