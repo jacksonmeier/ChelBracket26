@@ -1024,29 +1024,16 @@ body {
   box-shadow: var(--shadow);
 }
 
-.bk-label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.25rem;
-  margin-bottom: 0.25rem;
-}
 .bk-label {
   font-size: 0.58rem;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.07em;
+  margin-bottom: 0.25rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.bk-live-inline {
-  font-size: 0.58rem;
-  font-weight: 700;
-  color: var(--accent);
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 .bk-badge-row {
   margin-top: 0.2rem;

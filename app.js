@@ -1198,6 +1198,12 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
       }
       const t1Html = t1==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t1Class}">${logoImg(t1,'bk-logo')}${esc(t1)}</span>`;
       const t2Html = t2==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t2Class}">${logoImg(t2,'bk-logo')}${esc(t2)}</span>`;
+      // SCF: restore picked games display
+      const pickedGames = pick ? pick.games : null;
+      const actualGames = confirmed ? result.games : null;
+      const scfGamesNote = pickedGames
+        ? `<div class="bk-games">${actualGames ? `Picked ${pickedGames}g · Actual ${actualGames}g` : `Picked in ${pickedGames}`}</div>`
+        : '';
       box.className = 'bk-box scf-box';
       box.style.left = pos.x+'px'; box.style.top = pos.y+'px';
       box.style.width = SCF_W+'px';
@@ -1205,21 +1211,18 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
         <div class="bk-label scf-label">Stanley Cup Final</div>
         ${champHtml}
         <div class="scf-finalists">${t1Html}<span class="scf-vs">vs</span>${t2Html}</div>
-        ${liveScoreLabel ? `<div class="bk-games bk-series-score">${esc(liveScoreLabel)}</div>` : ''}`;
+        ${liveScoreLabel ? `<div class="bk-games bk-series-score">${esc(liveScoreLabel)}</div>` : ''}
+        ${scfGamesNote}`;
     } else {
       const t1Html = t1==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t1Class}">${logoImg(t1,'bk-logo')}${esc(t1)}</span>`;
       const t2Html = t2==='TBD' ? `<span class="bk-team tbd">TBD</span>` : `<span class="bk-team ${t2Class}">${logoImg(t2,'bk-logo')}${esc(t2)}</span>`;
-      // Label row: series name left, live score right
-      const labelRow = `<div class="bk-label-row">
-        <span class="bk-label">${esc(s.abbr)}</span>
-        ${liveScoreLabel ? `<span class="bk-live-inline">${esc(liveScoreLabel)}</span>` : ''}
-      </div>`;
       box.className = 'bk-box';
       box.style.left = pos.x+'px'; box.style.top = pos.y+'px'; box.style.width = BW+'px';
       box.innerHTML = `
-        ${labelRow}
+        <div class="bk-label">${esc(s.abbr)}</div>
         ${t1Html}${t2Html}
-        ${statusBadge ? `<div class="bk-badge-row">${statusBadge}</div>` : ''}`;
+        ${statusBadge ? `<div class="bk-badge-row">${statusBadge}</div>` : ''}
+        ${liveScoreLabel ? `<div class="bk-games bk-series-score">${esc(liveScoreLabel)}</div>` : ''}`;
     }
     canvas.appendChild(box);
   }
