@@ -995,7 +995,6 @@ function buildLeaderboardTable(ranked, results, mini = false, totalCount = null)
     <th>Rank</th><th>Name</th><th class="lb-col-cup">Cup Pick</th><th>Points</th>
     ${hasResults ? '<th class="lb-col-correct">Correct</th>' : ''}
     <th>Max Pts</th>
-    ${!mini ? '<th></th>' : ''}
   </tr></thead><tbody>`;
   ranked.forEach((b, i) => {
     const rank = i + 1;
@@ -1017,7 +1016,6 @@ function buildLeaderboardTable(ranked, results, mini = false, totalCount = null)
       <td class="lb-pts">${b.pts}</td>
       ${hasResults ? `<td class="lb-col-correct">${b.correct} <span style="color:var(--text-muted);font-size:0.8em">series</span></td>` : ''}
       <td class="lb-proj">${b.proj}</td>
-      ${!mini ? `<td><button class="lb-view-btn" data-bid="${b.id}">View →</button></td>` : ''}
     </tr>`;
   });
   return html + '</tbody></table></div>';
@@ -1412,9 +1410,6 @@ function renderLeaderboard() {
   const el = document.getElementById('leaderboardContent');
   if (!brackets.length) { el.innerHTML = '<div class="empty-state">No entries yet.</div>'; return; }
   el.innerHTML = buildLeaderboardTable(rankBrackets(brackets, results), results, false, brackets.length);
-  el.querySelectorAll('.lb-view-btn').forEach(btn => {
-    btn.addEventListener('click', () => { state.viewingId = btn.dataset.bid; showView('viewer'); drawBracket(btn.dataset.bid); });
-  });
 }
 
 // ── Commissioner ───────────────────────────────────────────
@@ -1698,10 +1693,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('saveResultsBtn').addEventListener('click', saveCommResults);
   document.getElementById('saveSettingsBtn').addEventListener('click', saveCommSettings);
 
-  // Full leaderboard view button
+  // Full leaderboard — click any row to view that bracket
   document.getElementById('leaderboardContent').addEventListener('click', e => {
-    const btn = e.target.closest('.lb-view-btn'); if (!btn) return;
-    state.viewingId = btn.dataset.bid; showView('viewer'); renderViewer(btn.dataset.bid); drawBracket(btn.dataset.bid);
+    const row = e.target.closest('.lb-row[data-bid]'); if (!row) return;
+    const bid = row.dataset.bid;
+    state.viewingId = bid; showView('viewer'); renderViewer(bid); drawBracket(bid);
   });
 
   // Home leaderboard — click any row to view that bracket
