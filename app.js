@@ -130,6 +130,26 @@ const TEAM_ABBR = {
   'Anaheim Ducks':        'ANA',
 };
 
+// Short city/nickname for display in entry cards
+const TEAM_CITY = {
+  'Buffalo Sabres':       'Buffalo',
+  'Tampa Bay Lightning':  'Tampa Bay',
+  'Montreal Canadiens':   'Montréal',
+  'Boston Bruins':        'Boston',
+  'Ottawa Senators':      'Ottawa',
+  'Carolina Hurricanes':  'Carolina',
+  'Pittsburgh Penguins':  'Pittsburgh',
+  'Philadelphia Flyers':  'Philadelphia',
+  'Colorado Avalanche':   'Colorado',
+  'Dallas Stars':         'Dallas',
+  'Minnesota Wild':       'Minnesota',
+  'Utah Mammoth':         'Utah',
+  'Los Angeles Kings':    'LA Kings',
+  'Vegas Golden Knights': 'Vegas',
+  'Edmonton Oilers':      'Edmonton',
+  'Anaheim Ducks':        'Anaheim',
+};
+
 function logoUrl(name) {
   const abbr = TEAM_ABBR[name];
   return abbr ? `https://assets.nhle.com/logos/nhl/svg/${abbr}_light.svg` : '';
@@ -150,7 +170,11 @@ function setTeamBtn(btn, name) {
     abbrEl.textContent = abbr;
   }
   const nameEl = btn.querySelector('.team-name-txt');
-  if (nameEl) nameEl.textContent = name;
+  if (nameEl) {
+    const city = name === 'TBD' ? '' : (TEAM_CITY[name] || name);
+    nameEl.textContent = city;
+    nameEl.style.display = city ? '' : 'none';
+  }
   // Legacy: update logo if present
   const img = btn.querySelector('.team-logo-sm');
   if (img) { const u = logoUrl(name); img.src = u; img.style.display = u ? '' : 'none'; }
@@ -1151,18 +1175,20 @@ function buildEntrySeriesCard(s, teams) {
   const dis = isLocked() ? 'disabled' : '';
   const a1 = TEAM_ABBR[t1] || t1.split(' ').pop().toUpperCase().slice(0, 3);
   const a2 = TEAM_ABBR[t2] || t2.split(' ').pop().toUpperCase().slice(0, 3);
+  const n1 = t1 === 'TBD' ? '' : (TEAM_CITY[t1] || t1);
+  const n2 = t2 === 'TBD' ? '' : (TEAM_CITY[t2] || t2);
   return `
     <div class="series-card" id="ecard-${s.id}" data-sid="${s.id}">
       <div class="sc-top series-card-label"><span>${esc(s.abbr)}</span></div>
       <div class="sc-pick-row team-picks">
         <button class="sc-pick team-pick-btn" data-sid="${s.id}" data-team="t1" ${dis}>
           <div class="sc-pick-abbr team-abbr-txt">${esc(a1)}</div>
-          <div class="sc-pick-name team-name-txt">${esc(t1)}</div>
+          ${n1 ? `<div class="sc-pick-name team-name-txt">${esc(n1)}</div>` : ''}
         </button>
         <div class="sc-vs">vs</div>
         <button class="sc-pick team-pick-btn" data-sid="${s.id}" data-team="t2" ${dis}>
           <div class="sc-pick-abbr team-abbr-txt">${esc(a2)}</div>
-          <div class="sc-pick-name team-name-txt">${esc(t2)}</div>
+          ${n2 ? `<div class="sc-pick-name team-name-txt">${esc(n2)}</div>` : ''}
         </button>
       </div>
       <div class="sc-games-lbl games-label">Series Length</div>
