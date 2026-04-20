@@ -627,25 +627,34 @@ async function showSeriesModal(sid) {
     }
   }).join('');
 
-  // Bracket picks
-  const t1Pickers = [], t2Pickers = [];
+  // Bracket picks — sorted by games picked (ascending: sweeps first)
+  const total = brackets.length;
+  const t1Entries = [], t2Entries = [];
   brackets.forEach(b => {
-    const w = b.picks?.[sid]?.winner;
-    const bracketLabel = esc(b.bracketName || b.name);
-    const byLabel = (b.bracketName && b.playerName) ? `<span class="sm-pill-by">${esc(b.playerName)}</span>` : '';
-    if (w === t1) t1Pickers.push(`<div class="sm-pill">${bracketLabel}${byLabel}</div>`);
-    else if (w === t2) t2Pickers.push(`<div class="sm-pill">${bracketLabel}${byLabel}</div>`);
+    const pick = b.picks?.[sid];
+    if (!pick?.winner) return;
+    const entry = { bracketLabel: esc(b.bracketName || b.name), byLabel: (b.bracketName && b.playerName) ? esc(b.playerName) : '', games: pick.games ?? null };
+    if (pick.winner === t1) t1Entries.push(entry);
+    else if (pick.winner === t2) t2Entries.push(entry);
   });
+  const sortByGames = arr => [...arr].sort((a, b) => (a.games ?? 99) - (b.games ?? 99));
+  const entryPill = e => `<div class="sm-pill">
+    <div class="sm-pill-main">${e.bracketLabel}${e.byLabel ? `<span class="sm-pill-by">${e.byLabel}</span>` : ''}</div>
+    ${e.games ? `<span class="sm-pill-games">in ${e.games}</span>` : ''}
+  </div>`;
 
-  const pickBlock = (team, abbr, pickers) => `
-    <div class="sm-pick-block">
+  const pickBlock = (team, abbr, entries) => {
+    const pct = total > 0 ? Math.round(entries.length / total * 100) : 0;
+    const pills = sortByGames(entries).map(entryPill).join('');
+    return `<div class="sm-pick-block">
       <div class="sm-pick-hdr">
         <img class="sm-pick-logo" src="${logoUrl(team)}" onerror="this.style.display='none'" alt="">
         <span class="sm-pick-team-name">${esc(team)}</span>
-        <span class="sm-pick-badge">${pickers.length}</span>
+        <span class="sm-pick-badge">${entries.length} <span class="sm-pick-pct">${pct}%</span></span>
       </div>
-      <div class="sm-pill-list">${pickers.join('') || '<span class="sm-pick-none">No picks</span>'}</div>
+      <div class="sm-pill-list">${pills || '<span class="sm-pick-none">No picks</span>'}</div>
     </div>`;
+  };
 
   content.innerHTML = `
     <div class="sm-matchup-header">
@@ -673,8 +682,8 @@ async function showSeriesModal(sid) {
 
     <div class="sm-section-label">Bracket Picks</div>
     <div class="sm-picks-grid">
-      ${pickBlock(t1, a1, t1Pickers)}
-      ${pickBlock(t2, a2, t2Pickers)}
+      ${pickBlock(t1, a1, t1Entries)}
+      ${pickBlock(t2, a2, t2Entries)}
     </div>`;
 }
 
