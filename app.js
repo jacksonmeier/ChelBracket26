@@ -992,9 +992,9 @@ function buildLeaderboardTable(ranked, results, mini = false, totalCount = null)
   </div>`;
   const hasResults = Object.values(results).some(r => r.completed);
   let html = prizeBanner + `<div class="lb-table-wrap"><table class="lb-table"><thead><tr>
-    <th>Rank</th><th>Name</th><th>Cup Pick</th><th>Points</th>
-    ${hasResults ? '<th>Correct</th>' : ''}
-    <th>Max Possible</th>
+    <th>Rank</th><th>Name</th><th class="lb-col-cup">Cup Pick</th><th>Points</th>
+    ${hasResults ? '<th class="lb-col-correct">Correct</th>' : ''}
+    <th>Max Pts</th>
     ${!mini ? '<th></th>' : ''}
   </tr></thead><tbody>`;
   ranked.forEach((b, i) => {
@@ -1013,9 +1013,9 @@ function buildLeaderboardTable(ranked, results, mini = false, totalCount = null)
         ${b.playerName ? `<span class="lb-player-name">${esc(b.playerName)}</span>` : ''}
         ${prize}
       </td>
-      <td class="lb-cup">${cupCell}</td>
+      <td class="lb-cup lb-col-cup">${cupCell}</td>
       <td class="lb-pts">${b.pts}</td>
-      ${hasResults ? `<td>${b.correct} <span style="color:var(--text-muted);font-size:0.8em">series</span></td>` : ''}
+      ${hasResults ? `<td class="lb-col-correct">${b.correct} <span style="color:var(--text-muted);font-size:0.8em">series</span></td>` : ''}
       <td class="lb-proj">${b.proj}</td>
       ${!mini ? `<td><button class="lb-view-btn" data-bid="${b.id}">View →</button></td>` : ''}
     </tr>`;

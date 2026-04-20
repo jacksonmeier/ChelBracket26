@@ -1769,10 +1769,21 @@ body {
 
   .comm-tabs { width: 100%; }
 
-  .lb-table th:nth-child(4),
-  .lb-table td:nth-child(4),
-  .lb-table th:nth-child(5),
-  .lb-table td:nth-child(5) { display: none; }
+  /* Hide Cup Pick + Correct series columns on mobile; keep Rank/Name/Points/Max */
+  .lb-col-cup,
+  .lb-col-correct { display: none; }
+
+  /* Tighter table padding on mobile */
+  .lb-table th,
+  .lb-table td { padding: 0.65rem 0.6rem; }
+  .lb-pts { font-size: 1rem; }
+  .lb-proj { font-size: 0.8rem; }
+  .lb-bracket-name { font-size: 0.85rem; }
+  .lb-player-name  { font-size: 0.72rem; }
+
+  /* Prize pool banner wraps nicely */
+  .prize-pool-banner { flex-wrap: wrap; gap: 0.4rem 0.6rem; padding: 0.7rem 1rem; }
+  .prize-pool-amount { font-size: 1.3rem; }
 
   .results-grid-inner { grid-template-columns: 1fr; }
   .teams-grid { grid-template-columns: 1fr; }
