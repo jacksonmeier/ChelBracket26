@@ -1968,5 +1968,52 @@ body {
 @media (max-width: 600px) {
   .entry-series-grid, .series-grid { grid-template-columns: 1fr; }
   .matchup-grid, .tg-grid, .tg-grid-wide { grid-template-columns: 1fr; }
-  .ticker { display: none; } /* hide ticker on very small screens */
+  .ticker { display: none; }
+}
+
+/* ── Series modal mobile ──────────────────────────────────── */
+@media (max-width: 540px) {
+  .series-modal {
+    padding: 1rem 0.85rem;
+  }
+  .series-modal-close {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  /* Matchup header: tighter */
+  .sm-matchup-header {
+    gap: 0.5rem;
+    padding-bottom: 1rem;
+  }
+  .sm-team-logo-lg { height: 32px; }
+  .sm-team-name-lg { font-size: 0.82rem; }
+  .sm-matchup-vs   { font-size: 0.85rem; }
+  .sm-matchup-round { font-size: 0.52rem; }
+
+  /* Game score row: reduce abbr size */
+  .sm-game-abbr  { font-size: 0.85rem; }
+  .sm-game-score { font-size: 1.2rem; }
+  .sm-game-card  { padding: 0.6rem 0.65rem; }
+
+  /* Picks grid: tighter columns, smaller text */
+  .sm-picks-grid {
+    gap: 0.4rem;
+  }
+  .sm-pick-hdr {
+    padding: 0.5rem 0.55rem;
+    gap: 0.35rem;
+  }
+  .sm-pick-logo      { height: 18px; width: 18px; }
+  .sm-pick-team-name { font-size: 0.7rem; }
+  .sm-pick-badge     { font-size: 0.62rem; }
+
+  /* Pill rows */
+  .sm-pill {
+    padding: 0.4rem 0.55rem;
+    gap: 0.3rem;
+  }
+  .sm-pill-main  { font-size: 0.72rem; }
+  .sm-pill-by    { font-size: 0.56rem; }
+  .sm-pill-games { font-size: 0.58rem; }
 }
