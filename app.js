@@ -719,8 +719,8 @@ function gameCard(g) {
 
 function renderCountdown() {
   const el = document.getElementById('homeCountdown');
-  const { lockDate } = getSettings();
-  if (!lockDate) { el.innerHTML = ''; return; }
+  const { lockDate, hideEntryTab } = getSettings();
+  if (!lockDate || hideEntryTab) { el.innerHTML = ''; return; }
   const target = new Date(lockDate), now = new Date();
   if (now >= target) { el.innerHTML = '<span class="countdown-locked">🔒 Bracket Entry Locked</span>'; return; }
   const diff = target - now;
