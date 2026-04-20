@@ -141,12 +141,19 @@ function logoImg(name, cls) {
   return `<img class="${cls}" src="${url}" alt="" onerror="this.style.display='none'">`;
 }
 
-// Update a team-pick button's logo + text in place
+// Update a team-pick button's abbr + text in place
 function setTeamBtn(btn, name) {
   if (!btn) return;
+  const abbrEl = btn.querySelector('.team-abbr-txt');
+  if (abbrEl) {
+    const abbr = TEAM_ABBR[name] || name.split(' ').pop().toUpperCase().slice(0, 3);
+    abbrEl.textContent = abbr;
+  }
+  const nameEl = btn.querySelector('.team-name-txt');
+  if (nameEl) nameEl.textContent = name;
+  // Legacy: update logo if present
   const img = btn.querySelector('.team-logo-sm');
   if (img) { const u = logoUrl(name); img.src = u; img.style.display = u ? '' : 'none'; }
-  btn.querySelector('.team-name-txt').textContent = name;
 }
 
 // ── App State ──────────────────────────────────────────────
@@ -693,9 +700,62 @@ function closeSeriesModal() {
 
 function renderHome() {
   renderCountdown();
+  renderHeroCard();
   renderTodayGames();
   renderActualBracket(); // async — fires and updates when done
   renderHomeLeaderboard();
+}
+
+function renderHeroCard() {
+  const brackets = getBrackets(), results = getResults();
+  const el = document.getElementById('heroPoolCard');
+  if (!el) return;
+  const ranked = rankBrackets(brackets, results);
+  const entryCount = brackets.length;
+  const prizePool = entryCount * 25;
+  const doneSeries = SERIES.filter(s => results[s.id] && results[s.id].completed).length;
+  const topScore = ranked[0] ? ranked[0].pts : 0;
+
+  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  const top4 = ranked.slice(0, 4).map((b, i) => {
+    const rankStr = String(i + 1).padStart(2, '0');
+    const bName = esc(b.bracketName || b.name);
+    const pName = b.playerName ? ` · ${esc(b.playerName)}` : '';
+    return `<div class="hero-leader-row">
+      <span class="hero-leader-rank">${rankStr}</span>
+      <span class="hero-leader-name">${bName}<small>${pName}</small></span>
+      <span class="hero-leader-pts">${b.pts}</span>
+    </div>`;
+  }).join('') || '<div style="padding:1rem 1.25rem;font-size:0.82rem;color:var(--text-3)">No entries yet.</div>';
+
+  el.innerHTML = `
+    <div class="hero-card-hdr">
+      <div class="hero-card-title">Pool Overview</div>
+      <div class="hero-card-meta">Live · ${today}</div>
+    </div>
+    <div class="hero-stats">
+      <div>
+        <div class="hero-stat-val red">${entryCount}</div>
+        <div class="hero-stat-lbl">Entries</div>
+      </div>
+      <div>
+        <div class="hero-stat-val">$${prizePool.toLocaleString()}</div>
+        <div class="hero-stat-lbl">Prize Pool</div>
+      </div>
+      <div>
+        <div class="hero-stat-val ice">${doneSeries}/${SERIES.length}</div>
+        <div class="hero-stat-lbl">Series Done</div>
+      </div>
+      <div>
+        <div class="hero-stat-val">${topScore}</div>
+        <div class="hero-stat-lbl">Top Score</div>
+      </div>
+    </div>
+    <div style="padding:0.5rem 1.25rem 0.4rem">
+      <div class="hero-card-title" style="font-size:0.62rem;color:var(--text-3);margin-bottom:0.4rem">Top 4</div>
+    </div>
+    <div class="hero-leader">${top4}</div>`;
 }
 
 // ── NHL Live Scores ────────────────────────────────────────
@@ -831,19 +891,19 @@ function renderDateStrip(selected) {
     const day = dt.toLocaleString('en-US', { weekday: 'short', timeZone: 'UTC' });
     const num = dt.getUTCDate();
     const active = d === selected ? ' active' : '';
-    return `<button class="sched-date-btn${active}" data-date="${d}">
-      <span class="sched-day">${day}</span>
-      <span class="sched-num">${num}</span>
-      <span class="sched-mon">${mon}</span>
+    return `<button class="date-btn${active}" data-date="${d}">
+      <span class="date-day">${day}</span>
+      <span class="date-num">${num}</span>
+      <span class="date-mon">${mon}</span>
     </button>`;
   }).join('');
 
   // Scroll selected into view
-  strip.querySelector('.sched-date-btn.active')
+  strip.querySelector('.date-btn.active')
     ?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
 
   strip.addEventListener('click', e => {
-    const btn = e.target.closest('.sched-date-btn');
+    const btn = e.target.closest('.date-btn');
     if (!btn) return;
     state.scheduleDate = btn.dataset.date;
     renderSchedule();
@@ -873,9 +933,9 @@ async function fetchScheduleGames(date) {
 
 function gameCard(g) {
   const away = g.awayTeam, home = g.homeTeam;
-  const state = g.gameState; // FUT PRE LIVE CRIT FINAL OFF
-  const isLive  = state === 'LIVE' || state === 'CRIT';
-  const isFinal = state === 'FINAL' || state === 'OFF';
+  const gstate = g.gameState; // FUT PRE LIVE CRIT FINAL OFF
+  const isLive  = gstate === 'LIVE' || gstate === 'CRIT';
+  const isFinal = gstate === 'FINAL' || gstate === 'OFF';
   const isFut   = !isLive && !isFinal;
 
   // ── Status badge ──
@@ -886,21 +946,21 @@ function gameCard(g) {
     const pType = pd.periodType || 'REG';
     const periodLabel = pType === 'OT' ? 'OT' : pType === 'SO' ? 'SO' : `P${pNum}`;
     const clock = g.clock?.timeRemaining || '';
-    statusHtml = `<span class="tg-badge tg-live">🔴 LIVE &nbsp;${clock ? clock + ' · ' : ''}${periodLabel}</span>`;
+    statusHtml = `<span class="mc-status mc-live">● Live${clock ? ' · ' + clock : ''} · ${periodLabel}</span>`;
   } else if (isFinal) {
     const pType = g.periodDescriptor?.periodType || 'REG';
     const suffix = pType === 'OT' ? '/OT' : pType === 'SO' ? '/SO' : '';
-    statusHtml = `<span class="tg-badge tg-final">Final${suffix}</span>`;
+    statusHtml = `<span class="mc-status mc-final">Final${suffix}</span>`;
   } else {
     const t = new Date(g.startTimeUTC);
     const timeStr = t.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', timeZoneName:'short' });
-    statusHtml = `<span class="tg-badge tg-future">${timeStr}</span>`;
+    statusHtml = `<span class="mc-status mc-future">${timeStr}</span>`;
   }
 
   // ── Series info ──
   const ss = g.seriesStatus;
   const gameNum = ss?.gameNumberOfSeries ?? null;
-  const gameNumHtml = gameNum ? `<span class="tg-game-num">Game ${gameNum}</span>` : '';
+  const topLine = gameNum ? `Game ${gameNum}` : 'Playoff';
 
   let seriesRecord = '';
   if (ss) {
@@ -908,36 +968,50 @@ function gameCard(g) {
     const aw = topIsAway ? (ss.topSeedWins ?? 0) : (ss.bottomSeedWins ?? 0);
     const hw = topIsAway ? (ss.bottomSeedWins ?? 0) : (ss.topSeedWins ?? 0);
     if (aw === hw) {
-      seriesRecord = aw === 0 ? 'Series begins' : `Series tied ${aw}–${hw}`;
+      seriesRecord = aw === 0 ? 'Series begins' : `Tied ${aw}–${hw}`;
     } else if (aw > hw) {
-      seriesRecord = `${away.abbrev} leads ${aw}–${hw}`;
+      seriesRecord = `<b>${away.abbrev}</b> leads ${aw}–${hw}`;
     } else {
-      seriesRecord = `${home.abbrev} leads ${hw}–${aw}`;
+      seriesRecord = `<b>${home.abbrev}</b> leads ${hw}–${aw}`;
     }
   }
-  const seriesHtml = seriesRecord ? `<div class="tg-series">${seriesRecord}</div>` : '';
 
-  // ── Team rows ──
+  // ── Abbreviations & city names ──
+  const awayAbbr = away.abbrev || TEAM_ABBR[away.name?.default || ''] || '???';
+  const homeAbbr = home.abbrev || TEAM_ABBR[home.name?.default || ''] || '???';
+  const awayCity = away.name?.default || awayAbbr;
+  const homeCity = home.name?.default || homeAbbr;
   const awayLead = !isFut && away.score > home.score;
   const homeLead = !isFut && home.score > away.score;
 
-  function teamRow(team, leading) {
-    const logoSrc = team.logo || logoUrl(team.name?.default || '');
-    const name = team.name?.default || team.abbrev;
-    return `<div class="tg-team${leading ? ' tg-lead' : ''}">
-      <img class="tg-logo" src="${logoSrc}" alt="" onerror="this.style.display='none'">
-      <span class="tg-name">${esc(name)}</span>
-      ${!isFut ? `<span class="tg-score${leading ? ' tg-score-lead' : ''}">${team.score}</span>` : ''}
+  // ── Center content (score or time) ──
+  let centerHtml;
+  if (isFut) {
+    const t = new Date(g.startTimeUTC);
+    const timeStr = t.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+    centerHtml = `<div class="mc-time">${timeStr}</div>`;
+  } else {
+    centerHtml = `<div class="mc-score">
+      <span${awayLead ? '' : ' class="dim"'}>${away.score}</span>
+      <span class="dash">–</span>
+      <span${homeLead ? '' : ' class="dim"'}>${home.score}</span>
     </div>`;
   }
 
-  return `<div class="tg-card">
-    <div class="tg-card-header">${statusHtml}${gameNumHtml}</div>
-    <div class="tg-teams">
-      ${teamRow(away, awayLead)}
-      ${teamRow(home, homeLead)}
+  return `<div class="mc${isLive ? ' mc-live-card' : ''}">
+    <div class="mc-top"><span>${esc(topLine)}</span>${statusHtml}</div>
+    <div class="mc-body">
+      <div class="mc-team-side">
+        <div class="mc-abbr${(!isFut && !awayLead && home.score > 0) ? ' dim' : ''}">${awayAbbr}</div>
+        <div class="mc-city">${esc(awayCity)}</div>
+      </div>
+      <div class="mc-center">${centerHtml}</div>
+      <div class="mc-team-side home">
+        <div class="mc-abbr${(!isFut && !homeLead && away.score > 0) ? ' dim' : ''}">${homeAbbr}</div>
+        <div class="mc-city">${esc(homeCity)}</div>
+      </div>
     </div>
-    ${seriesHtml}
+    ${seriesRecord ? `<div class="mc-series">${seriesRecord}</div>` : ''}
   </div>`;
 }
 
@@ -982,41 +1056,43 @@ function buildLeaderboardTable(ranked, results, mini = false, totalCount = null)
   if (!ranked.length) return '<div class="empty-state">No entries yet.</div>';
   const entryCount = totalCount !== null ? totalCount : ranked.length;
   const prizePool = entryCount * 25;
-  const prizeBanner = `<div class="prize-pool-banner">
-    <span class="prize-pool-icon">💰</span>
-    <span class="prize-pool-label">Prize Pool</span>
-    <span class="prize-pool-amount">$${prizePool.toLocaleString()}</span>
-    <span class="prize-pool-meta">${entryCount} bracket${entryCount !== 1 ? 's' : ''} × $25</span>
+  const first = Math.round(prizePool * 0.7);
+  const second = prizePool - first;
+
+  const prizeStrip = `<div class="prize-strip">
+    <div class="prize-item"><div class="prize-lbl">Prize Pool</div><div class="prize-val gold">$${prizePool.toLocaleString()}</div></div>
+    <div class="prize-item"><div class="prize-lbl">1st Place</div><div class="prize-val gold">$${first.toLocaleString()}</div></div>
+    <div class="prize-item"><div class="prize-lbl">2nd Place</div><div class="prize-val silver">$${second.toLocaleString()}</div></div>
+    <div class="prize-item"><div class="prize-lbl">Max Score</div><div class="prize-val">390</div></div>
   </div>`;
+
   const hasResults = Object.values(results).some(r => r.completed);
-  let html = prizeBanner + `<div class="lb-table-wrap"><table class="lb-table"><thead><tr>
-    <th>Rank</th><th>Name</th><th class="lb-col-cup">Cup Pick</th><th>Points</th>
-    ${hasResults ? '<th class="lb-col-correct">Correct</th>' : ''}
-    <th>Max Pts</th>
-  </tr></thead><tbody>`;
+  let rows = '';
   ranked.forEach((b, i) => {
     const rank = i + 1;
-    const badgeClass = rank===1?'rank-badge-1':rank===2?'rank-badge-2':'rank-badge-n';
-    const prize = rank===1?'<span class="prize-badge prize-1st">💰 Winner</span>'
-                : rank===2?'<span class="prize-badge prize-2nd">🥈 Entry Back</span>':'';
+    const rankStr = String(rank).padStart(2, '0');
+    const topClass = rank === 1 ? ' top-1' : rank === 2 ? ' top-2' : rank === 3 ? ' top-3' : '';
     const cupWinner = b.picks && b.picks['SCF'] && b.picks['SCF'].winner;
-    const cupCell = cupWinner
-      ? `<span class="lb-cup-pick">${logoImg(cupWinner,'bk-logo')}${esc(cupWinner)}</span>`
-      : `<span style="color:var(--text-muted)">—</span>`;
-    html += `<tr class="lb-row ${rank===1?'rank-1':rank===2?'rank-2':''}" data-bid="${b.id}" style="cursor:pointer">
-      <td class="lb-rank"><span class="rank-badge ${badgeClass}">${rank}</span></td>
-      <td class="lb-name">
-        <span class="lb-bracket-name">${esc(b.bracketName || b.name)}</span>
-        ${b.playerName ? `<span class="lb-player-name">${esc(b.playerName)}</span>` : ''}
-        ${prize}
-      </td>
-      <td class="lb-cup lb-col-cup">${cupCell}</td>
-      <td class="lb-pts">${b.pts}</td>
-      ${hasResults ? `<td class="lb-col-correct">${b.correct} <span style="color:var(--text-muted);font-size:0.8em">series</span></td>` : ''}
-      <td class="lb-proj">${b.proj}</td>
-    </tr>`;
+    const cupAbbr = cupWinner ? (TEAM_ABBR[cupWinner] || cupWinner.split(' ').pop()) : null;
+    const cupCell = cupAbbr
+      ? `<span class="lb-cup-abbr">${esc(cupAbbr)}</span> ${esc(cupWinner)}`
+      : `<span style="color:var(--text-3)">—</span>`;
+
+    rows += `<div class="lb-row${topClass}" data-bid="${b.id}">
+      <div class="lb-rank">${rankStr}</div>
+      <div class="lb-name">
+        <span class="lb-bracket">${esc(b.bracketName || b.name)}</span>
+        ${b.playerName ? `<span class="lb-player">${esc(b.playerName)}</span>` : ''}
+      </div>
+      <div class="lb-points">
+        <div class="lb-pts-val">${b.pts}</div>
+        <div class="lb-pts-lbl">pts · max ${b.proj}</div>
+      </div>
+      ${hasResults ? `<div class="lb-meta"><b>${b.correct}</b> correct</div>` : ''}
+      <div class="lb-cup">${cupCell}</div>
+    </div>`;
   });
-  return html + '</tbody></table></div>';
+  return prizeStrip + `<div class="lb-list">${rows}</div>`;
 }
 
 // ── Bracket Entry ──────────────────────────────────────────
@@ -1073,20 +1149,25 @@ function renderEntryRounds() {
 function buildEntrySeriesCard(s, teams) {
   const [t1, t2] = getSeriesTeams(s.id, state.entryPicks, teams);
   const dis = isLocked() ? 'disabled' : '';
+  const a1 = TEAM_ABBR[t1] || t1.split(' ').pop().toUpperCase().slice(0, 3);
+  const a2 = TEAM_ABBR[t2] || t2.split(' ').pop().toUpperCase().slice(0, 3);
   return `
     <div class="series-card" id="ecard-${s.id}" data-sid="${s.id}">
-      <div class="series-card-label">${s.abbr}</div>
-      <div class="team-picks">
-        <button class="team-pick-btn" data-sid="${s.id}" data-team="t1" ${dis}>
-          ${logoImg(t1,'team-logo-sm')}<span class="team-name-txt">${esc(t1)}</span><span class="pick-check"></span>
+      <div class="sc-top series-card-label"><span>${esc(s.abbr)}</span></div>
+      <div class="sc-pick-row team-picks">
+        <button class="sc-pick team-pick-btn" data-sid="${s.id}" data-team="t1" ${dis}>
+          <div class="sc-pick-abbr team-abbr-txt">${esc(a1)}</div>
+          <div class="sc-pick-name team-name-txt">${esc(t1)}</div>
         </button>
-        <button class="team-pick-btn" data-sid="${s.id}" data-team="t2" ${dis}>
-          ${logoImg(t2,'team-logo-sm')}<span class="team-name-txt">${esc(t2)}</span><span class="pick-check"></span>
+        <div class="sc-vs">vs</div>
+        <button class="sc-pick team-pick-btn" data-sid="${s.id}" data-team="t2" ${dis}>
+          <div class="sc-pick-abbr team-abbr-txt">${esc(a2)}</div>
+          <div class="sc-pick-name team-name-txt">${esc(t2)}</div>
         </button>
       </div>
-      <div class="games-label">Series length (games)</div>
-      <div class="games-btns">
-        ${[4,5,6,7].map(g=>`<button class="game-btn" data-sid="${s.id}" data-games="${g}" ${dis}>${g}</button>`).join('')}
+      <div class="sc-games-lbl games-label">Series Length</div>
+      <div class="sc-games games-btns">
+        ${[4,5,6,7].map(g=>`<button class="sc-g game-btn" data-sid="${s.id}" data-games="${g}" ${dis}>${g}</button>`).join('')}
       </div>
     </div>`;
 }
@@ -1243,11 +1324,11 @@ async function drawBracket(bid) {
 
   document.getElementById('viewerContent').innerHTML = `
     <div class="viewer-heading">${displayName}</div>
-    <div class="viewer-score-bar">
-      <div class="vsb-item"><span class="vsb-val">${pts}</span><span class="vsb-lbl">Points</span></div>
-      <div class="vsb-item"><span class="vsb-val">${correct}</span><span class="vsb-lbl">Correct Series</span></div>
-      <div class="vsb-item"><span class="vsb-val">${proj}</span><span class="vsb-lbl">Max Possible</span></div>
-      <div class="vsb-item"><span class="vsb-val">${doneSeries}/${SERIES.length}</span><span class="vsb-lbl">Series Done</span></div>
+    <div class="viewer-bar">
+      <div class="vbar-item"><div class="vbar-val red">${pts}</div><div class="vbar-lbl">Points</div></div>
+      <div class="vbar-item"><div class="vbar-val">${proj}</div><div class="vbar-lbl">Max Possible</div></div>
+      <div class="vbar-item"><div class="vbar-val">${correct}</div><div class="vbar-lbl">Correct</div></div>
+      <div class="vbar-item"><div class="vbar-val">${doneSeries}/${SERIES.length}</div><div class="vbar-lbl">Series Done</div></div>
     </div>
     <div class="bracket-scroll-wrap">
       <div class="bracket-canvas" id="bracketCanvas"></div>

@@ -5,28 +5,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bracket Challenge 26 — NHL Playoff Pool</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=32">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=34">
   <style>
     /* Critical: loading overlay — inlined to avoid cache issues */
-    #loadingOverlay { position:fixed; inset:0; background:#080c18; display:flex; align-items:center; justify-content:center; z-index:9000; }
+    #loadingOverlay { position:fixed; inset:0; background:#060914; display:flex; align-items:center; justify-content:center; z-index:9000; }
     #loadingOverlay.hidden { display:none; }
   </style>
 </head>
 <body>
 
+<!-- Live Ticker -->
+<div class="ticker" id="liveTicker">
+  <div class="ticker-label"><div class="ticker-dot"></div>Live</div>
+  <div class="ticker-scroll" id="tickerScroll">
+    <span id="tickerContent">2026 NHL Playoffs · Bracket Challenge 26 · Loading scores…</span>
+  </div>
+</div>
+<div class="rink-line"></div>
+
 <nav class="navbar">
   <div class="nav-brand" data-view="home" style="cursor:pointer">
     <img src="logo.png" class="nav-logo" alt="Bracket Challenge 26">
-    <span class="nav-title">Bracket Challenge<span class="nav-accent"> 26</span></span>
+    <div>
+      <div class="nav-title">Bracket Challenge<span class="nav-accent"> 26</span></div>
+      <div class="nav-sub">NHL Playoff Pool</div>
+    </div>
   </div>
   <div class="nav-links" id="navLinks">
     <button class="nav-btn" data-view="home">Home</button>
-    <button class="nav-btn" data-view="entry">Enter Bracket</button>
-    <button class="nav-btn" data-view="viewer">View Brackets</button>
+    <button class="nav-btn" data-view="entry">Enter</button>
+    <button class="nav-btn" data-view="viewer">Brackets</button>
     <button class="nav-btn" data-view="leaderboard">Leaderboard</button>
     <button class="nav-btn" data-view="schedule">Schedule</button>
-    <button class="nav-btn" data-view="commissioner">Commissioner</button>
+    <button class="nav-btn" data-view="commissioner">Commish</button>
+    <button class="nav-cta" data-view="entry">My Bracket →</button>
   </div>
   <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
     <span></span><span></span><span></span>
@@ -46,59 +59,89 @@
 
   <!-- ═══════════════════════════════ HOME ═══════════════════════════════ -->
   <section class="view" id="view-home">
+
     <div class="hero">
-      <img src="logo.png" class="hero-logo" alt="Bracket Challenge 26">
-      <h1 class="hero-title">Bracket Challenge<span class="accent"> 26</span></h1>
-      <p class="hero-sub" style="display:none">NHL Playoff Bracket Pool</p>
-      <div id="homeCountdown" class="countdown-wrap"></div>
-      <div class="hero-btns">
-        <button class="btn btn-primary btn-lg" data-view="entry">Enter My Bracket</button>
-        <button class="btn btn-outline btn-lg" data-view="leaderboard">View Standings</button>
+      <div class="hero-left">
+        <div class="hero-badge"><div class="hero-badge-dot"></div><span id="heroBadgeText">2026 NHL Playoffs</span></div>
+        <h1 class="hero-title">Bracket<br>Challenge <em>26</em></h1>
+        <p class="hero-desc">Sixteen teams. Four rounds. One cup. Track your picks and settle it the only way that matters.</p>
+        <div id="homeCountdown" class="countdown-wrap"></div>
+        <div class="hero-ctas">
+          <button class="btn btn-primary btn-lg" data-view="entry">Enter My Bracket</button>
+          <button class="btn btn-outline btn-lg" data-view="leaderboard">View Standings</button>
+        </div>
+      </div>
+      <div class="hero-right" id="heroPoolCard">
+        <!-- Populated by renderHeroCard() -->
       </div>
     </div>
-    <div class="home-scores">
-      <div class="section-header">
-        <h2 class="section-title">Today's Games</h2>
-        <span id="scoresRefreshBadge" class="scores-refresh-badge"></span>
+
+    <div class="sec home-scores">
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-num">01 — Live Scoreboard</div>
+          <div class="sec-title">Today's Games</div>
+        </div>
+        <div class="sec-right">
+          <span id="scoresRefreshBadge" class="scores-refresh-badge"></span>
+        </div>
       </div>
       <div id="todayGames"><div class="scores-loading">Loading games…</div></div>
     </div>
-    <div class="home-bracket">
-      <div class="section-header">
-        <h2 class="section-title">2026 NHL Playoffs</h2>
+
+    <div class="sec home-bracket">
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-num">02 — Live Bracket</div>
+          <div class="sec-title">2026 NHL Playoffs</div>
+        </div>
       </div>
       <div id="actualBracket"></div>
     </div>
-    <div class="home-standings">
-      <div class="section-header">
-        <h2 class="section-title">Current Standings</h2>
-        <button class="btn btn-sm btn-outline" data-view="leaderboard">Full Leaderboard →</button>
+
+    <div class="sec home-standings">
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-num">03 — Pool Standings</div>
+          <div class="sec-title">Current Rankings</div>
+        </div>
+        <div class="sec-right">
+          <button class="btn btn-sm btn-ghost" data-view="leaderboard">Full Leaderboard →</button>
+        </div>
       </div>
       <div id="homeLeaderboard"></div>
     </div>
+
   </section>
 
   <!-- ═══════════════════════════════ ENTRY ══════════════════════════════ -->
   <section class="view" id="view-entry">
-    <div class="view-header">
-      <h2 class="view-title">Enter Your Bracket</h2>
-      <p class="view-sub">Pick the winner and series length (in games) for all 15 series</p>
+    <div class="view-hdr">
+      <div class="view-hdr-left">
+        <div class="view-kicker">New Entry · 15 Series</div>
+        <h2 class="view-title">Enter Your Bracket</h2>
+      </div>
     </div>
+    <p class="view-sub" style="margin-bottom:1.5rem;color:var(--text-2)">Pick the winner and series length for all 15 series.</p>
     <div id="entryLockedMsg" class="alert alert-warning" style="display:none">
       <strong>🔒 Bracket entry is locked.</strong> The deadline has passed — no new entries accepted.
     </div>
     <div id="entryFormWrap">
       <div class="name-section">
-        <label class="form-label" for="entryPlayerName">Your Name</label>
-        <input type="text" id="entryPlayerName" class="form-input" placeholder="e.g. Jackson" maxlength="40" autocomplete="off">
-        <label class="form-label" for="entryBracketName" style="margin-top:0.85rem">Bracket Name</label>
-        <input type="text" id="entryBracketName" class="form-input" placeholder="e.g. Bold Picks, Safe Route…" maxlength="40" autocomplete="off">
-        <p class="field-note">Give your bracket a unique name — you can submit multiple brackets.</p>
+        <div>
+          <label class="form-label" for="entryPlayerName">Your Name</label>
+          <input type="text" id="entryPlayerName" class="form-input" placeholder="e.g. Jackson" maxlength="40" autocomplete="off">
+        </div>
+        <div>
+          <label class="form-label" for="entryBracketName">Bracket Name</label>
+          <input type="text" id="entryBracketName" class="form-input" placeholder="e.g. Bold Picks, Safe Route…" maxlength="40" autocomplete="off">
+          <p class="field-note">Unique name — multiple brackets allowed.</p>
+        </div>
       </div>
       <div id="entryRounds"></div>
       <div class="entry-footer">
         <button class="btn btn-primary btn-lg" id="submitBracketBtn">Submit Bracket</button>
-        <p class="entry-warning">⚠️ Once submitted, your bracket cannot be edited.</p>
+        <p class="entry-warning">⚠ Once submitted, your bracket cannot be edited.</p>
       </div>
     </div>
     <div id="entrySuccessMsg" class="success-card" style="display:none">
@@ -114,8 +157,11 @@
 
   <!-- ══════════════════════════════ VIEWER ══════════════════════════════ -->
   <section class="view" id="view-viewer">
-    <div class="view-header">
-      <h2 class="view-title">Bracket Viewer</h2>
+    <div class="view-hdr">
+      <div class="view-hdr-left">
+        <div class="view-kicker">Bracket Inspector</div>
+        <h2 class="view-title">View Brackets</h2>
+      </div>
     </div>
     <div class="viewer-controls">
       <select id="viewerSelect" class="form-select">
@@ -129,17 +175,23 @@
 
   <!-- ════════════════════════════ LEADERBOARD ════════════════════════════ -->
   <section class="view" id="view-leaderboard">
-    <div class="view-header">
-      <h2 class="view-title">Leaderboard</h2>
-      <button class="btn btn-sm btn-outline" id="exportCsvBtn">Export CSV</button>
+    <div class="view-hdr">
+      <div class="view-hdr-left">
+        <div class="view-kicker">Pool Standings · Live</div>
+        <h2 class="view-title">Leaderboard</h2>
+      </div>
+      <button class="btn btn-sm btn-ghost" id="exportCsvBtn">↓ Export CSV</button>
     </div>
     <div id="leaderboardContent"></div>
   </section>
 
   <!-- ════════════════════════════ SCHEDULE ══════════════════════════════ -->
   <section class="view" id="view-schedule">
-    <div class="view-header">
-      <h2 class="view-title">Playoff Schedule</h2>
+    <div class="view-hdr">
+      <div class="view-hdr-left">
+        <div class="view-kicker">Playoff Schedule · Apr 14 — May 30</div>
+        <h2 class="view-title">Schedule</h2>
+      </div>
       <span id="scheduleRefreshBadge" class="scores-refresh-badge"></span>
     </div>
     <div class="schedule-date-wrap">
@@ -153,18 +205,21 @@
 
     <div id="commLogin">
       <div class="auth-card">
-        <div class="auth-icon">🔐</div>
-        <h2 class="view-title">Commissioner Panel</h2>
-        <p style="color:var(--text-muted);margin-bottom:1.5rem">Enter the password to manage the pool.</p>
-        <input type="password" id="commPasswordInput" class="form-input" placeholder="Password" style="margin-bottom:0.75rem">
+        <div class="auth-kicker">Admin Access</div>
+        <h2 class="auth-title">Commissioner Panel</h2>
+        <p class="auth-sub">Enter the password to manage the pool.</p>
+        <input type="password" id="commPasswordInput" class="form-input" placeholder="Password" style="margin-bottom:0.85rem">
         <button class="btn btn-primary btn-block" id="commLoginBtn">Unlock</button>
         <div id="commLoginError" class="alert alert-error" style="display:none;margin-top:1rem">Incorrect password.</div>
       </div>
     </div>
 
     <div id="commPanel" style="display:none">
-      <div class="view-header">
-        <h2 class="view-title">Commissioner Panel</h2>
+      <div class="view-hdr">
+        <div class="view-hdr-left">
+          <div class="view-kicker">Admin</div>
+          <h2 class="view-title">Commissioner Panel</h2>
+        </div>
         <button class="btn btn-sm btn-ghost" id="commLogoutBtn">Log out</button>
       </div>
       <div class="comm-tabs" id="commTabs">
@@ -238,8 +293,10 @@
 
 </main>
 
+<div class="rink-line thin"></div>
 <footer class="app-footer">
-  <p>Bracket Challenge 26 &copy; 2026 &mdash; Max possible score: <strong>390 pts</strong></p>
+  <span>Bracket Challenge 26 · NHL Playoff Pool · © 2026</span>
+  <span>Max Score: <strong>390 pts</strong> · 15 Series · 4 Rounds</span>
 </footer>
 
 <div id="toastContainer" class="toast-container"></div>
@@ -261,6 +318,6 @@
 </div>
 
 <script src="config.js"></script>
-<script src="app.js?v=36"></script>
+<script src="app.js?v=38"></script>
 </body>
 </html>
