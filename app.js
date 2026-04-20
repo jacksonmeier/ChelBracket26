@@ -88,7 +88,7 @@ const DEFAULT_TEAMS = {
 const DEFAULT_SETTINGS = { lockDate: null, hideEntryTab: false };
 
 // Bracket canvas layout
-const BW = 165, BH = 92, YGAP = 150, YTOP = 20, CW = 1420, CH = 600;
+const BW = 165, BH = 108, YGAP = 158, YTOP = 20, CW = 1420, CH = 640;
 const COL = BW + 25; // horizontal step between rounds (box width + gap)
 const SCF_W = 255, SCF_H = 210; // Stanley Cup Final box — height used for connector midpoint
 const POSITIONS = {
@@ -1160,18 +1160,22 @@ function buildBracketCanvas(picks, results, teams, breakdown) {
     const actualGames = (result && result.completed) ? result.games : null;
     const gamesInfo = pickedGames ? `Picked: ${pickedGames}g${actualGames?' · Actual: '+actualGames+'g':''}` : '';
 
-    // Live series score from NHL API (only for in-progress series)
+    // Live series score from NHL API — only show if this series has actually started.
+    // For R2+ we verify using actual results, not just picks, to avoid showing R1 wins on R2 boxes.
     let liveScore = '';
-    if (!(result && result.completed) && t1 !== 'TBD' && t2 !== 'TBD') {
-      const a1 = TEAM_ABBR[t1], a2 = TEAM_ABBR[t2];
-      const w1 = a1 != null ? (state.apiSeriesWins[a1] ?? null) : null;
-      const w2 = a2 != null ? (state.apiSeriesWins[a2] ?? null) : null;
-      if (w1 != null && w2 != null) {
-        let label;
-        if (w1 === w2) label = w1 === 0 ? 'Series even 0–0' : `Tied ${w1}–${w2}`;
-        else if (w1 > w2) label = `${t1.split(' ').pop()} leads ${w1}–${w2}`;
-        else              label = `${t2.split(' ').pop()} leads ${w2}–${w1}`;
-        liveScore = `<div class="bk-games bk-series-score">${esc(label)}</div>`;
+    if (!(result && result.completed)) {
+      const [at1, at2] = getActualTeams(s.id, results, teams);
+      if (at1 !== 'TBD' && at2 !== 'TBD') {
+        const a1 = TEAM_ABBR[at1], a2 = TEAM_ABBR[at2];
+        const w1 = a1 != null ? (state.apiSeriesWins[a1] ?? null) : null;
+        const w2 = a2 != null ? (state.apiSeriesWins[a2] ?? null) : null;
+        if (w1 != null && w2 != null) {
+          let label;
+          if (w1 === w2) label = w1 === 0 ? 'Series even 0–0' : `Tied ${w1}–${w2}`;
+          else if (w1 > w2) label = `${at1.split(' ').pop()} leads ${w1}–${w2}`;
+          else              label = `${at2.split(' ').pop()} leads ${w2}–${w1}`;
+          liveScore = `<div class="bk-games bk-series-score">${esc(label)}</div>`;
+        }
       }
     }
 
