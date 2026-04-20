@@ -1650,7 +1650,7 @@ body {
   white-space: nowrap;
   flex-shrink: 0;
 }
-.sm-pill-by::before { content: '·'; margin-right: 0.2rem; color: var(--text-3); }
+.sm-pill-by::before { content: '\00B7'; margin-right: 0.2rem; color: var(--text-3); }
 .sm-pill-games {
   font-family: var(--font-m);
   font-size: 0.62rem;
@@ -1996,24 +1996,25 @@ body {
   .sm-game-score { font-size: 1.2rem; }
   .sm-game-card  { padding: 0.6rem 0.65rem; }
 
-  /* Picks grid: tighter columns, smaller text */
+  /* Picks grid: stack columns vertically so each has full width */
   .sm-picks-grid {
-    gap: 0.4rem;
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
   }
   .sm-pick-hdr {
-    padding: 0.5rem 0.55rem;
-    gap: 0.35rem;
+    padding: 0.55rem 0.75rem;
+    gap: 0.45rem;
   }
-  .sm-pick-logo      { height: 18px; width: 18px; }
-  .sm-pick-team-name { font-size: 0.7rem; }
-  .sm-pick-badge     { font-size: 0.62rem; }
+  .sm-pick-logo      { height: 22px; width: 22px; }
+  .sm-pick-team-name { font-size: 0.8rem; }
+  .sm-pick-badge     { font-size: 0.72rem; }
 
   /* Pill rows */
   .sm-pill {
-    padding: 0.4rem 0.55rem;
-    gap: 0.3rem;
+    padding: 0.45rem 0.75rem;
+    gap: 0.4rem;
   }
-  .sm-pill-main  { font-size: 0.72rem; }
-  .sm-pill-by    { font-size: 0.56rem; }
-  .sm-pill-games { font-size: 0.58rem; }
+  .sm-pill-main  { font-size: 0.78rem; }
+  .sm-pill-by    { font-size: 0.62rem; }
+  .sm-pill-games { font-size: 0.64rem; }
 }
