@@ -864,6 +864,35 @@ async function fetchWithProxy(url) {
   throw new Error('All NHL API attempts failed');
 }
 
+function updateTicker(games) {
+  const el = document.getElementById('tickerContent');
+  if (!el) return;
+  if (!games.length) {
+    el.textContent = '2026 NHL Playoffs · Bracket Challenge 26 · No games today';
+    return;
+  }
+  const segments = games.map(g => {
+    const away = g.awayTeam, home = g.homeTeam;
+    const aAbbr = away.abbrev || '???', hAbbr = home.abbrev || '???';
+    const gstate = g.gameState;
+    const isFinal = gstate === 'FINAL' || gstate === 'OFF';
+    const isLive  = gstate === 'LIVE'  || gstate === 'CRIT';
+    if (isFinal || isLive) {
+      const ptType = g.periodDescriptor?.periodType;
+      const sfx = ptType === 'OT' ? '/OT' : ptType === 'SO' ? '/SO' : '';
+      const tag = isLive
+        ? (() => { const pd = g.periodDescriptor || {}; const p = pd.periodType === 'OT' ? 'OT' : pd.periodType === 'SO' ? 'SO' : `P${pd.number||''}`; const t = g.clock?.timeRemaining || ''; return `● ${p}${t ? ' '+t : ''}`; })()
+        : `Final${sfx}`;
+      const winner = away.score > home.score ? aAbbr : hAbbr;
+      return `${aAbbr} ${away.score ?? 0}  ${home.score ?? 0} ${hAbbr}  ${tag}`;
+    } else {
+      const t = new Date(g.startTimeUTC).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+      return `${aAbbr} vs ${hAbbr}  ${t}`;
+    }
+  });
+  el.textContent = segments.join('   ·   ');
+}
+
 async function renderTodayGames() {
   const el = document.getElementById('todayGames');
   if (!el) return;
@@ -871,6 +900,7 @@ async function renderTodayGames() {
     const res = await fetchWithProxy(NHL_SCORE_URL);
     const data = await res.json();
     const games = (data.games || []).filter(g => g.gameType === 3); // playoffs only
+    updateTicker(games);
     if (!games.length) {
       el.innerHTML = '<div class="scores-empty">No playoff games scheduled today.</div>';
       document.getElementById('scoresRefreshBadge').textContent = '';
