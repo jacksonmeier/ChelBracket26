@@ -1058,6 +1058,21 @@ async function showGameModal(gameId, fromSeriesId) {
   if (!modal || !content) return;
 
   const quick = state.gameById[gameId];
+
+  // Auto-detect series from team abbreviations if not provided
+  if (!fromSeriesId && quick) {
+    const awayAbbr = quick.awayTeam?.abbrev;
+    const homeAbbr = quick.homeTeam?.abbrev;
+    const results = getResults(), teams = getTeams();
+    for (const s of SERIES) {
+      const [t1, t2] = getActualTeams(s.id, results, teams);
+      const a1 = TEAM_ABBR[t1], a2 = TEAM_ABBR[t2];
+      if (a1 && a2 && ((a1 === awayAbbr && a2 === homeAbbr) || (a2 === awayAbbr && a1 === homeAbbr))) {
+        fromSeriesId = s.id;
+        break;
+      }
+    }
+  }
   content.innerHTML = buildGameModalShell(quick);
   modal.classList.add('open');
 
