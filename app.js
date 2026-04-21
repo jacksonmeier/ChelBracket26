@@ -1165,60 +1165,67 @@ function buildGameModalFull(data) {
 
   // Period-by-period shots/score table
   const periods = summary.scoring || [];
-  const shotsByPeriod = summary.shotsByPeriod || [];
+  // shotsByPeriod: try both common field names
+  const shotsByPeriod = summary.shotsByPeriod || summary.shotsOnGoalByPeriod || [];
   if (periods.length || shotsByPeriod.length) {
-    const periodLabels = ['1', '2', '3', 'OT', 'SO'];
     // Build shot counts by period number
     const shotMap = {};
-    shotsByPeriod.forEach(p => { shotMap[p.periodDescriptor?.number ?? p.period] = p; });
+    shotsByPeriod.forEach(p => {
+      const key = p.periodDescriptor?.number ?? p.number ?? p.period;
+      shotMap[key] = p;
+    });
 
-    // Period score totals — accumulate running totals
-    let awayRunning = 0, homeRunning = 0;
     const periodRows = periods.map(p => {
       const pGoals = p.goals || [];
-      const awayG = pGoals.filter(g => g.teamAbbrev?.default === awayAbbr || g.teamAbbrev === awayAbbr).length;
-      const homeG = pGoals.filter(g => g.teamAbbrev?.default === homeAbbr || g.teamAbbrev === homeAbbr).length;
-      awayRunning += awayG; homeRunning += homeG;
+      const awayG = pGoals.filter(g => (g.teamAbbrev?.default || g.teamAbbrev) === awayAbbr).length;
+      const homeG = pGoals.filter(g => (g.teamAbbrev?.default || g.teamAbbrev) === homeAbbr).length;
       const pNum = p.periodDescriptor?.number ?? p.period;
       const pType = p.periodDescriptor?.periodType || 'REG';
       const label = pType === 'OT' ? 'OT' : pType === 'SO' ? 'SO' : `P${pNum}`;
       const shots = shotMap[pNum];
+      const aSog = shots?.away ?? shots?.awaySOG ?? '–';
+      const hSog = shots?.home ?? shots?.homeSOG ?? '–';
       return `<tr>
         <td class="gm-tbl-period">${label}</td>
-        <td class="gm-tbl-shots">${shots?.away ?? '–'}</td>
         <td class="gm-tbl-goals ${awayG > homeG ? 'gm-tbl-lead' : ''}">${awayG}</td>
+        <td class="gm-tbl-shots">${aSog}</td>
         <td class="gm-tbl-div">|</td>
         <td class="gm-tbl-goals ${homeG > awayG ? 'gm-tbl-lead' : ''}">${homeG}</td>
-        <td class="gm-tbl-shots">${shots?.home ?? '–'}</td>
+        <td class="gm-tbl-shots">${hSog}</td>
       </tr>`;
     });
 
     html += `<div class="sm-section-label">By Period</div>
     <div class="gm-period-table-wrap">
       <table class="gm-period-table">
-        <thead><tr>
-          <th></th>
-          <th class="gm-th-team">${awayAbbr}</th>
-          <th class="gm-th-shots">SOG</th>
-          <th></th>
-          <th class="gm-th-shots">SOG</th>
-          <th class="gm-th-team">${homeAbbr}</th>
-        </tr></thead>
+        <thead>
+          <tr>
+            <th rowspan="2"></th>
+            <th colspan="2" class="gm-th-team">${awayAbbr}</th>
+            <th rowspan="2"></th>
+            <th colspan="2" class="gm-th-team">${homeAbbr}</th>
+          </tr>
+          <tr>
+            <th class="gm-th-sub">G</th><th class="gm-th-sub">SOG</th>
+            <th class="gm-th-sub">G</th><th class="gm-th-sub">SOG</th>
+          </tr>
+        </thead>
         <tbody>${periodRows.join('')}</tbody>
         <tfoot><tr>
           <td class="gm-tbl-period">TOT</td>
-          <td class="gm-tbl-shots">${away.sog ?? '–'}</td>
           <td class="gm-tbl-goals gm-tbl-total ${awayWin ? 'gm-tbl-lead' : ''}">${away.score ?? '–'}</td>
+          <td class="gm-tbl-shots">${away.sog ?? '–'}</td>
           <td class="gm-tbl-div">|</td>
           <td class="gm-tbl-goals gm-tbl-total ${homeWin ? 'gm-tbl-lead' : ''}">${home.score ?? '–'}</td>
           <td class="gm-tbl-shots">${home.sog ?? '–'}</td>
-        </tfoot>
+        </tr></tfoot>
       </table>
     </div>`;
   }
 
   // Goal-by-goal scoring summary
-  const allGoals = periods.flatMap(p => {
+  const periods2 = summary.scoring || [];
+  const allGoals = periods2.flatMap(p => {
     const pLabel = (p.periodDescriptor?.periodType === 'OT') ? 'OT'
       : (p.periodDescriptor?.periodType === 'SO') ? 'SO'
       : `P${p.periodDescriptor?.number ?? p.period}`;
@@ -1252,6 +1259,38 @@ function buildGameModalFull(data) {
   } else if (!isFut) {
     html += `<div class="sm-section-label">Scoring Summary</div>
     <div class="gm-no-goals">No goals recorded yet.</div>`;
+  }
+
+  // Penalty summary — summary.penalties is grouped by period like summary.scoring
+  const allPenalties = (summary.penalties || []).flatMap(pg => {
+    const pNum = pg.periodDescriptor?.number ?? pg.period;
+    const pType = pg.periodDescriptor?.periodType || 'REG';
+    const pLabel = pType === 'OT' ? 'OT' : pType === 'SO' ? 'SO' : `P${pNum}`;
+    return (pg.penalties || []).map(p => ({ ...p, _pLabel: pLabel }));
+  });
+  if (allPenalties.length) {
+    const penRows = allPenalties.map(pen => {
+      const teamAbbr = pen.teamAbbrev?.default || pen.teamAbbrev || '';
+      const isAway = teamAbbr === awayAbbr;
+      const player = `${pen.committedByPlayer?.firstName?.default || ''} ${pen.committedByPlayer?.lastName?.default || ''}`.trim();
+      const drawnBy = pen.drawnBy ? `${pen.drawnBy.firstName?.default || ''} ${pen.drawnBy.lastName?.default || ''}`.trim() : '';
+      const desc = pen.descKey ? pen.descKey.replace(/-/g, ' ') : (pen.type || '');
+      const mins = pen.duration ? `${pen.duration} min` : '';
+      return `<div class="gm-pen-row">
+        <div class="gm-pen-team-bar" style="background:${isAway ? 'var(--red-dim)' : 'var(--ice-dim)'}"></div>
+        <div class="gm-pen-info">
+          <div class="gm-pen-top">
+            <span class="gm-goal-period">${pen._pLabel} ${pen.timeInPeriod || ''}</span>
+            <span class="gm-goal-abbr">${teamAbbr}</span>
+            ${mins ? `<span class="gm-pen-mins">${mins}</span>` : ''}
+          </div>
+          <div class="gm-pen-player">${esc(player)}</div>
+          <div class="gm-goal-assists">${esc(desc)}${drawnBy ? ` · drawn by ${esc(drawnBy)}` : ''}</div>
+        </div>
+      </div>`;
+    });
+    html += `<div class="sm-section-label">Penalties</div>
+    <div class="gm-goals-list">${penRows.join('')}</div>`;
   }
 
   // Upcoming: show venue/time prominently

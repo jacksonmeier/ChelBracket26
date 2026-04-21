@@ -1752,6 +1752,22 @@ body {
 .gm-tbl-total  { font-size: 1.4rem; }
 .gm-th-team    { font-family: var(--font-h); font-size: 0.72rem; font-weight: 700; color: var(--text-2); }
 .gm-th-shots   { font-size: 0.56rem; }
+.gm-th-sub     { font-size: 0.56rem; color: var(--text-3); letter-spacing: 0.06em; }
+
+/* Penalty rows — same structure as goal rows */
+.gm-pen-row {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.gm-pen-team-bar { width: 3px; flex-shrink: 0; }
+.gm-pen-info { flex: 1; padding: 0.5rem 0.75rem; min-width: 0; }
+.gm-pen-top { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.2rem; }
+.gm-pen-player { font-family: var(--font-h); font-size: 0.88rem; font-weight: 700; color: var(--text); }
+.gm-pen-mins { font-family: var(--font-m); font-size: 0.58rem; color: var(--gold); background: rgba(255,200,81,0.12); padding: 0.1rem 0.3rem; border-radius: var(--r); }
 
 /* Goal rows */
 .gm-goals-list {
