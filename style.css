@@ -1696,6 +1696,24 @@ body {
 }
 
 /* ── Game Detail Modal ────────────────────────────────────── */
+.gm-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-m);
+  font-size: 0.62rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ice);
+  background: var(--ice-dim);
+  border: none;
+  border-radius: var(--r);
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  transition: background 0.15s;
+}
+.gm-back-btn:hover { background: rgba(77,184,255,0.2); }
 .gm-score {
   font-family: var(--font-h);
   font-size: 2.4rem;

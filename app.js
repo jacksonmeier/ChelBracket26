@@ -587,6 +587,7 @@ async function showSeriesModal(sid) {
   if (!modal || !content) return;
 
   content.innerHTML = '<div class="series-modal-loading">Loading…</div>';
+  content.dataset.currentSeries = sid;
   modal.classList.add('open');
 
   await fetchAllPlayoffGames();
@@ -634,7 +635,7 @@ async function showSeriesModal(sid) {
       const stateTag = isLive
         ? `<span class="sm-game-live">● LIVE</span>`
         : `<span class="sm-game-final">Final${ptSuffix ? ' / ' + ptSuffix : ''}</span>`;
-      return `<div class="sm-game-card">
+      return `<div class="sm-game-card" data-game-id="${g.id || ''}" style="cursor:pointer">
         <div class="sm-game-meta"><span class="sm-game-num">Game ${gNum}</span><span class="sm-game-date">${date}</span>${stateTag}</div>
         <div class="sm-game-matchup">
           <div class="sm-game-side ${aWin ? 'sm-side-win' : 'sm-side-loss'}">
@@ -652,7 +653,7 @@ async function showSeriesModal(sid) {
       </div>`;
     } else {
       const tStr = new Date(g.startTimeUTC).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
-      return `<div class="sm-game-card sm-game-upcoming">
+      return `<div class="sm-game-card sm-game-upcoming" data-game-id="${g.id || ''}" style="cursor:pointer">
         <div class="sm-game-meta"><span class="sm-game-num">Game ${gNum}</span><span class="sm-game-date">${date}</span></div>
         <div class="sm-game-time">${tStr}</div>
       </div>`;
@@ -1051,7 +1052,7 @@ function gameCard(g) {
 
 // ── Game Detail Modal ────────────────────────────────────────
 
-async function showGameModal(gameId) {
+async function showGameModal(gameId, fromSeriesId) {
   const modal = document.getElementById('seriesModal');
   const content = document.getElementById('seriesModalContent');
   if (!modal || !content) return;
@@ -1063,9 +1064,9 @@ async function showGameModal(gameId) {
   try {
     const res = await fetchWithProxy(`https://api-web.nhle.com/v1/gamecenter/${gameId}/landing`);
     const data = await res.json();
-    content.innerHTML = buildGameModalFull(data);
+    content.innerHTML = buildGameModalFull(data, fromSeriesId);
   } catch (_) {
-    if (quick) content.innerHTML = buildGameModalFull(quick);
+    if (quick) content.innerHTML = buildGameModalFull(quick, fromSeriesId);
     else content.querySelector('.gm-loading').textContent = 'Could not load game details.';
   }
 }
@@ -1093,7 +1094,7 @@ function buildGameModalShell(g) {
   </div>`;
 }
 
-function buildGameModalFull(data) {
+function buildGameModalFull(data, fromSeriesId) {
   const away = data.awayTeam, home = data.homeTeam;
   const awayAbbr = away.abbrev || '???';
   const homeAbbr = home.abbrev || '???';
@@ -1142,7 +1143,10 @@ function buildGameModalFull(data) {
 
   const venue = data.venue?.default ? `<div class="gm-venue">${esc(data.venue.default)}</div>` : '';
 
-  let html = `<div class="sm-matchup-header">
+  let html = fromSeriesId
+    ? `<button class="gm-back-btn" data-series-id="${fromSeriesId}">← View Series</button>`
+    : '';
+  html += `<div class="sm-matchup-header">
     <div class="sm-team-side">
       <img class="sm-team-logo-lg" src="https://assets.nhle.com/logos/nhl/svg/${awayAbbr}_light.svg" onerror="this.style.display='none'" alt="">
       <div class="sm-team-name-lg">${esc(away.name?.default || awayAbbr)}</div>
@@ -2090,12 +2094,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     state.viewingId = bid; showView('viewer'); renderViewer(bid); drawBracket(bid);
   });
 
-  // Game card click → game detail modal
+  // Score card click → game detail modal
   document.getElementById('appMain').addEventListener('click', e => {
     const card = e.target.closest('.mc[data-game-id]');
     if (!card) return;
     const gid = card.dataset.gameId;
     if (gid) showGameModal(gid);
+  });
+
+  // Series modal: click a game card → game detail modal (with back link)
+  document.getElementById('seriesModalContent').addEventListener('click', e => {
+    const card = e.target.closest('.sm-game-card[data-game-id]');
+    if (card?.dataset.gameId) {
+      const sid = document.getElementById('seriesModalContent').dataset.currentSeries;
+      showGameModal(card.dataset.gameId, sid || undefined);
+      return;
+    }
+    // Game modal "← View Series" button
+    const back = e.target.closest('.gm-back-btn[data-series-id]');
+    if (back) showSeriesModal(back.dataset.seriesId);
   });
 
   setInterval(() => { if (state.view==='home') renderCountdown(); }, 1000);
