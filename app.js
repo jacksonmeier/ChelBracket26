@@ -1310,7 +1310,7 @@ function buildLeaderboardTable(ranked, results, mini = false, totalCount = null)
   if (!ranked.length) return '<div class="empty-state">No entries yet.</div>';
   const entryCount = totalCount !== null ? totalCount : ranked.length;
   const prizePool = entryCount * 25;
-  const first = prizePool - 1;
+  const first = (entryCount - 1) * 25;
   const second = 25;
 
   const prizeStrip = `<div class="prize-strip">
