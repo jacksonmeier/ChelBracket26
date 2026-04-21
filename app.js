@@ -191,6 +191,7 @@ const state = {
   scheduleDate:  new Date().toISOString().slice(0, 10),
   apiSeriesWins: {}, // abbrev → wins
   apiGames:      {}, // dateStr → [game objects] — cached playoff game data
+  gameById:      {}, // gameId → game object (for modal lookup)
 };
 
 // In-memory data store (loaded from GitHub on startup)
@@ -1027,7 +1028,9 @@ function gameCard(g) {
   const awayLogoUrl = `https://assets.nhle.com/logos/nhl/svg/${awayAbbr}_light.svg`;
   const homeLogoUrl = `https://assets.nhle.com/logos/nhl/svg/${homeAbbr}_light.svg`;
 
-  return `<div class="mc${isLive ? ' mc-live-card' : ''}">
+  if (g.id) state.gameById[g.id] = g;
+
+  return `<div class="mc${isLive ? ' mc-live-card' : ''}" data-game-id="${g.id || ''}" style="cursor:pointer">
     <div class="mc-top"><span>${esc(topLine)}</span>${statusHtml}</div>
     <div class="mc-body">
       <div class="mc-team-side">
@@ -1044,6 +1047,226 @@ function gameCard(g) {
     </div>
     ${seriesRecord ? `<div class="mc-series">${seriesRecord}</div>` : ''}
   </div>`;
+}
+
+// ── Game Detail Modal ────────────────────────────────────────
+
+async function showGameModal(gameId) {
+  const modal = document.getElementById('seriesModal');
+  const content = document.getElementById('seriesModalContent');
+  if (!modal || !content) return;
+
+  const quick = state.gameById[gameId];
+  content.innerHTML = buildGameModalShell(quick);
+  modal.classList.add('open');
+
+  try {
+    const res = await fetchWithProxy(`https://api-web.nhle.com/v1/gamecenter/${gameId}/landing`);
+    const data = await res.json();
+    content.innerHTML = buildGameModalFull(data);
+  } catch (_) {
+    if (quick) content.innerHTML = buildGameModalFull(quick);
+    else content.querySelector('.gm-loading').textContent = 'Could not load game details.';
+  }
+}
+
+function buildGameModalShell(g) {
+  if (!g) return '<div class="gm-loading series-modal-loading">Loading…</div>';
+  const away = g.awayTeam, home = g.homeTeam;
+  const awayAbbr = away.abbrev || '???';
+  const homeAbbr = home.abbrev || '???';
+  const isFinal = g.gameState === 'FINAL' || g.gameState === 'OFF';
+  const isLive  = g.gameState === 'LIVE'  || g.gameState === 'CRIT';
+  const scoreHtml = (isFinal || isLive)
+    ? `<div class="gm-score">${away.score ?? 0}<span class="gm-dash">–</span>${home.score ?? 0}</div>`
+    : `<div class="gm-vs">VS</div>`;
+  return `<div class="sm-matchup-header">
+    <div class="sm-team-side">
+      <img class="sm-team-logo-lg" src="https://assets.nhle.com/logos/nhl/svg/${awayAbbr}_light.svg" onerror="this.style.display='none'" alt="">
+      <div class="sm-team-name-lg">${esc(away.name?.default || awayAbbr)}</div>
+    </div>
+    <div class="sm-matchup-center">${scoreHtml}<div class="gm-loading series-modal-loading" style="margin-top:0.5rem">Loading…</div></div>
+    <div class="sm-team-side sm-team-side-right">
+      <img class="sm-team-logo-lg" src="https://assets.nhle.com/logos/nhl/svg/${homeAbbr}_light.svg" onerror="this.style.display='none'" alt="">
+      <div class="sm-team-name-lg">${esc(home.name?.default || homeAbbr)}</div>
+    </div>
+  </div>`;
+}
+
+function buildGameModalFull(data) {
+  const away = data.awayTeam, home = data.homeTeam;
+  const awayAbbr = away.abbrev || '???';
+  const homeAbbr = home.abbrev || '???';
+  const gstate = data.gameState;
+  const isFinal = gstate === 'FINAL' || gstate === 'OFF';
+  const isLive  = gstate === 'LIVE'  || gstate === 'CRIT';
+  const isFut   = !isFinal && !isLive;
+
+  // Status line
+  const pd = data.periodDescriptor || {};
+  const ptType = pd.periodType || 'REG';
+  const pNum = pd.number || 0;
+  let statusBadge;
+  if (isFinal) {
+    const sfx = ptType === 'OT' ? '/OT' : ptType === 'SO' ? '/SO' : '';
+    statusBadge = `<span class="sm-status sm-status-done">Final${sfx}</span>`;
+  } else if (isLive) {
+    const clock = data.clock?.timeRemaining || '';
+    const pLabel = ptType === 'OT' ? 'OT' : ptType === 'SO' ? 'SO' : `P${pNum}`;
+    statusBadge = `<span class="sm-status sm-status-live">● Live · ${clock ? clock + ' · ' : ''}${pLabel}</span>`;
+  } else {
+    const t = new Date(data.startTimeUTC);
+    const timeStr = t.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', timeZoneName:'short' });
+    statusBadge = `<span class="sm-status sm-status-future">${timeStr}</span>`;
+  }
+
+  // Header
+  const awayWin = !isFut && (away.score ?? 0) > (home.score ?? 0);
+  const homeWin = !isFut && (home.score ?? 0) > (away.score ?? 0);
+  const scoreOrVs = isFut
+    ? `<div class="sm-matchup-vs">VS</div>`
+    : `<div class="gm-score${awayWin ? ' gm-away-win' : homeWin ? ' gm-home-win' : ''}"><span class="${awayWin ? '' : 'gm-dim'}">${away.score ?? 0}</span><span class="gm-dash">–</span><span class="${homeWin ? '' : 'gm-dim'}">${home.score ?? 0}</span></div>`;
+
+  // Series record
+  const ss = data.seriesStatus;
+  let seriesLine = '';
+  if (ss) {
+    const gNum = ss.gameNumberOfSeries ? `Game ${ss.gameNumberOfSeries}` : '';
+    const topIsAway = ss.topSeedTeamId === away.id;
+    const aw = topIsAway ? (ss.topSeedWins ?? 0) : (ss.bottomSeedWins ?? 0);
+    const hw = topIsAway ? (ss.bottomSeedWins ?? 0) : (ss.topSeedWins ?? 0);
+    const record = aw === hw ? (aw === 0 ? 'Series begins' : `Tied ${aw}–${hw}`)
+      : aw > hw ? `${awayAbbr} leads ${aw}–${hw}` : `${homeAbbr} leads ${hw}–${aw}`;
+    seriesLine = gNum ? `${gNum} · ${record}` : record;
+  }
+
+  const venue = data.venue?.default ? `<div class="gm-venue">${esc(data.venue.default)}</div>` : '';
+
+  let html = `<div class="sm-matchup-header">
+    <div class="sm-team-side">
+      <img class="sm-team-logo-lg" src="https://assets.nhle.com/logos/nhl/svg/${awayAbbr}_light.svg" onerror="this.style.display='none'" alt="">
+      <div class="sm-team-name-lg">${esc(away.name?.default || awayAbbr)}</div>
+      ${away.sog != null ? `<div class="gm-sog">${away.sog} SOG</div>` : ''}
+    </div>
+    <div class="sm-matchup-center">
+      ${scoreOrVs}
+      <div class="sm-status-wrap">${statusBadge}</div>
+      ${seriesLine ? `<div class="sm-matchup-round">${esc(seriesLine)}</div>` : ''}
+      ${venue}
+    </div>
+    <div class="sm-team-side sm-team-side-right">
+      <img class="sm-team-logo-lg" src="https://assets.nhle.com/logos/nhl/svg/${homeAbbr}_light.svg" onerror="this.style.display='none'" alt="">
+      <div class="sm-team-name-lg">${esc(home.name?.default || homeAbbr)}</div>
+      ${home.sog != null ? `<div class="gm-sog">${home.sog} SOG</div>` : ''}
+    </div>
+  </div>`;
+
+  const summary = data.summary || {};
+
+  // Period-by-period shots/score table
+  const periods = summary.scoring || [];
+  const shotsByPeriod = summary.shotsByPeriod || [];
+  if (periods.length || shotsByPeriod.length) {
+    const periodLabels = ['1', '2', '3', 'OT', 'SO'];
+    // Build shot counts by period number
+    const shotMap = {};
+    shotsByPeriod.forEach(p => { shotMap[p.periodDescriptor?.number ?? p.period] = p; });
+
+    // Period score totals — accumulate running totals
+    let awayRunning = 0, homeRunning = 0;
+    const periodRows = periods.map(p => {
+      const pGoals = p.goals || [];
+      const awayG = pGoals.filter(g => g.teamAbbrev?.default === awayAbbr || g.teamAbbrev === awayAbbr).length;
+      const homeG = pGoals.filter(g => g.teamAbbrev?.default === homeAbbr || g.teamAbbrev === homeAbbr).length;
+      awayRunning += awayG; homeRunning += homeG;
+      const pNum = p.periodDescriptor?.number ?? p.period;
+      const pType = p.periodDescriptor?.periodType || 'REG';
+      const label = pType === 'OT' ? 'OT' : pType === 'SO' ? 'SO' : `P${pNum}`;
+      const shots = shotMap[pNum];
+      return `<tr>
+        <td class="gm-tbl-period">${label}</td>
+        <td class="gm-tbl-shots">${shots?.away ?? '–'}</td>
+        <td class="gm-tbl-goals ${awayG > homeG ? 'gm-tbl-lead' : ''}">${awayG}</td>
+        <td class="gm-tbl-div">|</td>
+        <td class="gm-tbl-goals ${homeG > awayG ? 'gm-tbl-lead' : ''}">${homeG}</td>
+        <td class="gm-tbl-shots">${shots?.home ?? '–'}</td>
+      </tr>`;
+    });
+
+    html += `<div class="sm-section-label">By Period</div>
+    <div class="gm-period-table-wrap">
+      <table class="gm-period-table">
+        <thead><tr>
+          <th></th>
+          <th class="gm-th-team">${awayAbbr}</th>
+          <th class="gm-th-shots">SOG</th>
+          <th></th>
+          <th class="gm-th-shots">SOG</th>
+          <th class="gm-th-team">${homeAbbr}</th>
+        </tr></thead>
+        <tbody>${periodRows.join('')}</tbody>
+        <tfoot><tr>
+          <td class="gm-tbl-period">TOT</td>
+          <td class="gm-tbl-shots">${away.sog ?? '–'}</td>
+          <td class="gm-tbl-goals gm-tbl-total ${awayWin ? 'gm-tbl-lead' : ''}">${away.score ?? '–'}</td>
+          <td class="gm-tbl-div">|</td>
+          <td class="gm-tbl-goals gm-tbl-total ${homeWin ? 'gm-tbl-lead' : ''}">${home.score ?? '–'}</td>
+          <td class="gm-tbl-shots">${home.sog ?? '–'}</td>
+        </tfoot>
+      </table>
+    </div>`;
+  }
+
+  // Goal-by-goal scoring summary
+  const allGoals = periods.flatMap(p => {
+    const pLabel = (p.periodDescriptor?.periodType === 'OT') ? 'OT'
+      : (p.periodDescriptor?.periodType === 'SO') ? 'SO'
+      : `P${p.periodDescriptor?.number ?? p.period}`;
+    return (p.goals || []).map(g => ({ ...g, _pLabel: pLabel }));
+  });
+
+  if (allGoals.length) {
+    const goalRows = allGoals.map(g => {
+      const teamAbbr = g.teamAbbrev?.default || g.teamAbbrev || '';
+      const isAway = teamAbbr === awayAbbr;
+      const scorer = `${g.firstName?.default || ''} ${g.lastName?.default || g.lastName || ''}`.trim();
+      const assists = (g.assists || []).map(a => `${a.firstName?.default || ''} ${a.lastName?.default || a.lastName || ''}`.trim()).filter(Boolean);
+      const strength = g.strength?.code && g.strength.code !== 'EV' ? `<span class="gm-goal-strength">${g.strength.code}</span>` : '';
+      const emptyNet = g.goalModifier === 'empty-net' ? `<span class="gm-goal-strength gm-goal-en">EN</span>` : '';
+      const assistLine = assists.length ? `<div class="gm-goal-assists">Assists: ${assists.join(', ')}</div>` : '<div class="gm-goal-assists">Unassisted</div>';
+      return `<div class="gm-goal-row ${isAway ? 'gm-goal-away' : 'gm-goal-home'}">
+        <div class="gm-goal-team-bar" style="background:${isAway ? 'var(--red-dim)' : 'var(--ice-dim)'}"></div>
+        <div class="gm-goal-info">
+          <div class="gm-goal-top">
+            <span class="gm-goal-period">${g._pLabel} ${g.timeInPeriod || ''}</span>
+            <span class="gm-goal-abbr">${teamAbbr}</span>
+            ${strength}${emptyNet}
+          </div>
+          <div class="gm-goal-scorer">${esc(scorer)}</div>
+          ${assistLine}
+        </div>
+      </div>`;
+    });
+    html += `<div class="sm-section-label">Scoring Summary</div>
+    <div class="gm-goals-list">${goalRows.join('')}</div>`;
+  } else if (!isFut) {
+    html += `<div class="sm-section-label">Scoring Summary</div>
+    <div class="gm-no-goals">No goals recorded yet.</div>`;
+  }
+
+  // Upcoming: show venue/time prominently
+  if (isFut) {
+    const t = new Date(data.startTimeUTC);
+    const fullDate = t.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+    const timeStr  = t.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', timeZoneName:'short' });
+    html += `<div class="gm-upcoming-detail">
+      <div class="gm-upcoming-date">${fullDate}</div>
+      <div class="gm-upcoming-time">${timeStr}</div>
+      ${data.venue?.default ? `<div class="gm-upcoming-venue">${esc(data.venue.default)}</div>` : ''}
+    </div>`;
+  }
+
+  return html;
 }
 
 function renderCountdown() {
@@ -1826,6 +2049,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const row = e.target.closest('.lb-row[data-bid]'); if (!row) return;
     const bid = row.dataset.bid;
     state.viewingId = bid; showView('viewer'); renderViewer(bid); drawBracket(bid);
+  });
+
+  // Game card click → game detail modal
+  document.getElementById('appMain').addEventListener('click', e => {
+    const card = e.target.closest('.mc[data-game-id]');
+    if (!card) return;
+    const gid = card.dataset.gameId;
+    if (gid) showGameModal(gid);
   });
 
   setInterval(() => { if (state.view==='home') renderCountdown(); }, 1000);

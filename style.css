@@ -1695,6 +1695,171 @@ body {
   color: var(--text-3);
 }
 
+/* ── Game Detail Modal ────────────────────────────────────── */
+.gm-score {
+  font-family: var(--font-h);
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  line-height: 1;
+}
+.gm-dash { color: var(--text-3); font-size: 1.8rem; }
+.gm-dim  { color: var(--text-3); }
+.gm-sog {
+  font-family: var(--font-m);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-top: 0.15rem;
+}
+.gm-venue {
+  font-family: var(--font-m);
+  font-size: 0.56rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-top: 0.25rem;
+}
+
+/* Period table */
+.gm-period-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 1.25rem;
+}
+.gm-period-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-m);
+  font-size: 0.7rem;
+}
+.gm-period-table th, .gm-period-table td {
+  padding: 0.45rem 0.6rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+}
+.gm-period-table thead th { color: var(--text-3); font-size: 0.6rem; letter-spacing: 0.07em; text-transform: uppercase; }
+.gm-period-table tfoot td { border-top: 1px solid var(--border-2); border-bottom: none; }
+.gm-tbl-period { text-align: left; color: var(--text-3); font-size: 0.62rem; letter-spacing: 0.06em; }
+.gm-tbl-goals  { font-family: var(--font-h); font-size: 1.1rem; font-weight: 700; color: var(--text); width: 2rem; }
+.gm-tbl-shots  { color: var(--text-3); width: 2.5rem; }
+.gm-tbl-div    { color: var(--border-2); padding: 0 0.2rem; }
+.gm-tbl-lead   { color: var(--text); }
+.gm-tbl-total  { font-size: 1.4rem; }
+.gm-th-team    { font-family: var(--font-h); font-size: 0.72rem; font-weight: 700; color: var(--text-2); }
+.gm-th-shots   { font-size: 0.56rem; }
+
+/* Goal rows */
+.gm-goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+.gm-goal-row {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.gm-goal-team-bar { width: 3px; flex-shrink: 0; }
+.gm-goal-info {
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  min-width: 0;
+}
+.gm-goal-top {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+.gm-goal-period {
+  font-family: var(--font-m);
+  font-size: 0.6rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.gm-goal-abbr {
+  font-family: var(--font-h);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--bg-3);
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--r);
+}
+.gm-goal-strength {
+  font-family: var(--font-m);
+  font-size: 0.55rem;
+  letter-spacing: 0.05em;
+  color: var(--ice);
+  background: var(--ice-dim);
+  padding: 0.1rem 0.3rem;
+  border-radius: var(--r);
+}
+.gm-goal-en { color: var(--gold); background: rgba(255,200,81,0.12); }
+.gm-goal-scorer {
+  font-family: var(--font-h);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.gm-goal-assists {
+  font-family: var(--font-m);
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  margin-top: 0.1rem;
+}
+.gm-no-goals {
+  font-family: var(--font-m);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 0.75rem 0;
+  text-align: center;
+}
+
+/* Upcoming game detail */
+.gm-upcoming-detail {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  margin-top: 0.5rem;
+}
+.gm-upcoming-date {
+  font-family: var(--font-h);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.35rem;
+}
+.gm-upcoming-time {
+  font-family: var(--font-m);
+  font-size: 0.8rem;
+  color: var(--ice);
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35rem;
+}
+.gm-upcoming-venue {
+  font-family: var(--font-m);
+  font-size: 0.62rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
 /* ── Commissioner ─────────────────────────────────────────── */
 .auth-card {
   max-width: 420px;
