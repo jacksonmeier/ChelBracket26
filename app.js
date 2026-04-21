@@ -666,12 +666,12 @@ async function showSeriesModal(sid) {
   brackets.forEach(b => {
     const pick = b.picks?.[sid];
     if (!pick?.winner) return;
-    const entry = { bracketLabel: esc(b.bracketName || b.name), byLabel: (b.bracketName && b.playerName) ? esc(b.playerName) : '', games: pick.games ?? null };
+    const entry = { id: b.id, bracketLabel: esc(b.bracketName || b.name), byLabel: (b.bracketName && b.playerName) ? esc(b.playerName) : '', games: pick.games ?? null };
     if (pick.winner === t1) t1Entries.push(entry);
     else if (pick.winner === t2) t2Entries.push(entry);
   });
   const sortByGames = arr => [...arr].sort((a, b) => (a.games ?? 99) - (b.games ?? 99));
-  const entryPill = e => `<div class="sm-pill">
+  const entryPill = e => `<div class="sm-pill" data-bid="${e.id}" style="cursor:pointer">
     <div class="sm-pill-main">${e.bracketLabel}${e.byLabel ? `<span class="sm-pill-by">${e.byLabel}</span>` : ''}</div>
     ${e.games ? `<span class="sm-pill-games">in ${e.games}</span>` : ''}
   </div>`;
@@ -2127,7 +2127,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     // Game modal "← View Series" button
     const back = e.target.closest('.gm-back-btn[data-series-id]');
-    if (back) showSeriesModal(back.dataset.seriesId);
+    if (back) { showSeriesModal(back.dataset.seriesId); return; }
+    // Bracket pick pill → open that bracket in viewer
+    const pill = e.target.closest('.sm-pill[data-bid]');
+    if (pill?.dataset.bid) {
+      closeSeriesModal();
+      state.viewingId = pill.dataset.bid;
+      showView('viewer');
+      renderViewer(pill.dataset.bid);
+      drawBracket(pill.dataset.bid);
+    }
   });
 
   setInterval(() => { if (state.view==='home') renderCountdown(); }, 1000);
