@@ -430,17 +430,35 @@ function scoreOneBracket(bracket, results) {
   return { pts, correct, breakdown: bd };
 }
 
+// Returns true when the loser team in a pick already has more wins than
+// the pick allows — e.g. picking "PIT in 5" means PHI can have at most 1
+// win (5-4=1), so if PHI already has 2 wins that games pick is dead.
+function isGamesImpossible(pickedGames, loserCurrentWins) {
+  if (!pickedGames) return false;
+  return loserCurrentWins > (pickedGames - 4);
+}
+
 function maxPossible(bracket, results) {
+  const teams = getTeams();
   let max = 0;
   for (const s of SERIES) {
-    const pick = bracket.picks[s.id];
+    const pick = bracket.picks?.[s.id];
     if (!pick) continue;
     const result = results[s.id];
     const p = ROUND_PTS[s.round];
     if (result && result.completed) {
       if (pick.winner === result.winner) max += p.w + (pick.games === result.games ? p.g : 0);
     } else {
-      max += p.max;
+      // Check if the games pick is still achievable given current series state
+      let gamesOk = true;
+      if (pick.winner && pick.games) {
+        const [t1, t2] = getActualTeams(s.id, results, teams);
+        const loserTeam = pick.winner === t1 ? t2 : t1;
+        const loserAbbr = TEAM_ABBR[loserTeam];
+        const loserWins = loserAbbr ? (state.apiSeriesWins[loserAbbr] ?? 0) : 0;
+        gamesOk = !isGamesImpossible(pick.games, loserWins);
+      }
+      max += gamesOk ? p.max : p.w;
     }
   }
   return max;
@@ -666,14 +684,18 @@ async function showSeriesModal(sid) {
   brackets.forEach(b => {
     const pick = b.picks?.[sid];
     if (!pick?.winner) return;
-    const entry = { id: b.id, bracketLabel: esc(b.bracketName || b.name), byLabel: (b.bracketName && b.playerName) ? esc(b.playerName) : '', games: pick.games ?? null };
+    const loserTeam = pick.winner === t1 ? t2 : t1;
+    const loserAbbr = TEAM_ABBR[loserTeam];
+    const loserWins = loserAbbr ? (state.apiSeriesWins[loserAbbr] ?? 0) : 0;
+    const gamesImpossible = isGamesImpossible(pick.games, loserWins);
+    const entry = { id: b.id, bracketLabel: esc(b.bracketName || b.name), byLabel: (b.bracketName && b.playerName) ? esc(b.playerName) : '', games: pick.games ?? null, gamesImpossible };
     if (pick.winner === t1) t1Entries.push(entry);
     else if (pick.winner === t2) t2Entries.push(entry);
   });
   const sortByGames = arr => [...arr].sort((a, b) => (a.games ?? 99) - (b.games ?? 99));
   const entryPill = e => `<div class="sm-pill" data-bid="${e.id}" style="cursor:pointer">
     <div class="sm-pill-main">${e.bracketLabel}${e.byLabel ? `<span class="sm-pill-by">${e.byLabel}</span>` : ''}</div>
-    ${e.games ? `<span class="sm-pill-games">in ${e.games}</span>` : ''}
+    ${e.games ? `<span class="sm-pill-games${e.gamesImpossible ? ' sm-pill-games-dead' : ''}">in ${e.games}</span>` : ''}
   </div>`;
 
   const pickBlock = (team, abbr, entries) => {

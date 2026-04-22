@@ -1677,6 +1677,11 @@ body {
   white-space: nowrap;
   flex-shrink: 0;
 }
+.sm-pill-games-dead {
+  color: var(--red);
+  text-decoration: line-through;
+  opacity: 0.8;
+}
 .sm-pick-none {
   display: block;
   font-family: var(--font-m);
