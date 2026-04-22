@@ -167,6 +167,9 @@ body {
   padding: 0 1.75rem;
   gap: 1rem;
 }
+@media (prefers-color-scheme: light) {
+  .navbar { background: rgba(240,242,248,0.92); }
+}
 .nav-brand {
   display: flex;
   align-items: center;
