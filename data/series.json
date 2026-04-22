@@ -1,0 +1,220 @@
+{
+  "active": [
+    {
+      "series_id": "BUF-BOS",
+      "round": 1,
+      "seed": "D1 vs WC1",
+      "home": {
+        "team": "BUF",
+        "name": "Buffalo Sabres",
+        "wins": 1,
+        "series_win_pct": 0.4002
+      },
+      "away": {
+        "team": "BOS",
+        "name": "Boston Bruins",
+        "wins": 1,
+        "series_win_pct": 0.5998
+      },
+      "length_distribution": {
+        "4": 0.0,
+        "5": 0.2615,
+        "6": 0.380125,
+        "7": 0.358375
+      },
+      "most_likely": {
+        "winner": "BOS",
+        "games": "6"
+      }
+    },
+    {
+      "series_id": "TBL-MTL",
+      "round": 1,
+      "seed": "D2 vs D3",
+      "home": {
+        "team": "TBL",
+        "name": "Tampa Bay Lightning",
+        "wins": 1,
+        "series_win_pct": 0.652
+      },
+      "away": {
+        "team": "MTL",
+        "name": "Montr\u00e9al Canadiens",
+        "wins": 1,
+        "series_win_pct": 0.348
+      },
+      "length_distribution": {
+        "4": 0.0,
+        "5": 0.260875,
+        "6": 0.37925,
+        "7": 0.359875
+      },
+      "most_likely": {
+        "winner": "TBL",
+        "games": "6"
+      }
+    },
+    {
+      "series_id": "CAR-OTT",
+      "round": 1,
+      "seed": "D1 vs WC2",
+      "home": {
+        "team": "CAR",
+        "name": "Carolina Hurricanes",
+        "wins": 2,
+        "series_win_pct": 0.7961
+      },
+      "away": {
+        "team": "OTT",
+        "name": "Ottawa Senators",
+        "wins": 0,
+        "series_win_pct": 0.2039
+      },
+      "length_distribution": {
+        "4": 0.211625,
+        "5": 0.26125,
+        "6": 0.248625,
+        "7": 0.2785
+      },
+      "most_likely": {
+        "winner": "CAR",
+        "games": "7"
+      }
+    },
+    {
+      "series_id": "PIT-PHI",
+      "round": 1,
+      "seed": "D2 vs D3",
+      "home": {
+        "team": "PIT",
+        "name": "Pittsburgh Penguins",
+        "wins": 0,
+        "series_win_pct": 0.1879
+      },
+      "away": {
+        "team": "PHI",
+        "name": "Philadelphia Flyers",
+        "wins": 2,
+        "series_win_pct": 0.8121
+      },
+      "length_distribution": {
+        "4": 0.28875,
+        "5": 0.2145,
+        "6": 0.26075,
+        "7": 0.236
+      },
+      "most_likely": {
+        "winner": "PHI",
+        "games": "4"
+      }
+    },
+    {
+      "series_id": "COL-LAK",
+      "round": 1,
+      "seed": "D1 vs WC2",
+      "home": {
+        "team": "COL",
+        "name": "Colorado Avalanche",
+        "wins": 2,
+        "series_win_pct": 0.808
+      },
+      "away": {
+        "team": "LAK",
+        "name": "Los Angeles Kings",
+        "wins": 0,
+        "series_win_pct": 0.192
+      },
+      "length_distribution": {
+        "4": 0.206,
+        "5": 0.277375,
+        "6": 0.248875,
+        "7": 0.26775
+      },
+      "most_likely": {
+        "winner": "COL",
+        "games": "5"
+      }
+    },
+    {
+      "series_id": "DAL-MIN",
+      "round": 1,
+      "seed": "D2 vs D3",
+      "home": {
+        "team": "DAL",
+        "name": "Dallas Stars",
+        "wins": 1,
+        "series_win_pct": 0.5834
+      },
+      "away": {
+        "team": "MIN",
+        "name": "Minnesota Wild",
+        "wins": 1,
+        "series_win_pct": 0.4166
+      },
+      "length_distribution": {
+        "4": 0.0,
+        "5": 0.25775,
+        "6": 0.373875,
+        "7": 0.368375
+      },
+      "most_likely": {
+        "winner": "DAL",
+        "games": "6"
+      }
+    },
+    {
+      "series_id": "VGK-UTA",
+      "round": 1,
+      "seed": "D1 vs WC1",
+      "home": {
+        "team": "VGK",
+        "name": "Vegas Golden Knights",
+        "wins": 1,
+        "series_win_pct": 0.5441
+      },
+      "away": {
+        "team": "UTA",
+        "name": "Utah Mammoth",
+        "wins": 1,
+        "series_win_pct": 0.4559
+      },
+      "length_distribution": {
+        "4": 0.0,
+        "5": 0.244625,
+        "6": 0.372625,
+        "7": 0.38275
+      },
+      "most_likely": {
+        "winner": "VGK",
+        "games": "7"
+      }
+    },
+    {
+      "series_id": "EDM-ANA",
+      "round": 1,
+      "seed": "D2 vs D3",
+      "home": {
+        "team": "EDM",
+        "name": "Edmonton Oilers",
+        "wins": 1,
+        "series_win_pct": 0.6399
+      },
+      "away": {
+        "team": "ANA",
+        "name": "Anaheim Ducks",
+        "wins": 0,
+        "series_win_pct": 0.3601
+      },
+      "length_distribution": {
+        "4": 0.108875,
+        "5": 0.259625,
+        "6": 0.309,
+        "7": 0.3225
+      },
+      "most_likely": {
+        "winner": "EDM",
+        "games": "7"
+      }
+    }
+  ]
+}
