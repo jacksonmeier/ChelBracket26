@@ -220,7 +220,26 @@
   }
   .series-score-big { font-size: 1.2rem; }
   .game-vs { display: none; }
-  .pred-table thead th:nth-child(3),
-  .pred-table tbody td:nth-child(3) { display: none; }
+  .cup-table thead th:nth-child(3),
+  .cup-table tbody td:nth-child(3) { display: none; }
   .series-lengths { grid-template-columns: repeat(2, 1fr); }
+
+  .series-top {
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+  }
+
+  .pred-table { font-size: 0.82rem; }
+  .pred-table thead th,
+  .pred-table tbody td { padding: 0.55rem 0.5rem; }
+  .pred-table .rank { width: 1.6rem; padding-right: 0.25rem; }
+  .pool-table .team-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+  }
+  .pool-table .team-abbr { font-size: 0.82rem; letter-spacing: 0.02em; }
+  .pool-table .team-name { font-size: 0.72rem; }
 }

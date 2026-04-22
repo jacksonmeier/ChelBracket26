@@ -1491,6 +1491,24 @@ body {
   letter-spacing: -0.01em;
   color: var(--text);
 }
+.sm-team-odds {
+  margin-top: 4px;
+  font-family: var(--font-h);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-2);
+}
+.sm-odds-label {
+  margin-top: 4px;
+  font-family: var(--font-h);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3, var(--text-2));
+  opacity: 0.75;
+}
 .sm-matchup-center {
   display: flex;
   flex-direction: column;

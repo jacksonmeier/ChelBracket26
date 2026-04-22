@@ -572,7 +572,7 @@ function renderCupOdds(data) {
   `).join('');
   return `
     <div class="table-wrap">
-      <table class="pred-table">
+      <table class="pred-table cup-table">
         <thead>
           <tr><th>#</th><th>Team</th><th>Score</th><th>R1%</th><th>R2%</th><th>R3%</th><th>Cup%</th></tr>
         </thead>
@@ -673,9 +673,9 @@ function renderPoolOdds(ranked, entryCount) {
   }).join('');
   return `
     <div class="table-wrap">
-      <table class="pred-table">
+      <table class="pred-table pool-table">
         <thead>
-          <tr><th>#</th><th>Bracket</th><th>Cup Pick</th><th>Exp Pts</th><th>P(Win)</th></tr>
+          <tr><th>#</th><th>Bracket</th><th>Cup</th><th>Exp Pts</th><th>P(Win)</th></tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
@@ -841,6 +841,24 @@ function buildActualBracketCanvas() {
 
 // ── Series Modal ───────────────────────────────────────────
 
+async function loadPredSeries() {
+  if (state._predSeriesData !== undefined) return state._predSeriesData;
+  try {
+    const r = await fetch('data/series.json', { cache: 'no-store' });
+    state._predSeriesData = r.ok ? await r.json() : null;
+  } catch { state._predSeriesData = null; }
+  return state._predSeriesData;
+}
+
+function findPredSeriesOdds(predData, a1, a2) {
+  const list = predData?.active;
+  if (!list || !a1 || !a2) return null;
+  const entry = list.find(s => (s.home.team === a1 && s.away.team === a2) || (s.home.team === a2 && s.away.team === a1));
+  if (!entry) return null;
+  const pct = t => entry.home.team === t ? entry.home.series_win_pct : entry.away.series_win_pct;
+  return { [a1]: pct(a1), [a2]: pct(a2) };
+}
+
 async function showSeriesModal(sid) {
   const modal = document.getElementById('seriesModal');
   const content = document.getElementById('seriesModalContent');
@@ -851,11 +869,16 @@ async function showSeriesModal(sid) {
   modal.classList.add('open');
 
   await fetchAllPlayoffGames();
+  const predSeries = await loadPredSeries();
 
   const results = getResults(), teams = getTeams(), brackets = getBrackets();
   const s = BY_ID[sid];
   const [t1, t2] = getActualTeams(sid, results, teams);
   const a1 = TEAM_ABBR[t1], a2 = TEAM_ABBR[t2];
+  const modelOdds = findPredSeriesOdds(predSeries, a1, a2);
+  const fmtPct = p => (p * 100).toFixed(1) + '%';
+  const oddsBadge = abbr => modelOdds && modelOdds[abbr] != null
+    ? `<div class="sm-team-odds">${fmtPct(modelOdds[abbr])}</div>` : '';
 
   // All games in this series (match by both team abbrevs)
   const allGames = Object.entries(state.apiGames)
@@ -958,15 +981,18 @@ async function showSeriesModal(sid) {
       <div class="sm-team-side">
         <img class="sm-team-logo-lg" src="${logoUrl(t1)}" onerror="this.style.display='none'" alt="">
         <div class="sm-team-name-lg">${esc(t1)}</div>
+        ${oddsBadge(a1)}
       </div>
       <div class="sm-matchup-center">
         <div class="sm-matchup-round">${esc(s.abbr)}</div>
         <div class="sm-matchup-vs">VS</div>
         ${statusLine ? `<div class="sm-status-wrap">${statusLine}</div>` : ''}
+        ${modelOdds ? `<div class="sm-odds-label">Odds to Win</div>` : ''}
       </div>
       <div class="sm-team-side sm-team-side-right">
         <img class="sm-team-logo-lg" src="${logoUrl(t2)}" onerror="this.style.display='none'" alt="">
         <div class="sm-team-name-lg">${esc(t2)}</div>
+        ${oddsBadge(a2)}
       </div>
     </div>
 
