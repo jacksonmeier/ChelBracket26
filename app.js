@@ -1989,12 +1989,16 @@ function renderStats() {
   }
   cupHtml += '</div></div>';
 
-  // Section 3: Series Breakdown by round
-  let seriesHtml = `<div class="stats-section"><div class="stats-sec-title">Series Breakdown</div>`;
+  // Section 3: Series Breakdown by round (tabbed)
   const rounds = [1, 2, 3, 4];
+  const roundPills = rounds.map(r =>
+    `<button class="stats-round-pill${r === 1 ? ' active' : ''}" data-round="${r}">${ROUND_NAMES[r]}</button>`
+  ).join('');
+
+  let roundGrids = '';
   for (const round of rounds) {
     const roundSeries = SERIES.filter(s => s.round === round);
-    seriesHtml += `<div class="stats-round-label">${ROUND_NAMES[round]}</div><div class="stats-series-grid">`;
+    let cards = '';
     for (const s of roundSeries) {
       const { t1, t2, c1, c2 } = pickCounts[s.id];
       const r = results[s.id];
@@ -2015,7 +2019,7 @@ function renderStats() {
           <span class="stats-sc-accuracy">${correctCount}/${total} correct (${correctPct}%)</span>
         </div>`;
       }
-      seriesHtml += `
+      cards += `
         <div class="stats-sc-card">
           <div class="stats-sc-header">
             <div class="stats-sc-teams">
@@ -2040,9 +2044,16 @@ function renderStats() {
           ${resultLine}
         </div>`;
     }
-    seriesHtml += '</div>';
+    roundGrids += `<div class="stats-series-grid${round === 1 ? '' : ' hidden'}" data-round-grid="${round}">${cards}</div>`;
   }
-  seriesHtml += '</div>';
+
+  let seriesHtml = `<div class="stats-section">
+    <div class="stats-sec-hdr-row">
+      <div class="stats-sec-title">Series Breakdown</div>
+      <div class="stats-round-pills">${roundPills}</div>
+    </div>
+    ${roundGrids}
+  </div>`;
 
   // Section 4: Round Accuracy
   let accHtml = `<div class="stats-section"><div class="stats-sec-title">Round Accuracy</div>
@@ -2063,6 +2074,15 @@ function renderStats() {
   accHtml += '</tbody></table></div>';
 
   el.innerHTML = pulseHtml + cupHtml + seriesHtml + accHtml;
+
+  el.querySelectorAll('.stats-round-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      el.querySelectorAll('.stats-round-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      const round = pill.dataset.round;
+      el.querySelectorAll('[data-round-grid]').forEach(g => g.classList.toggle('hidden', g.dataset.roundGrid !== round));
+    });
+  });
 }
 
 // ── Commissioner ───────────────────────────────────────────
