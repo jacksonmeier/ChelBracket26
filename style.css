@@ -2270,3 +2270,265 @@ body {
   .sm-pill-by    { font-size: 0.62rem; }
   .sm-pill-games { font-size: 0.64rem; }
 }
+
+/* ── Stats page ───────────────────────────────────────────── */
+
+/* Pool Pulse */
+.stats-pulse {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+.stats-pill {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.stats-pill-val {
+  font-family: var(--font-h);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--ice);
+  line-height: 1;
+}
+.stats-pill-denom {
+  font-size: 1rem;
+  color: var(--text-3);
+}
+.stats-pill-lbl {
+  font-family: var(--font-m);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* Section wrapper */
+.stats-section {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.stats-sec-title {
+  font-family: var(--font-h);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-bottom: 1.1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Cup picks */
+.stats-cup-list { display: flex; flex-direction: column; gap: 0.6rem; }
+.stats-cup-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+.stats-cup-dead { opacity: 0.4; }
+.stats-cup-dead .stats-cup-name { text-decoration: line-through; }
+.stats-cup-team {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.stats-cup-logo { height: 28px; width: 28px; object-fit: contain; flex-shrink: 0; }
+.stats-cup-abbr {
+  font-family: var(--font-m);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.stats-cup-name {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stats-cup-count {
+  font-family: var(--font-m);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  text-align: right;
+}
+.stats-cup-pct { color: var(--text-3); font-weight: 400; }
+
+/* Shared bar */
+.stats-bar-wrap {
+  height: 8px;
+  background: var(--bg-3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.stats-bar-fill {
+  height: 100%;
+  background: var(--ice);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  min-width: 2px;
+}
+.stats-bar-dead { background: var(--text-3); }
+.stats-bar-sm { height: 6px; }
+
+/* Series breakdown */
+.stats-round-label {
+  font-family: var(--font-m);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin: 1.25rem 0 0.6rem;
+}
+.stats-round-label:first-child { margin-top: 0; }
+.stats-series-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+.stats-sc-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.stats-sc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.stats-sc-teams {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.stats-sc-logo { height: 24px; width: 24px; object-fit: contain; }
+.stats-sc-abbr {
+  font-family: var(--font-m);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.stats-sc-vs {
+  font-size: 0.65rem;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Status badges */
+.stats-badge {
+  font-family: var(--font-m);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: 99px;
+  background: var(--bg-3);
+  color: var(--text-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.stats-badge-live { background: var(--ice-dim); color: var(--ice); }
+.stats-badge-done { background: var(--green-dim); color: var(--green); }
+
+/* Pick bars per series */
+.stats-sc-picks { display: flex; flex-direction: column; gap: 0.4rem; }
+.stats-sc-pick-row {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr 1.5rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+.stats-sc-pick-lbl {
+  font-family: var(--font-m);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-2);
+  text-align: right;
+}
+.stats-sc-pick-cnt {
+  font-family: var(--font-m);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-3);
+  text-align: right;
+}
+
+/* Result line */
+.stats-sc-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+.stats-sc-winner {
+  font-family: var(--font-m);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.stats-sc-accuracy {
+  font-size: 0.68rem;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+/* Round accuracy table */
+.stats-acc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.stats-acc-table th {
+  font-family: var(--font-m);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  text-align: left;
+  padding: 0 0.75rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+.stats-acc-table th:not(:first-child) { text-align: right; }
+.stats-acc-table td {
+  padding: 0.65rem 0.75rem;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+}
+.stats-acc-table td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+.stats-acc-table td:first-child { color: var(--text); font-weight: 500; }
+.stats-acc-table tr:last-child td { border-bottom: none; }
+
+@media (max-width: 760px) {
+  .stats-pulse { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 500px) {
+  .stats-cup-row { grid-template-columns: 1fr 1fr auto; }
+  .stats-cup-name { display: none; }
+  .stats-series-grid { grid-template-columns: 1fr; }
+}

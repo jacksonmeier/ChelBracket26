@@ -6,7 +6,7 @@
   <title>Bracket Challenge 26 — NHL Playoff Pool</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=43">
+  <link rel="stylesheet" href="style.css?v=44">
   <style>
     /* Critical: loading overlay — inlined to avoid cache issues */
     #loadingOverlay { position:fixed; inset:0; background:#060914; display:flex; align-items:center; justify-content:center; z-index:9000; }
@@ -38,6 +38,7 @@
     <button class="nav-btn" data-view="viewer">Brackets</button>
     <button class="nav-btn" data-view="leaderboard">Leaderboard</button>
     <button class="nav-btn" data-view="schedule">Schedule</button>
+    <button class="nav-btn" data-view="stats">Stats</button>
     <button class="nav-btn" data-view="commissioner">Commish</button>
     <button class="nav-cta" data-view="entry">My Bracket →</button>
   </div>
@@ -52,6 +53,7 @@
   <button class="nav-btn" data-view="viewer">View Brackets</button>
   <button class="nav-btn" data-view="leaderboard">Leaderboard</button>
   <button class="nav-btn" data-view="schedule">Schedule</button>
+  <button class="nav-btn" data-view="stats">Stats</button>
   <button class="nav-btn" data-view="commissioner">Commissioner</button>
 </div>
 
@@ -290,6 +292,18 @@
 
   </section>
 
+
+  <!-- ════════════════════════════ STATS ═════════════════════════════ -->
+  <section class="view" id="view-stats">
+    <div class="view-hdr">
+      <div class="view-hdr-left">
+        <div class="view-kicker">Pool &amp; Playoff Analytics</div>
+        <h2 class="view-title">Stats</h2>
+      </div>
+    </div>
+    <div id="statsContent"><div class="scores-loading">Loading stats…</div></div>
+  </section>
+
 </main>
 
 <div class="rink-line thin"></div>
@@ -317,6 +331,6 @@
 </div>
 
 <script src="config.js"></script>
-<script src="app.js?v=51"></script>
+<script src="app.js?v=52"></script>
 </body>
 </html>

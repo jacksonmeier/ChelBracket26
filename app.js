@@ -478,6 +478,7 @@ function showView(name) {
   if (name === 'viewer')       renderViewer();
   if (name === 'leaderboard')  renderLeaderboard();
   if (name === 'schedule')     renderSchedule();
+  if (name === 'stats')        renderStats();
   if (name === 'commissioner') renderCommissioner();
 }
 
@@ -1871,6 +1872,197 @@ function renderLeaderboard() {
   const el = document.getElementById('leaderboardContent');
   if (!brackets.length) { el.innerHTML = '<div class="empty-state">No entries yet.</div>'; return; }
   el.innerHTML = buildLeaderboardTable(rankBrackets(brackets, results), results, false, brackets.length);
+}
+
+// ── Stats ──────────────────────────────────────────────────
+
+function renderStats() {
+  const el = document.getElementById('statsContent');
+  if (!el) return;
+  const brackets = getBrackets();
+  const results  = getResults();
+  const teams    = getTeams();
+
+  if (!brackets.length) {
+    el.innerHTML = '<div class="empty-state">No entries yet.</div>';
+    return;
+  }
+
+  // ── Pool Pulse aggregates ──────────────────────────────
+  const seriesDone = SERIES.filter(s => results[s.id]?.completed).length;
+  const scores     = brackets.map(b => scoreOneBracket(b, results).pts);
+  const avgScore   = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+  const topScore   = Math.max(...scores);
+
+  // ── Figure out eliminated teams ────────────────────────
+  // A team is eliminated if they lost a completed series
+  const eliminated = new Set();
+  for (const s of SERIES) {
+    const r = results[s.id];
+    if (r?.completed) {
+      const [t1, t2] = getActualTeams(s.id, results, teams);
+      if (r.winner === t1) eliminated.add(t2);
+      else if (r.winner === t2) eliminated.add(t1);
+    }
+  }
+
+  // ── Stanley Cup pick counts ────────────────────────────
+  const cupCounts = {};
+  for (const b of brackets) {
+    const w = b.picks?.SCF?.winner;
+    if (w) cupCounts[w] = (cupCounts[w] || 0) + 1;
+  }
+  const cupEntries = Object.entries(cupCounts).sort((a, b) => b[1] - a[1]);
+  const total = brackets.length;
+
+  // ── Per-series pick counts ─────────────────────────────
+  const pickCounts = {}; // sid → { team1Name: count, team2Name: count }
+  for (const s of SERIES) {
+    const [t1, t2] = getActualTeams(s.id, results, teams);
+    let c1 = 0, c2 = 0;
+    for (const b of brackets) {
+      const w = b.picks?.[s.id]?.winner;
+      if (w === t1) c1++;
+      else if (w === t2) c2++;
+    }
+    pickCounts[s.id] = { t1, t2, c1, c2 };
+  }
+
+  // ── Round accuracy ─────────────────────────────────────
+  const roundStats = {}; // round → { done, total, correct }
+  for (const s of SERIES) {
+    if (!roundStats[s.round]) roundStats[s.round] = { done: 0, total: 0, correct: 0 };
+    roundStats[s.round].total++;
+    const r = results[s.id];
+    if (r?.completed) {
+      roundStats[s.round].done++;
+      for (const b of brackets) {
+        if (b.picks?.[s.id]?.winner === r.winner) roundStats[s.round].correct++;
+      }
+    }
+  }
+
+  // ── Series live status ─────────────────────────────────
+  function seriesStatusText(sid) {
+    const r = results[sid];
+    if (r?.completed) return `<span class="stats-badge stats-badge-done">Final</span>`;
+    const [t1, t2] = getActualTeams(sid, results, teams);
+    if (t1 === 'TBD' || t2 === 'TBD') return `<span class="stats-badge">TBD</span>`;
+    const a1 = TEAM_ABBR[t1], a2 = TEAM_ABBR[t2];
+    const w1 = a1 ? (state.apiSeriesWins[a1] ?? 0) : 0;
+    const w2 = a2 ? (state.apiSeriesWins[a2] ?? 0) : 0;
+    if (w1 === 0 && w2 === 0) return `<span class="stats-badge">Series even</span>`;
+    if (w1 === w2) return `<span class="stats-badge">Tied ${w1}-${w2}</span>`;
+    const leader = w1 > w2 ? (a1 || t1) : (a2 || t2);
+    const wl = Math.max(w1, w2), ll = Math.min(w1, w2);
+    return `<span class="stats-badge stats-badge-live">${leader} leads ${wl}-${ll}</span>`;
+  }
+
+  // ── Build HTML ─────────────────────────────────────────
+
+  // Section 1: Pool Pulse
+  const pulseHtml = `
+    <div class="stats-pulse">
+      <div class="stats-pill"><div class="stats-pill-val">${total}</div><div class="stats-pill-lbl">Entries</div></div>
+      <div class="stats-pill"><div class="stats-pill-val">${seriesDone}<span class="stats-pill-denom">/15</span></div><div class="stats-pill-lbl">Series Done</div></div>
+      <div class="stats-pill"><div class="stats-pill-val">${total > 0 ? avgScore : '—'}</div><div class="stats-pill-lbl">Avg Score</div></div>
+      <div class="stats-pill"><div class="stats-pill-val">${topScore}</div><div class="stats-pill-lbl">Top Score</div></div>
+    </div>`;
+
+  // Section 2: Cup Picks
+  let cupHtml = `<div class="stats-section"><div class="stats-sec-title">Stanley Cup Picks</div><div class="stats-cup-list">`;
+  if (!cupEntries.length) {
+    cupHtml += '<div class="empty-state" style="padding:1rem 0">No Cup picks yet.</div>';
+  } else {
+    for (const [team, count] of cupEntries) {
+      const pct = Math.round((count / total) * 100);
+      const abbr = TEAM_ABBR[team] || team.split(' ').pop().toUpperCase().slice(0, 3);
+      const logo = logoImg(team, 'stats-cup-logo');
+      const dead = eliminated.has(team);
+      cupHtml += `
+        <div class="stats-cup-row${dead ? ' stats-cup-dead' : ''}">
+          <div class="stats-cup-team">${logo}<span class="stats-cup-abbr">${abbr}</span><span class="stats-cup-name">${team}</span></div>
+          <div class="stats-bar-wrap"><div class="stats-bar-fill${dead ? ' stats-bar-dead' : ''}" style="width:${pct}%"></div></div>
+          <div class="stats-cup-count">${count} <span class="stats-cup-pct">(${pct}%)</span></div>
+        </div>`;
+    }
+  }
+  cupHtml += '</div></div>';
+
+  // Section 3: Series Breakdown by round
+  let seriesHtml = `<div class="stats-section"><div class="stats-sec-title">Series Breakdown</div>`;
+  const rounds = [1, 2, 3, 4];
+  for (const round of rounds) {
+    const roundSeries = SERIES.filter(s => s.round === round);
+    seriesHtml += `<div class="stats-round-label">${ROUND_NAMES[round]}</div><div class="stats-series-grid">`;
+    for (const s of roundSeries) {
+      const { t1, t2, c1, c2 } = pickCounts[s.id];
+      const r = results[s.id];
+      const a1 = TEAM_ABBR[t1] || (t1 !== 'TBD' ? t1.split(' ').pop().toUpperCase().slice(0,3) : '?');
+      const a2 = TEAM_ABBR[t2] || (t2 !== 'TBD' ? t2.split(' ').pop().toUpperCase().slice(0,3) : '?');
+      const logo1 = t1 !== 'TBD' ? logoImg(t1, 'stats-sc-logo') : '';
+      const logo2 = t2 !== 'TBD' ? logoImg(t2, 'stats-sc-logo') : '';
+      const totalPicks = c1 + c2;
+      const pct1 = totalPicks ? Math.round((c1 / totalPicks) * 100) : 50;
+      const pct2 = totalPicks ? Math.round((c2 / totalPicks) * 100) : 50;
+      const statusBadge = seriesStatusText(s.id);
+      let resultLine = '';
+      if (r?.completed) {
+        const correctCount = brackets.filter(b => b.picks?.[s.id]?.winner === r.winner).length;
+        const correctPct = Math.round((correctCount / total) * 100);
+        resultLine = `<div class="stats-sc-result">
+          <span class="stats-sc-winner">${TEAM_ABBR[r.winner] || r.winner} won in ${r.games}</span>
+          <span class="stats-sc-accuracy">${correctCount}/${total} correct (${correctPct}%)</span>
+        </div>`;
+      }
+      seriesHtml += `
+        <div class="stats-sc-card">
+          <div class="stats-sc-header">
+            <div class="stats-sc-teams">
+              ${logo1}<span class="stats-sc-abbr">${a1}</span>
+              <span class="stats-sc-vs">vs</span>
+              <span class="stats-sc-abbr">${a2}</span>${logo2}
+            </div>
+            ${statusBadge}
+          </div>
+          <div class="stats-sc-picks">
+            <div class="stats-sc-pick-row">
+              <span class="stats-sc-pick-lbl">${a1}</span>
+              <div class="stats-bar-wrap stats-bar-sm"><div class="stats-bar-fill" style="width:${pct1}%"></div></div>
+              <span class="stats-sc-pick-cnt">${c1}</span>
+            </div>
+            <div class="stats-sc-pick-row">
+              <span class="stats-sc-pick-lbl">${a2}</span>
+              <div class="stats-bar-wrap stats-bar-sm"><div class="stats-bar-fill" style="width:${pct2}%"></div></div>
+              <span class="stats-sc-pick-cnt">${c2}</span>
+            </div>
+          </div>
+          ${resultLine}
+        </div>`;
+    }
+    seriesHtml += '</div>';
+  }
+  seriesHtml += '</div>';
+
+  // Section 4: Round Accuracy
+  let accHtml = `<div class="stats-section"><div class="stats-sec-title">Round Accuracy</div>
+    <table class="stats-acc-table">
+      <thead><tr><th>Round</th><th>Series Done</th><th>Correct Picks</th><th>Accuracy</th></tr></thead>
+      <tbody>`;
+  for (const round of rounds) {
+    const rs = roundStats[round] || { done: 0, total: 0, correct: 0 };
+    const maxCorrect = rs.done * total;
+    const accPct = maxCorrect ? Math.round((rs.correct / maxCorrect) * 100) : null;
+    accHtml += `<tr>
+      <td>${ROUND_NAMES[round]}</td>
+      <td>${rs.done}/${rs.total}</td>
+      <td>${rs.done ? rs.correct : '—'}</td>
+      <td>${accPct !== null ? accPct + '%' : '—'}</td>
+    </tr>`;
+  }
+  accHtml += '</tbody></table></div>';
+
+  el.innerHTML = pulseHtml + cupHtml + seriesHtml + accHtml;
 }
 
 // ── Commissioner ───────────────────────────────────────────
