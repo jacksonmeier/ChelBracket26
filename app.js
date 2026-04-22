@@ -665,8 +665,8 @@ function renderPoolOdds(ranked, entryCount) {
     return `
     <tr class="${i === 0 ? 'cup-leader' : ''}">
       <td class="rank">${i + 1}</td>
-      <td class="team-cell"><span class="team-abbr">${r.bracketName || '—'}</span><span class="team-name">${r.playerName || ''}</span></td>
-      <td class="team-cell">${cupAbbr ? predLogoImg(cupAbbr) : ''}<span class="team-abbr">${cupAbbr}</span></td>
+      <td><div class="team-cell"><span class="team-abbr">${r.bracketName || '—'}</span><span class="team-name">${r.playerName || ''}</span></div></td>
+      <td><div class="team-cell">${cupAbbr ? predLogoImg(cupAbbr) : ''}<span class="team-abbr">${cupAbbr}</span></div></td>
       <td>${r.expectedPts.toFixed(1)}</td>
       <td class="cup-pct">${predFmtPct(r.winPoolPct)}</td>
     </tr>`;
