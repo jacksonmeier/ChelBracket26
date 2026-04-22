@@ -562,7 +562,7 @@ function renderCupOdds(data) {
   const rows = teams.map((t, i) => `
     <tr class="${i === 0 ? 'cup-leader' : ''}">
       <td class="rank">${i + 1}</td>
-      <td class="team-cell">${predLogoImg(t.team)}<span class="team-abbr">${t.team}</span><span class="team-name">${t.name || ''}</span></td>
+      <td class="team-cell">${predLogoImg(t.team)}<span class="team-abbr">${t.team}</span></td>
       <td class="series-score">${t.current_series || ''}</td>
       <td>${predFmtPct(t.round1_win_pct)}</td>
       <td>${predFmtPct(t.round2_win_pct)}</td>
