@@ -1,0 +1,56 @@
+name: Update NHL Predictions
+
+on:
+  push:
+    branches:
+      - nhl-predictions
+    paths-ignore:
+      - 'data/bracket.json'
+      - 'data/series.json'
+      - 'data/games.json'
+      - 'data/last_updated.json'
+      - 'data/bracket_samples.json'
+  schedule:
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: nhl-predictions
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r nhl-predictor/requirements.txt
+
+      - name: Run export script
+        run: python nhl-predictor/export.py
+
+      - name: Retrain goalie sub-model
+        run: |
+          python -c "
+          import sys
+          sys.path.insert(0, 'nhl-predictor/src')
+          from features.goalie_sub_model import GoalieSubModel
+          m = GoalieSubModel()
+          m.train(as_of_season='current')
+          "
+
+      - name: Commit updated predictions
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/bracket.json data/series.json data/games.json data/last_updated.json data/bracket_samples.json
+          git diff --staged --quiet || git commit -m "Auto-update predictions $(date -u '+%Y-%m-%d')"
+          git push

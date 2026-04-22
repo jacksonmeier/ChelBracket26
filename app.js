@@ -479,7 +479,248 @@ function showView(name) {
   if (name === 'leaderboard')  renderLeaderboard();
   if (name === 'schedule')     renderSchedule();
   if (name === 'stats')        renderStats();
+  if (name === 'predictions')  renderPredictions();
   if (name === 'commissioner') renderCommissioner();
+}
+
+// ── Predictions ────────────────────────────────────────────
+
+const PRED_DATA = [
+  ['bracket',       'data/bracket.json'],
+  ['series',        'data/series.json'],
+  ['games',         'data/games.json'],
+  ['lastUpdated',   'data/last_updated.json'],
+  ['samples',       'data/bracket_samples.json'],
+];
+
+// Score one bracket against a sample outcome {seriesId: [abbr, games]}.
+function scoreBracketAgainstSample(bracket, sample) {
+  let pts = 0;
+  if (!bracket || !bracket.picks) return 0;
+  for (const s of SERIES) {
+    const pick = bracket.picks[s.id];
+    const outcome = sample[s.id];
+    if (!pick || !outcome) continue;
+    const [winnerAbbr, games] = outcome;
+    const pickAbbr = TEAM_ABBR[pick.winner] || pick.winner;
+    if (pickAbbr === winnerAbbr) {
+      const p = ROUND_PTS[s.round];
+      pts += p.w;
+      if (pick.games === games) pts += p.g;
+    }
+  }
+  return pts;
+}
+
+function computePoolOdds(entries, samplesData) {
+  const samples = (samplesData && samplesData.samples) || [];
+  if (!entries.length || !samples.length) return [];
+  const n = samples.length;
+  const winShare = new Array(entries.length).fill(0);
+  const totalPts = new Array(entries.length).fill(0);
+  for (let i = 0; i < n; i++) {
+    const sample = samples[i];
+    let bestPts = -1, winners = [];
+    for (let j = 0; j < entries.length; j++) {
+      const pts = scoreBracketAgainstSample(entries[j], sample);
+      totalPts[j] += pts;
+      if (pts > bestPts) { bestPts = pts; winners = [j]; }
+      else if (pts === bestPts) { winners.push(j); }
+    }
+    const share = 1 / winners.length;
+    for (const j of winners) winShare[j] += share;
+  }
+  return entries.map((e, j) => ({
+    id: e.id,
+    playerName: e.playerName,
+    bracketName: e.bracketName,
+    cupPick: e.picks?.SCF?.winner || null,
+    winPoolPct: winShare[j] / n,
+    expectedPts: totalPts[j] / n,
+  })).sort((a, b) => b.winPoolPct - a.winPoolPct);
+}
+
+function predFmtPct(p) {
+  if (p == null || isNaN(p)) return '—';
+  return (p * 100).toFixed(1) + '%';
+}
+
+function predLogoImg(abbrev) {
+  if (!abbrev) return '';
+  const safe = String(abbrev).replace(/[^A-Z]/g, '');
+  return `<img class="team-logo" src="https://assets.nhle.com/logos/nhl/svg/${safe}_dark.svg" alt="${safe}" loading="lazy" onerror="this.style.display='none'">`;
+}
+
+function predBar(pct, side) {
+  const width = Math.max(2, Math.min(100, (pct || 0) * 100));
+  return `<div class="prob-bar prob-${side}"><div class="prob-fill" style="width:${width.toFixed(1)}%"></div><span class="prob-label">${predFmtPct(pct)}</span></div>`;
+}
+
+function renderCupOdds(data) {
+  const teams = (data && data.teams) || [];
+  if (!teams.length) return '<div class="empty-state">No odds available yet.</div>';
+  const rows = teams.map((t, i) => `
+    <tr class="${i === 0 ? 'cup-leader' : ''}">
+      <td class="rank">${i + 1}</td>
+      <td class="team-cell">${predLogoImg(t.team)}<span class="team-abbr">${t.team}</span><span class="team-name">${t.name || ''}</span></td>
+      <td class="series-score">${t.current_series || ''}</td>
+      <td>${predFmtPct(t.round1_win_pct)}</td>
+      <td>${predFmtPct(t.round2_win_pct)}</td>
+      <td>${predFmtPct(t.round3_win_pct)}</td>
+      <td class="cup-pct">${predFmtPct(t.cup_win_pct)}</td>
+    </tr>
+  `).join('');
+  return `
+    <div class="table-wrap">
+      <table class="pred-table">
+        <thead>
+          <tr><th>#</th><th>Team</th><th>Score</th><th>R1%</th><th>R2%</th><th>R3%</th><th>Cup%</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderPredSeries(data) {
+  const active = (data && data.active) || [];
+  if (!active.length) return '<div class="empty-state">No active series.</div>';
+  return active.map(s => {
+    const len = s.length_distribution || {};
+    const lengths = ['4','5','6','7'].map(k => `
+      <div class="len-cell">
+        <div class="len-games">in ${k}</div>
+        <div class="len-pct">${predFmtPct(len[k] || 0)}</div>
+      </div>`).join('');
+    const most = s.most_likely || {};
+    return `
+      <div class="series-card">
+        <div class="series-top">
+          <div class="series-seed">${s.seed || ''} · Round ${s.round || 1}</div>
+          <div class="series-most">Most likely: <strong>${most.winner || '—'} in ${most.games || '—'}</strong></div>
+        </div>
+        <div class="series-teams">
+          <div class="series-team">
+            <div class="t-name">${predLogoImg(s.home.team)}<span class="team-abbr">${s.home.team}</span> ${s.home.name || ''}</div>
+            ${predBar(s.home.series_win_pct, 'home')}
+          </div>
+          <div class="series-score-big">${s.home.wins}–${s.away.wins}</div>
+          <div class="series-team">
+            <div class="t-name">${predLogoImg(s.away.team)}<span class="team-abbr">${s.away.team}</span> ${s.away.name || ''}</div>
+            ${predBar(s.away.series_win_pct, 'away')}
+          </div>
+        </div>
+        <div class="series-lengths">${lengths}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderPredGames(data) {
+  const games = (data && data.upcoming) || [];
+  if (!games.length) return '<div class="empty-state">No games scheduled in the next 48 hours.</div>';
+  return games.map(g => {
+    const d = g.date ? new Date(g.date) : null;
+    const when = d ? d.toLocaleString(undefined, { weekday:'short', hour:'numeric', minute:'2-digit' }) : '';
+    const badge = g.uncertain_starter ? `<span class="uncertain-badge" title="Starting goalie unconfirmed">⚠ Unconfirmed starter</span>` : '';
+    return `
+      <div class="game-card">
+        <div class="game-top">
+          <span class="game-when">${when}</span>
+          ${badge}
+        </div>
+        <div class="game-matchup">
+          <div class="game-side">
+            <div class="t-name">${predLogoImg(g.home.team)}<span class="team-abbr">${g.home.team}</span> ${g.home.name || ''}</div>
+            <div class="t-goalie">${g.home.goalie || '—'} · quality ${g.home.goalie_score != null ? g.home.goalie_score.toFixed(2) : '—'}</div>
+            <div class="t-rest">Rest: ${g.home.rest_days}d</div>
+            ${predBar(g.home.win_pct, 'home')}
+          </div>
+          <div class="game-vs">vs</div>
+          <div class="game-side">
+            <div class="t-name">${predLogoImg(g.away.team)}<span class="team-abbr">${g.away.team}</span> ${g.away.name || ''}</div>
+            <div class="t-goalie">${g.away.goalie || '—'} · quality ${g.away.goalie_score != null ? g.away.goalie_score.toFixed(2) : '—'}</div>
+            <div class="t-rest">Rest: ${g.away.rest_days}d</div>
+            ${predBar(g.away.win_pct, 'away')}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderPredLastUpdated(d) {
+  const el = document.getElementById('predLastUpdated');
+  if (!el) return;
+  if (!d || !d.generated_at) { el.textContent = 'Updated: unknown'; return; }
+  try {
+    const dt = new Date(d.generated_at);
+    el.textContent = 'Updated ' + dt.toLocaleString(undefined, { month:'long', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit', timeZoneName:'short' });
+  } catch {
+    el.textContent = 'Updated ' + d.generated_at;
+  }
+}
+
+function renderPoolOdds(ranked, entryCount) {
+  if (!ranked.length) return '<div class="empty-state">No pool entries yet.</div>';
+  const rows = ranked.map((r, i) => {
+    const cupAbbr = r.cupPick ? (TEAM_ABBR[r.cupPick] || '') : '';
+    return `
+    <tr class="${i === 0 ? 'cup-leader' : ''}">
+      <td class="rank">${i + 1}</td>
+      <td><div class="team-cell"><span class="team-abbr">${r.bracketName || '—'}</span><span class="team-name">${r.playerName || ''}</span></div></td>
+      <td><div class="team-cell">${cupAbbr ? predLogoImg(cupAbbr) : ''}<span class="team-abbr">${cupAbbr}</span></div></td>
+      <td>${r.expectedPts.toFixed(1)}</td>
+      <td class="cup-pct">${predFmtPct(r.winPoolPct)}</td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="table-wrap">
+      <table class="pred-table">
+        <thead>
+          <tr><th>#</th><th>Bracket</th><th>Cup Pick</th><th>Exp Pts</th><th>P(Win)</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <p class="view-sub" style="margin-top:0.6rem;color:var(--text-3);font-size:0.78rem">Across ${entryCount} entries · 5,000 simulated brackets · ties split evenly.</p>`;
+}
+
+async function renderPredictions() {
+  const fetchJson = async (p) => {
+    const r = await fetch(p, { cache: 'no-store' });
+    if (!r.ok) throw new Error(`${p} ${r.status}`);
+    return r.json();
+  };
+  const set = (id, html, err) => { const el = document.getElementById(id); if (el) el.innerHTML = html || `<div class="empty-state">${err}</div>`; };
+
+  if (!state._predictionsLoaded) {
+    state._predictionsLoaded = true;
+    const results = await Promise.allSettled(PRED_DATA.map(([, p]) => fetchJson(p)));
+    const [bracket, series, games, lastUpdated, samples] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+    state._predSamples = samples;
+    try { set('cupOdds',       bracket && renderCupOdds(bracket),   "Couldn't load Cup odds."); } catch (e) { console.error(e); set('cupOdds', null, 'Failed to render odds.'); }
+    try { set('activeSeries',  series  && renderPredSeries(series), "Couldn't load series."); }   catch (e) { console.error(e); set('activeSeries', null, 'Failed to render series.'); }
+    try { set('upcomingGames', games   && renderPredGames(games),   "Couldn't load games."); }    catch (e) { console.error(e); set('upcomingGames', null, 'Failed to render games.'); }
+    renderPredLastUpdated(lastUpdated);
+  }
+
+  // Pool odds re-renders on every nav into view — entries may have updated.
+  const el = document.getElementById('poolOdds');
+  if (!el) return;
+  const entries = getBrackets();
+  if (!state._predSamples) {
+    el.innerHTML = '<div class="empty-state">Couldn\'t load simulation data.</div>';
+    return;
+  }
+  if (!entries.length) {
+    el.innerHTML = '<div class="empty-state">No pool entries yet.</div>';
+    return;
+  }
+  try {
+    const ranked = computePoolOdds(entries, state._predSamples);
+    el.innerHTML = renderPoolOdds(ranked, entries.length);
+  } catch (e) {
+    console.error(e);
+    el.innerHTML = '<div class="empty-state">Failed to compute pool odds.</div>';
+  }
 }
 
 // ── Actual NHL Bracket ─────────────────────────────────────

@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=45">
+  <link rel="stylesheet" href="predictions/style.css?v=2">
   <style>
     /* Critical: loading overlay — inlined to avoid cache issues */
     #loadingOverlay { position:fixed; inset:0; background:#060914; display:flex; align-items:center; justify-content:center; z-index:9000; }
@@ -39,6 +40,7 @@
     <button class="nav-btn" data-view="leaderboard">Leaderboard</button>
     <button class="nav-btn" data-view="schedule">Schedule</button>
     <button class="nav-btn" data-view="stats">Stats</button>
+    <button class="nav-btn" data-view="predictions">Predictions</button>
     <button class="nav-btn" data-view="commissioner">Commish</button>
     <button class="nav-cta" data-view="entry">My Bracket →</button>
   </div>
@@ -54,6 +56,7 @@
   <button class="nav-btn" data-view="leaderboard">Leaderboard</button>
   <button class="nav-btn" data-view="schedule">Schedule</button>
   <button class="nav-btn" data-view="stats">Stats</button>
+  <button class="nav-btn" data-view="predictions">Predictions</button>
   <button class="nav-btn" data-view="commissioner">Commissioner</button>
 </div>
 
@@ -293,6 +296,63 @@
   </section>
 
 
+  <!-- ════════════════════════════ PREDICTIONS ═══════════════════════ -->
+  <section class="view" id="view-predictions">
+    <div class="view-hdr">
+      <div class="view-hdr-left">
+        <div class="view-kicker">Model · Monte Carlo · 50,000 sims</div>
+        <h2 class="view-title">Predictions</h2>
+      </div>
+      <div class="sec-right">
+        <span id="predLastUpdated" class="scores-refresh-badge">Loading…</span>
+      </div>
+    </div>
+    <p class="view-sub" style="margin-bottom:1.5rem;color:var(--text-2)">
+      Data-driven forecasts for every remaining team, active series, and upcoming game.
+      Probabilities are re-generated daily from team / goalie metrics.
+    </p>
+
+    <div class="sec">
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-num">01 — Stanley Cup Odds</div>
+          <div class="sec-title">Who wins it all?</div>
+        </div>
+      </div>
+      <div id="cupOdds"><div class="scores-loading">Loading odds…</div></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-num">02 — Active Series</div>
+          <div class="sec-title">Live series forecasts</div>
+        </div>
+      </div>
+      <div id="activeSeries"><div class="scores-loading">Loading series…</div></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-num">03 — Upcoming Games</div>
+          <div class="sec-title">Next 48 hours</div>
+        </div>
+      </div>
+      <div id="upcomingGames"><div class="scores-loading">Loading games…</div></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-num">04 — Pool Odds</div>
+          <div class="sec-title">Who's most likely to win the pool?</div>
+        </div>
+      </div>
+      <div id="poolOdds"><div class="scores-loading">Loading pool odds…</div></div>
+    </div>
+  </section>
+
   <!-- ════════════════════════════ STATS ═════════════════════════════ -->
   <section class="view" id="view-stats">
     <div class="view-hdr">
@@ -331,6 +391,6 @@
 </div>
 
 <script src="config.js"></script>
-<script src="app.js?v=52"></script>
+<script src="app.js?v=55"></script>
 </body>
 </html>

@@ -1,0 +1,5 @@
+data/raw/
+data/nhl.sqlite
+data/processed/calibration_curve.png
+__pycache__/
+*.pyc
