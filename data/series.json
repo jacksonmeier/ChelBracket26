@@ -8,19 +8,33 @@
         "team": "BUF",
         "name": "Buffalo Sabres",
         "wins": 1,
-        "series_win_pct": 0.411
+        "series_win_pct": 0.4155
       },
       "away": {
         "team": "BOS",
         "name": "Boston Bruins",
         "wins": 1,
-        "series_win_pct": 0.589
+        "series_win_pct": 0.5845
       },
       "length_distribution": {
         "4": 0.0,
-        "5": 0.265125,
-        "6": 0.37725,
-        "7": 0.357625
+        "5": 0.26025,
+        "6": 0.373125,
+        "7": 0.366625
+      },
+      "joint_distribution": {
+        "home": {
+          "4": 0.0,
+          "5": 0.0895,
+          "6": 0.1395,
+          "7": 0.1865
+        },
+        "away": {
+          "4": 0.0,
+          "5": 0.17075,
+          "6": 0.233625,
+          "7": 0.180125
+        }
       },
       "most_likely": {
         "winner": "BOS",
@@ -35,19 +49,33 @@
         "team": "TBL",
         "name": "Tampa Bay Lightning",
         "wins": 1,
-        "series_win_pct": 0.6484
+        "series_win_pct": 0.6587
       },
       "away": {
         "team": "MTL",
         "name": "Montr\u00e9al Canadiens",
         "wins": 1,
-        "series_win_pct": 0.3516
+        "series_win_pct": 0.3413
       },
       "length_distribution": {
         "4": 0.0,
-        "5": 0.2725,
-        "6": 0.3775,
-        "7": 0.35
+        "5": 0.2665,
+        "6": 0.37,
+        "7": 0.3635
+      },
+      "joint_distribution": {
+        "home": {
+          "4": 0.0,
+          "5": 0.197,
+          "6": 0.231375,
+          "7": 0.230375
+        },
+        "away": {
+          "4": 0.0,
+          "5": 0.0695,
+          "6": 0.138625,
+          "7": 0.133125
+        }
       },
       "most_likely": {
         "winner": "TBL",
@@ -62,19 +90,33 @@
         "team": "CAR",
         "name": "Carolina Hurricanes",
         "wins": 2,
-        "series_win_pct": 0.7919
+        "series_win_pct": 0.7963
       },
       "away": {
         "team": "OTT",
         "name": "Ottawa Senators",
         "wins": 0,
-        "series_win_pct": 0.2081
+        "series_win_pct": 0.2037
       },
       "length_distribution": {
-        "4": 0.211125,
-        "5": 0.26125,
-        "6": 0.257,
-        "7": 0.270625
+        "4": 0.212,
+        "5": 0.2655,
+        "6": 0.245,
+        "7": 0.2775
+      },
+      "joint_distribution": {
+        "home": {
+          "4": 0.212,
+          "5": 0.2655,
+          "6": 0.171,
+          "7": 0.14775
+        },
+        "away": {
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.074,
+          "7": 0.12975
+        }
       },
       "most_likely": {
         "winner": "CAR",
@@ -89,19 +131,33 @@
         "team": "PIT",
         "name": "Pittsburgh Penguins",
         "wins": 0,
-        "series_win_pct": 0.1854
+        "series_win_pct": 0.1836
       },
       "away": {
         "team": "PHI",
         "name": "Philadelphia Flyers",
         "wins": 2,
-        "series_win_pct": 0.8146
+        "series_win_pct": 0.8164
       },
       "length_distribution": {
-        "4": 0.279,
-        "5": 0.224875,
-        "6": 0.25525,
-        "7": 0.240875
+        "4": 0.272875,
+        "5": 0.23525,
+        "6": 0.258125,
+        "7": 0.23375
+      },
+      "joint_distribution": {
+        "home": {
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.056125,
+          "7": 0.1275
+        },
+        "away": {
+          "4": 0.272875,
+          "5": 0.23525,
+          "6": 0.202,
+          "7": 0.10625
+        }
       },
       "most_likely": {
         "winner": "PHI",
@@ -116,19 +172,33 @@
         "team": "COL",
         "name": "Colorado Avalanche",
         "wins": 2,
-        "series_win_pct": 0.7934
+        "series_win_pct": 0.8051
       },
       "away": {
         "team": "LAK",
         "name": "Los Angeles Kings",
         "wins": 0,
-        "series_win_pct": 0.2066
+        "series_win_pct": 0.1949
       },
       "length_distribution": {
-        "4": 0.20875,
-        "5": 0.258375,
-        "6": 0.25375,
-        "7": 0.279125
+        "4": 0.209,
+        "5": 0.265875,
+        "6": 0.25625,
+        "7": 0.268875
+      },
+      "joint_distribution": {
+        "home": {
+          "4": 0.209,
+          "5": 0.265875,
+          "6": 0.185,
+          "7": 0.14525
+        },
+        "away": {
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.07125,
+          "7": 0.123625
+        }
       },
       "most_likely": {
         "winner": "COL",
@@ -143,19 +213,33 @@
         "team": "DAL",
         "name": "Dallas Stars",
         "wins": 1,
-        "series_win_pct": 0.5797
+        "series_win_pct": 0.587
       },
       "away": {
         "team": "MIN",
         "name": "Minnesota Wild",
         "wins": 1,
-        "series_win_pct": 0.4203
+        "series_win_pct": 0.413
       },
       "length_distribution": {
         "4": 0.0,
-        "5": 0.25675,
-        "6": 0.37875,
-        "7": 0.3645
+        "5": 0.256875,
+        "6": 0.3745,
+        "7": 0.368625
+      },
+      "joint_distribution": {
+        "home": {
+          "4": 0.0,
+          "5": 0.159,
+          "6": 0.211,
+          "7": 0.217
+        },
+        "away": {
+          "4": 0.0,
+          "5": 0.097875,
+          "6": 0.1635,
+          "7": 0.151625
+        }
       },
       "most_likely": {
         "winner": "DAL",
@@ -170,19 +254,33 @@
         "team": "VGK",
         "name": "Vegas Golden Knights",
         "wins": 1,
-        "series_win_pct": 0.54
+        "series_win_pct": 0.5365
       },
       "away": {
         "team": "UTA",
         "name": "Utah Mammoth",
         "wins": 1,
-        "series_win_pct": 0.46
+        "series_win_pct": 0.4635
       },
       "length_distribution": {
         "4": 0.0,
-        "5": 0.244,
-        "6": 0.384625,
-        "7": 0.371375
+        "5": 0.25275,
+        "6": 0.3755,
+        "7": 0.37175
+      },
+      "joint_distribution": {
+        "home": {
+          "4": 0.0,
+          "5": 0.137625,
+          "6": 0.188,
+          "7": 0.210875
+        },
+        "away": {
+          "4": 0.0,
+          "5": 0.115125,
+          "6": 0.1875,
+          "7": 0.160875
+        }
       },
       "most_likely": {
         "winner": "VGK",
@@ -197,19 +295,33 @@
         "team": "EDM",
         "name": "Edmonton Oilers",
         "wins": 1,
-        "series_win_pct": 0.6422
+        "series_win_pct": 0.6512
       },
       "away": {
         "team": "ANA",
         "name": "Anaheim Ducks",
         "wins": 0,
-        "series_win_pct": 0.3578
+        "series_win_pct": 0.3488
       },
       "length_distribution": {
-        "4": 0.119,
-        "5": 0.2505,
-        "6": 0.314625,
-        "7": 0.315875
+        "4": 0.1125,
+        "5": 0.254875,
+        "6": 0.3055,
+        "7": 0.327125
+      },
+      "joint_distribution": {
+        "home": {
+          "4": 0.1125,
+          "5": 0.194,
+          "6": 0.17375,
+          "7": 0.171
+        },
+        "away": {
+          "4": 0.0,
+          "5": 0.060875,
+          "6": 0.13175,
+          "7": 0.156125
+        }
       },
       "most_likely": {
         "winner": "EDM",
