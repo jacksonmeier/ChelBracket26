@@ -792,6 +792,13 @@ const CORS_PROXIES = [
   u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
 ];
 
+// The NHL score endpoint uses topSeedTeamId; the schedule endpoint uses
+// topSeedTeamAbbrev. This helper handles both.
+function ssTopIsAway(ss, away) {
+  if (ss.topSeedTeamAbbrev) return ss.topSeedTeamAbbrev === away.abbrev;
+  return ss.topSeedTeamId === away.id;
+}
+
 // Build series wins map from NHL score API games.
 // seriesStatus has topSeedTeamId/topSeedWins/bottomSeedTeamId/bottomSeedWins.
 // Returns { 'TOR': 3, 'BOS': 2, ... }
@@ -801,7 +808,7 @@ function extractSeriesWins(games) {
     const ss = g.seriesStatus;
     const away = g.awayTeam, home = g.homeTeam;
     if (!ss || !away || !home) return;
-    const topIsAway = ss.topSeedTeamId === away.id;
+    const topIsAway = ssTopIsAway(ss, away);
     const awayWins = topIsAway ? (ss.topSeedWins ?? 0) : (ss.bottomSeedWins ?? 0);
     const homeWins = topIsAway ? (ss.bottomSeedWins ?? 0) : (ss.topSeedWins ?? 0);
     if (away.abbrev) wins[away.abbrev] = awayWins;
@@ -1020,7 +1027,7 @@ function gameCard(g) {
 
   let seriesRecord = '';
   if (ss) {
-    const topIsAway = ss.topSeedTeamId === away.id;
+    const topIsAway = ssTopIsAway(ss, away);
     const aw = topIsAway ? (ss.topSeedWins ?? 0) : (ss.bottomSeedWins ?? 0);
     const hw = topIsAway ? (ss.bottomSeedWins ?? 0) : (ss.topSeedWins ?? 0);
     if (aw === hw) {
@@ -1178,7 +1185,7 @@ function buildGameModalFull(data, fromSeriesId) {
   let seriesLine = '';
   if (ss) {
     const gNum = ss.gameNumberOfSeries ? `Game ${ss.gameNumberOfSeries}` : '';
-    const topIsAway = ss.topSeedTeamId === away.id;
+    const topIsAway = ssTopIsAway(ss, away);
     const aw = topIsAway ? (ss.topSeedWins ?? 0) : (ss.bottomSeedWins ?? 0);
     const hw = topIsAway ? (ss.bottomSeedWins ?? 0) : (ss.topSeedWins ?? 0);
     const record = aw === hw ? (aw === 0 ? 'Series begins' : `Tied ${aw}–${hw}`)
