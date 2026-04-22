@@ -3,7 +3,7 @@ name: Update NHL Predictions
 on:
   push:
     branches:
-      - nhl-predictions
+      - main
     paths-ignore:
       - 'data/bracket.json'
       - 'data/series.json'
@@ -24,7 +24,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: nhl-predictions
+          ref: main
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
