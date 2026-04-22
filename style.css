@@ -51,6 +51,32 @@
   --success:     var(--green);
 }
 
+/* ── Light mode (system preference) ──────────────────────── */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:    #f0f2f8;
+    --bg-1:  #ffffff;
+    --bg-2:  #e8ecf5;
+    --bg-3:  #dde2ef;
+    --border:   rgba(0,0,0,0.08);
+    --border-2: rgba(0,0,0,0.16);
+    --red:     #d91a29;
+    --red-dim: rgba(217,26,41,0.1);
+    --ice:     #0077cc;
+    --ice-dim: rgba(0,119,204,0.1);
+    --gold:    #c47f00;
+    --silver:  #5a6a85;
+    --green:   #1a9e55;
+    --green-dim: rgba(26,158,85,0.1);
+    --text:   #0d1224;
+    --text-2: #4a5570;
+    --text-3: #8892aa;
+    --error:  #c0392b;
+    --warning: #b45309;
+    --shadow: 0 4px 24px rgba(0,0,0,0.12);
+  }
+}
+
 /* ── Base ─────────────────────────────────────────────────── */
 html { scroll-behavior: smooth; }
 
