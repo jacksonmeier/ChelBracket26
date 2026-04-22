@@ -1,6 +1,14 @@
 name: Update NHL Predictions
 
 on:
+  push:
+    branches:
+      - nhl-predictions
+    paths-ignore:
+      - 'data/bracket.json'
+      - 'data/series.json'
+      - 'data/games.json'
+      - 'data/last_updated.json'
   schedule:
     - cron: '0 10 * * *'
   workflow_dispatch:
