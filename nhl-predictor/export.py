@@ -77,6 +77,7 @@ def _series_sim(p_home_at_home: float, p_home_at_away: float,
     rng = random.Random(seed)
     hw_count = 0
     length = {4: 0, 5: 0, 6: 0, 7: 0}
+    joint = {"home": {4: 0, 5: 0, 6: 0, 7: 0}, "away": {4: 0, 5: 0, 6: 0, 7: 0}}
     for _ in range(n):
         hw, aw = home_wins, away_wins
         played = hw + aw
@@ -89,11 +90,17 @@ def _series_sim(p_home_at_home: float, p_home_at_away: float,
             played += 1
         if hw == 4:
             hw_count += 1
+            joint["home"][played] = joint["home"].get(played, 0) + 1
+        else:
+            joint["away"][played] = joint["away"].get(played, 0) + 1
         length[played] = length.get(played, 0) + 1
     total = sum(length.values()) or 1
     return {
         "p_home_series": hw_count / n,
         "length_distribution": {str(k): v / total for k, v in length.items()},
+        "joint_distribution": {
+            side: {str(k): v / total for k, v in d.items()} for side, d in joint.items()
+        },
     }
 
 
@@ -363,6 +370,7 @@ def _compose_payload(series_list: list[dict]) -> dict:
             "p_home_series": round(sim["p_home_series"], 4),
             "p_away_series": round(1 - sim["p_home_series"], 4),
             "length_distribution": sim["length_distribution"],
+            "joint_distribution": sim["joint_distribution"],
             "home_goalie": {"name": hg[0], "score": hg[1]},
             "away_goalie": {"name": ag[0], "score": ag[1]},
         }
@@ -404,6 +412,7 @@ def _compose_payload(series_list: list[dict]) -> dict:
             "away": {"team": s["away"], "name": s["away_name"], "wins": s["away_wins"],
                      "series_win_pct": m["p_away_series"]},
             "length_distribution": ld,
+            "joint_distribution": m.get("joint_distribution"),
             "most_likely": {"winner": winner, "games": most_likely_len},
         })
 

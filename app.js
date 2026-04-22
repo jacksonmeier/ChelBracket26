@@ -585,12 +585,21 @@ function renderPredSeries(data) {
   const active = (data && data.active) || [];
   if (!active.length) return '<div class="empty-state">No active series.</div>';
   return active.map(s => {
+    const j = s.joint_distribution;
     const len = s.length_distribution || {};
-    const lengths = ['4','5','6','7'].map(k => `
-      <div class="len-cell">
-        <div class="len-games">in ${k}</div>
-        <div class="len-pct">${predFmtPct(len[k] || 0)}</div>
-      </div>`).join('');
+    const cells = j
+      ? [['home', s.home.team], ['away', s.away.team]].flatMap(([side, abbr]) =>
+          ['4','5','6','7'].map(k => `
+            <div class="len-cell">
+              <div class="len-games">${abbr} in ${k}</div>
+              <div class="len-pct">${predFmtPct((j[side] || {})[k] || 0)}</div>
+            </div>`))
+      : ['4','5','6','7'].map(k => `
+          <div class="len-cell">
+            <div class="len-games">in ${k}</div>
+            <div class="len-pct">${predFmtPct(len[k] || 0)}</div>
+          </div>`);
+    const lengths = cells.join('');
     const most = s.most_likely || {};
     return `
       <div class="series-card">
