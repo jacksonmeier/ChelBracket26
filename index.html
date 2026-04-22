@@ -110,6 +110,7 @@
           <div class="sec-title">Current Rankings</div>
         </div>
         <div class="sec-right">
+          <button class="btn btn-sm btn-ghost" data-view="predictions">Pool Odds →</button>
           <button class="btn btn-sm btn-ghost" data-view="leaderboard">Full Leaderboard →</button>
         </div>
       </div>
@@ -184,7 +185,10 @@
         <div class="view-kicker">Pool Standings · Live</div>
         <h2 class="view-title">Leaderboard</h2>
       </div>
-      <button class="btn btn-sm btn-ghost" id="exportCsvBtn">↓ Export CSV</button>
+      <div class="sec-right">
+        <button class="btn btn-sm btn-ghost" data-view="predictions">Pool Odds →</button>
+        <button class="btn btn-sm btn-ghost" id="exportCsvBtn">↓ Export CSV</button>
+      </div>
     </div>
     <div id="leaderboardContent"></div>
   </section>
@@ -391,6 +395,6 @@
 </div>
 
 <script src="config.js"></script>
-<script src="app.js?v=55"></script>
+<script src="app.js?v=56"></script>
 </body>
 </html>
