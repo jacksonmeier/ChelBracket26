@@ -14,6 +14,7 @@ def matchup_vector(
     home_goalie_id: int | None,
     away_goalie_id: int | None,
     game_date: str,
+    game_id: int | None = None,
 ) -> dict:
     """Produce flat feature dict for the game model, plus an uncertainty flag.
 
@@ -31,8 +32,8 @@ def matchup_vector(
     home_gs = sub.score(home_goalie_id, away_team_id, game_date)
     away_gs = sub.score(away_goalie_id, home_team_id, game_date)
 
-    home_conf = goalie_features.is_confirmed_starter(home_goalie_id, home_team_id, game_date)
-    away_conf = goalie_features.is_confirmed_starter(away_goalie_id, away_team_id, game_date)
+    home_conf = goalie_features.is_confirmed_starter(home_goalie_id, home_team_id, game_date, game_id)
+    away_conf = goalie_features.is_confirmed_starter(away_goalie_id, away_team_id, game_date, game_id)
 
     feats = {
         "xgf_pct_diff": home["xgf_pct"] - away["xgf_pct"],

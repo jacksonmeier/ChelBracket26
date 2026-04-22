@@ -12,6 +12,12 @@ function fmtPct(p) {
   return (p * 100).toFixed(1) + '%';
 }
 
+function logoImg(abbrev) {
+  if (!abbrev) return '';
+  const safe = abbrev.replace(/[^A-Z]/g, '');
+  return `<img class="team-logo" src="https://assets.nhle.com/logos/nhl/svg/${safe}_dark.svg" alt="${safe}" loading="lazy" onerror="this.style.display='none'">`;
+}
+
 function bar(pct, side /* 'home' | 'away' */) {
   const width = Math.max(2, Math.min(100, pct * 100));
   return `<div class="prob-bar prob-${side}"><div class="prob-fill" style="width:${width.toFixed(1)}%"></div><span class="prob-label">${fmtPct(pct)}</span></div>`;
@@ -25,7 +31,7 @@ function renderCupOdds(data) {
   const rows = teams.map((t, i) => `
     <tr class="${i === 0 ? 'cup-leader' : ''}">
       <td class="rank">${i + 1}</td>
-      <td class="team-cell"><span class="team-abbr">${t.team}</span><span class="team-name">${t.name || ''}</span></td>
+      <td class="team-cell">${logoImg(t.team)}<span class="team-abbr">${t.team}</span><span class="team-name">${t.name || ''}</span></td>
       <td class="series-score">${t.current_series || ''}</td>
       <td>${fmtPct(t.round1_win_pct)}</td>
       <td>${fmtPct(t.round2_win_pct)}</td>
@@ -37,7 +43,7 @@ function renderCupOdds(data) {
     <div class="table-wrap">
       <table class="pred-table">
         <thead>
-          <tr><th>#</th><th>Team</th><th>R1</th><th>R1%</th><th>R2%</th><th>R3%</th><th>Cup%</th></tr>
+          <tr><th>#</th><th>Team</th><th>Score</th><th>R1%</th><th>R2%</th><th>R3%</th><th>Cup%</th></tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
@@ -63,12 +69,12 @@ function renderSeries(data) {
         </div>
         <div class="series-teams">
           <div class="series-team">
-            <div class="t-name"><span class="team-abbr">${s.home.team}</span> ${s.home.name || ''}</div>
+            <div class="t-name">${logoImg(s.home.team)}<span class="team-abbr">${s.home.team}</span> ${s.home.name || ''}</div>
             ${bar(s.home.series_win_pct, 'home')}
           </div>
           <div class="series-score-big">${s.home.wins}–${s.away.wins}</div>
           <div class="series-team">
-            <div class="t-name"><span class="team-abbr">${s.away.team}</span> ${s.away.name || ''}</div>
+            <div class="t-name">${logoImg(s.away.team)}<span class="team-abbr">${s.away.team}</span> ${s.away.name || ''}</div>
             ${bar(s.away.series_win_pct, 'away')}
           </div>
         </div>
@@ -92,14 +98,14 @@ function renderGames(data) {
         </div>
         <div class="game-matchup">
           <div class="game-side">
-            <div class="t-name"><span class="team-abbr">${g.home.team}</span> ${g.home.name || ''}</div>
+            <div class="t-name">${logoImg(g.home.team)}<span class="team-abbr">${g.home.team}</span> ${g.home.name || ''}</div>
             <div class="t-goalie">${g.home.goalie || '—'} · quality ${g.home.goalie_score != null ? g.home.goalie_score.toFixed(2) : '—'}</div>
             <div class="t-rest">Rest: ${g.home.rest_days}d</div>
             ${bar(g.home.win_pct, 'home')}
           </div>
           <div class="game-vs">vs</div>
           <div class="game-side">
-            <div class="t-name"><span class="team-abbr">${g.away.team}</span> ${g.away.name || ''}</div>
+            <div class="t-name">${logoImg(g.away.team)}<span class="team-abbr">${g.away.team}</span> ${g.away.name || ''}</div>
             <div class="t-goalie">${g.away.goalie || '—'} · quality ${g.away.goalie_score != null ? g.away.goalie_score.toFixed(2) : '—'}</div>
             <div class="t-rest">Rest: ${g.away.rest_days}d</div>
             ${bar(g.away.win_pct, 'away')}

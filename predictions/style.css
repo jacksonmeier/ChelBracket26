@@ -29,7 +29,9 @@
   color: var(--text-3);
   width: 2.5rem;
 }
-.pred-table .team-cell { display: flex; align-items: baseline; gap: 0.6rem; }
+.pred-table .team-cell { display: flex; align-items: center; gap: 0.6rem; }
+.team-logo { width: 22px; height: 22px; flex-shrink: 0; object-fit: contain; }
+.t-name .team-logo { width: 20px; height: 20px; }
 .pred-table .team-abbr {
   font-family: var(--font-m);
   font-weight: 700;

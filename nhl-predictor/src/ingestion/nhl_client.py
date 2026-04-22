@@ -32,24 +32,29 @@ def _cache_path(key: str) -> Path:
     return RAW_DIR / f"{safe}.json"
 
 
-def _is_fresh(path: Path, season: int | None) -> bool:
+def _is_fresh(path: Path, season: int | None, stale_seconds: int) -> bool:
     """Return True if cache is still valid.
 
-    Completed historical seasons are never re-fetched. Current season is
-    re-fetched after STALE_SECONDS.
+    Completed historical seasons are never re-fetched. Current season +
+    season-less requests are re-fetched after `stale_seconds`.
     """
     if not path.exists():
         return False
     if season is not None and season != CURRENT_SEASON:
         return True
     age = time.time() - path.stat().st_mtime
-    return age < STALE_SECONDS
+    return age < stale_seconds
 
 
-def fetch(url: str, cache_key: str, season: int | None = None) -> dict[str, Any] | None:
-    """GET `url`, cache to disk under `cache_key`. Returns parsed JSON or None on failure."""
+def fetch(url: str, cache_key: str, season: int | None = None,
+          stale_seconds: int = STALE_SECONDS) -> dict[str, Any] | None:
+    """GET `url`, cache to disk under `cache_key`. Returns parsed JSON or None on failure.
+
+    `stale_seconds` overrides the default 24h TTL — pass a shorter value for
+    rapidly-changing data like live gamecenter feeds.
+    """
     path = _cache_path(cache_key)
-    if _is_fresh(path, season):
+    if _is_fresh(path, season, stale_seconds):
         try:
             return json.loads(path.read_text())
         except Exception:

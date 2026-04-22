@@ -51,13 +51,30 @@ def goalie_vector(goalie_id: int | None, opponent_id: int | None, as_of_date: st
     return feats
 
 
-def is_confirmed_starter(goalie_id: int | None, team_id: int, game_date: str) -> bool:
+def is_confirmed_starter(goalie_id: int | None, team_id: int, game_date: str,
+                         game_id: int | None = None) -> bool:
     """Live check whether this goalie is the confirmed starter for the given game.
 
-    Historical backfill: returns True unconditionally so training data is usable.
-    For future games this would query the NHL API lineup endpoint; the skeleton
-    returns True and leaves the live check as a TODO.
+    Historical backfill (game_id=None): returns True so the game actually
+    happened with this goalie — training data is grounded in reality.
+
+    Live path (game_id provided): queries the starter_lookup module, which
+    reads /gamecenter/{id}/landing and heuristically picks the probable
+    starter based on playoff games played + roster match. Returns False
+    when the feed hasn't committed to a single goalie.
     """
     if goalie_id is None:
         return False
-    return True
+    if game_id is None:
+        return True
+    try:
+        from ingestion import starter_lookup
+    except Exception:
+        log.warning("starter_lookup unavailable; treating %s as confirmed", goalie_id)
+        return True
+    info = starter_lookup.lookup(game_id)
+    for side in ("home", "away"):
+        s = info.get(side)
+        if s and s.get("player_id") == goalie_id:
+            return bool(s.get("confirmed"))
+    return False
