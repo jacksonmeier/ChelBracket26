@@ -27,6 +27,17 @@ log = logging.getLogger(__name__)
 PLAYOFF_YEAR = 2026
 HOME_SCHED = [True, True, False, False, True, False, True]  # games 1..7, top seed home
 
+# Map NHL API seriesLetter → pool series ID. Based on standard 2026 bracket ordering:
+# R1 letters A–H follow NHL's division pairs; the pool uses E1–E4 for East, W1–W4 for West.
+# R2 letters I–L are the winners of (A|B, C|D, E|F, G|H); pool labels them E5/E6/W5/W6.
+# R3 M|N = conference finals → pool ECF/WCF. O = Stanley Cup Final → pool SCF.
+LETTER_TO_POOL_SERIES = {
+    "A": "E1", "B": "E2", "C": "E3", "D": "E4",
+    "E": "W1", "F": "W2", "G": "W3", "H": "W4",
+    "I": "E5", "J": "E6", "K": "W5", "L": "W6",
+    "M": "ECF", "N": "WCF", "O": "SCF",
+}
+
 
 # Fallback goalie quality scores keyed by team abbrev. These stand in until
 # we wire a live starter lookup. Values are hand-set in [0.45, 0.72].
@@ -84,6 +95,21 @@ def _series_sim(p_home_at_home: float, p_home_at_away: float,
         "p_home_series": hw_count / n,
         "length_distribution": {str(k): v / total for k, v in length.items()},
     }
+
+
+def _sim_one_series(p_home_at_home: float, p_home_at_away: float,
+                    hw0: int, aw0: int, rng: random.Random) -> tuple[bool, int]:
+    """Play out one best-of-7 from (hw0, aw0). Returns (home_won, total_games_played)."""
+    hw, aw = hw0, aw0
+    played = hw + aw
+    while hw < 4 and aw < 4:
+        p = p_home_at_home if HOME_SCHED[played] else p_home_at_away
+        if rng.random() < p:
+            hw += 1
+        else:
+            aw += 1
+        played += 1
+    return hw == 4, played
 
 
 def _bracket_live() -> list[dict] | None:
@@ -200,14 +226,18 @@ def _upcoming_games_live(active_series: list[dict]) -> list[dict]:
     return out
 
 
-def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000) -> dict:
-    """Monte Carlo the entire remaining bracket, return per-team round+Cup probs.
+def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000,
+                      n_samples_keep: int = 5_000) -> dict:
+    """Monte Carlo the entire remaining bracket.
 
     NHL bracket pairing: R1 series A–H advance to R2 pairs (A|B, C|D, E|F, G|H),
     which pair again in R3 (AB|CD, EF|GH), finals = AB/CD winner vs EF/GH winner.
-    Each series is resolved via a quick best-of-7 Bernoulli draw using goalie
-    quality. Rest/home-ice for future rounds is approximated as neutral home-ice
-    for the higher-seeded survivor; goalie quality carries through.
+
+    Returns:
+        {
+          "probs": {abbrev: {name, r1, r2, r3, cup}},  # aggregate probabilities
+          "samples": [ { "A": ["BOS", 6], ..., "O": ["COL", 5] }, ... ],  # first n_samples_keep sims
+        }
     """
     letters = ["A", "B", "C", "D", "E", "F", "G", "H"]
     by_letter = {s["letter"]: s for s in active_series}
@@ -223,67 +253,89 @@ def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000) -> dict:
 
     rng = random.Random(42)
 
-    # Precompute per-R1 series probability (home team wins series from current score).
-    r1_series_p: dict[str, float] = {}
+    # Precompute per-R1 per-game probs; series state starts at current wins.
+    r1_probs: dict[str, tuple[float, float]] = {}
     for letter, s in by_letter.items():
         hg = _goalie_for(s["home"])[1]
         ag = _goalie_for(s["away"])[1]
-        p_home_at_home = _game_prob_home(hg, ag, home_ice=True)
-        p_home_at_away = _game_prob_home(hg, ag, home_ice=False)
-        sim = _series_sim(p_home_at_home, p_home_at_away, s["home_wins"], s["away_wins"],
-                          n=4000, seed=hash(("r1", letter)) & 0xFFFFFFFF)
-        r1_series_p[letter] = sim["p_home_series"]
+        r1_probs[letter] = (_game_prob_home(hg, ag, True), _game_prob_home(hg, ag, False))
 
-    for _ in range(n_sims):
+    samples: list[dict] = []
+
+    for sim_i in range(n_sims):
+        sample: dict[str, list] = {}
+
         # Round 1
         r1_winners = {}
         for letter in letters:
             s = by_letter.get(letter)
             if not s:
                 continue
-            winner = s["home"] if rng.random() < r1_series_p[letter] else s["away"]
+            # If series already decided, emit actual result.
+            if s["home_wins"] >= 4 or s["away_wins"] >= 4:
+                winner = s["home"] if s["home_wins"] >= 4 else s["away"]
+                games = s["home_wins"] + s["away_wins"]
+            else:
+                ph_home, ph_away = r1_probs[letter]
+                home_won, games = _sim_one_series(ph_home, ph_away,
+                                                   s["home_wins"], s["away_wins"], rng)
+                winner = s["home"] if home_won else s["away"]
             r1_winners[letter] = winner
             teams[winner]["r1"] += 1
+            if sim_i < n_samples_keep:
+                sample[letter] = [winner, games]
 
-        # Round 2 pairings
-        r2_pairs = [("A", "B"), ("C", "D"), ("E", "F"), ("G", "H")]
-        r2_winners = []
-        for a, b in r2_pairs:
+        # Round 2 pairings: A|B=I, C|D=J, E|F=K, G|H=L
+        r2_pairs = [("A", "B", "I"), ("C", "D", "J"), ("E", "F", "K"), ("G", "H", "L")]
+        r2_winners: dict[str, str] = {}
+        for a, b, rkey in r2_pairs:
             if a not in r1_winners or b not in r1_winners:
                 continue
             w1, w2 = r1_winners[a], r1_winners[b]
             q1, q2 = _goalie_for(w1)[1], _goalie_for(w2)[1]
-            p = _game_prob_home(q1, q2, home_ice=True)
-            # Quick best-of-7 approx: series prob from per-game prob
-            # Using neutral series (no current score), Bradley-Terry inflated.
-            series_p = _series_p_from_game(p)
-            winner = w1 if rng.random() < series_p else w2
-            r2_winners.append(winner)
+            ph_home = _game_prob_home(q1, q2, home_ice=True)
+            ph_away = _game_prob_home(q1, q2, home_ice=False)
+            home_won, games = _sim_one_series(ph_home, ph_away, 0, 0, rng)
+            winner = w1 if home_won else w2
+            r2_winners[rkey] = winner
             teams[winner]["r2"] += 1
+            if sim_i < n_samples_keep:
+                sample[rkey] = [winner, games]
 
-        # Round 3 (conference finals)
-        r3_winners = []
-        for i in range(0, len(r2_winners), 2):
-            if i + 1 >= len(r2_winners):
+        # Round 3 (conference finals): I|J=M, K|L=N
+        r3_pairs = [("I", "J", "M"), ("K", "L", "N")]
+        r3_winners: dict[str, str] = {}
+        for a, b, rkey in r3_pairs:
+            if a not in r2_winners or b not in r2_winners:
                 continue
-            w1, w2 = r2_winners[i], r2_winners[i + 1]
+            w1, w2 = r2_winners[a], r2_winners[b]
             q1, q2 = _goalie_for(w1)[1], _goalie_for(w2)[1]
-            p = _game_prob_home(q1, q2, home_ice=True)
-            series_p = _series_p_from_game(p)
-            winner = w1 if rng.random() < series_p else w2
-            r3_winners.append(winner)
+            ph_home = _game_prob_home(q1, q2, home_ice=True)
+            ph_away = _game_prob_home(q1, q2, home_ice=False)
+            home_won, games = _sim_one_series(ph_home, ph_away, 0, 0, rng)
+            winner = w1 if home_won else w2
+            r3_winners[rkey] = winner
             teams[winner]["r3"] += 1
+            if sim_i < n_samples_keep:
+                sample[rkey] = [winner, games]
 
-        # Final
-        if len(r3_winners) >= 2:
-            w1, w2 = r3_winners[0], r3_winners[1]
+        # Stanley Cup Final: M|N=O
+        if "M" in r3_winners and "N" in r3_winners:
+            w1, w2 = r3_winners["M"], r3_winners["N"]
             q1, q2 = _goalie_for(w1)[1], _goalie_for(w2)[1]
-            p = _game_prob_home(q1, q2, home_ice=True)
-            series_p = _series_p_from_game(p)
-            champ = w1 if rng.random() < series_p else w2
+            ph_home = _game_prob_home(q1, q2, home_ice=True)
+            ph_away = _game_prob_home(q1, q2, home_ice=False)
+            home_won, games = _sim_one_series(ph_home, ph_away, 0, 0, rng)
+            champ = w1 if home_won else w2
             teams[champ]["cup"] += 1
+            if sim_i < n_samples_keep:
+                sample["O"] = [champ, games]
 
-    return {t: {k: (v / n_sims if k != "name" else v) for k, v in d.items()} for t, d in teams.items()}
+        if sim_i < n_samples_keep:
+            samples.append(sample)
+
+    probs = {t: {k: (v / n_sims if k != "name" else v) for k, v in d.items()} for t, d in teams.items()}
+    return {"probs": probs, "samples": samples}
 
 
 def _series_p_from_game(p_game: float) -> float:
@@ -315,8 +367,10 @@ def _compose_payload(series_list: list[dict]) -> dict:
             "away_goalie": {"name": ag[0], "score": ag[1]},
         }
 
-    # 2. Full bracket Monte Carlo for Cup odds.
-    bracket_probs = _full_bracket_sim(active_series, n_sims=20_000)
+    # 2. Full bracket Monte Carlo for Cup odds + sample retention for pool scoring.
+    bracket_result = _full_bracket_sim(active_series, n_sims=20_000, n_samples_keep=5_000)
+    bracket_probs = bracket_result["probs"]
+    raw_samples = bracket_result["samples"]
     cup_rows = []
     for s in active_series:
         for side in ("home", "away"):
@@ -355,10 +409,26 @@ def _compose_payload(series_list: list[dict]) -> dict:
 
     upcoming = _upcoming_games_live(active_series)
 
+    # 4. Pool-scoring samples: translate NHL letters → pool series IDs.
+    pool_series_ids = ["E1","E2","E3","E4","W1","W2","W3","W4",
+                       "E5","E6","W5","W6","ECF","WCF","SCF"]
+    pool_samples = []
+    for s in raw_samples:
+        mapped = {}
+        for letter, pool_id in LETTER_TO_POOL_SERIES.items():
+            if letter in s:
+                mapped[pool_id] = s[letter]
+        pool_samples.append(mapped)
+
     return {
         "bracket": {"teams": cup_rows},
         "series":  {"active": ui_series},
         "games":   {"upcoming": upcoming},
+        "bracket_samples": {
+            "n_samples": len(pool_samples),
+            "series_ids": pool_series_ids,
+            "samples": pool_samples,
+        },
         "last_updated": {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "round": 1,
@@ -380,11 +450,14 @@ def main() -> None:
     (WEB_DATA / "series.json").write_text(json.dumps(payload["series"], indent=2))
     (WEB_DATA / "games.json").write_text(json.dumps(payload["games"], indent=2))
     (WEB_DATA / "last_updated.json").write_text(json.dumps(payload["last_updated"], indent=2))
+    # Samples file is large and doesn't benefit from pretty-printing.
+    (WEB_DATA / "bracket_samples.json").write_text(json.dumps(payload["bracket_samples"]))
 
-    print(f"wrote 4 JSON files to {WEB_DATA}")
+    print(f"wrote 5 JSON files to {WEB_DATA}")
     print(f"  teams in bracket: {len(payload['bracket']['teams'])}")
     print(f"  active series:    {len(payload['series']['active'])}")
     print(f"  upcoming games:   {len(payload['games']['upcoming'])}")
+    print(f"  bracket samples:  {payload['bracket_samples']['n_samples']}")
     print(f"  source:           {payload['last_updated']['source']}")
     print(f"  generated_at:     {payload['last_updated']['generated_at']}")
 
