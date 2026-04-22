@@ -600,7 +600,17 @@ function renderPredSeries(data) {
             <div class="len-pct">${predFmtPct(len[k] || 0)}</div>
           </div>`);
     const lengths = cells.join('');
-    const most = s.most_likely || {};
+    let most = s.most_likely || {};
+    if (j) {
+      let bestSide = 'home', bestLen = '7', bestP = -1;
+      for (const side of ['home','away']) {
+        for (const k of ['4','5','6','7']) {
+          const p = (j[side] || {})[k] || 0;
+          if (p > bestP) { bestP = p; bestSide = side; bestLen = k; }
+        }
+      }
+      most = { winner: s[bestSide].team, games: bestLen };
+    }
     return `
       <div class="series-card">
         <div class="series-top">

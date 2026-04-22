@@ -401,8 +401,14 @@ def _compose_payload(series_list: list[dict]) -> dict:
     for s in active_series:
         m = series_models[s["letter"]]
         ld = m["length_distribution"]
-        most_likely_len = max(ld, key=lambda k: ld[k])
-        winner = s["home"] if m["p_home_series"] >= 0.5 else s["away"]
+        jd = m.get("joint_distribution") or {}
+        best_side, best_len, best_p = "home", "7", -1.0
+        for side in ("home", "away"):
+            for k, p in (jd.get(side) or {}).items():
+                if p > best_p:
+                    best_side, best_len, best_p = side, k, p
+        most_likely_len = best_len
+        winner = s["home"] if best_side == "home" else s["away"]
         ui_series.append({
             "series_id": f'{s["home"]}-{s["away"]}',
             "round": s["round"],

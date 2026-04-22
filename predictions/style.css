@@ -31,7 +31,7 @@
 }
 .pred-table .team-cell { display: flex; align-items: center; gap: 0.6rem; }
 .team-logo { width: 22px; height: 22px; flex-shrink: 0; object-fit: contain; }
-.t-name .team-logo { width: 20px; height: 20px; }
+.t-name .team-logo { width: 40px; height: 40px; }
 .pred-table .team-abbr {
   font-family: var(--font-m);
   font-weight: 700;
@@ -85,7 +85,11 @@
   text-align: center;
   padding: 0 0.5rem;
 }
-.t-name { display: flex; gap: 0.5rem; align-items: baseline; margin-bottom: 0.4rem; color: var(--text); font-weight: 500; }
+.t-name { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; color: var(--text); font-family: var(--font-h); font-weight: 600; letter-spacing: -0.01em; }
+.series-teams > .series-team:last-child { text-align: right; }
+.series-teams > .series-team:last-child .t-name { flex-direction: row-reverse; justify-content: flex-start; }
+.series-teams > .series-team:last-child .prob-fill { left: auto; right: 0; }
+.series-teams > .series-team:last-child .prob-label { right: auto; left: 0.5rem; }
 .t-name .team-abbr { font-family: var(--font-m); font-weight: 700; color: var(--text); }
 
 .prob-bar {
@@ -102,7 +106,7 @@
   background: linear-gradient(90deg, var(--ice), var(--ice-dim));
 }
 .prob-away .prob-fill {
-  background: linear-gradient(90deg, var(--red), var(--red-dim));
+  background: linear-gradient(90deg, var(--red-dim), var(--red));
 }
 .prob-label {
   position: absolute;
