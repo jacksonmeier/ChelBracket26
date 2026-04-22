@@ -2020,7 +2020,7 @@ function renderStats() {
         </div>`;
       }
       cards += `
-        <div class="stats-sc-card">
+        <div class="stats-sc-card" data-series-id="${s.id}" style="cursor:pointer">
           <div class="stats-sc-header">
             <div class="stats-sc-teams">
               ${logo1}<span class="stats-sc-abbr">${a1}</span>
@@ -2074,6 +2074,10 @@ function renderStats() {
   accHtml += '</tbody></table></div>';
 
   el.innerHTML = pulseHtml + cupHtml + seriesHtml + accHtml;
+
+  el.querySelectorAll('.stats-sc-card[data-series-id]').forEach(card => {
+    card.addEventListener('click', () => showSeriesModal(card.dataset.seriesId));
+  });
 
   el.querySelectorAll('.stats-round-pill').forEach(pill => {
     pill.addEventListener('click', () => {
