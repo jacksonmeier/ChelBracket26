@@ -1,0 +1,391 @@
+{
+  "mode": "walk_forward_game_model",
+  "min_target_season": 20152016,
+  "n_games_scored": 914,
+  "features": [
+    "h_point_pct",
+    "h_gf",
+    "h_ga",
+    "h_gd",
+    "h_pp",
+    "h_pk",
+    "h_sf",
+    "h_sa",
+    "a_point_pct",
+    "a_gf",
+    "a_ga",
+    "a_gd",
+    "a_pp",
+    "a_pk",
+    "a_sf",
+    "a_sa",
+    "d_point_pct",
+    "d_gf",
+    "d_ga",
+    "d_gd",
+    "d_pp",
+    "d_pk",
+    "d_sf",
+    "d_sa",
+    "days_rest_home",
+    "days_rest_away",
+    "home_series_wins",
+    "away_series_wins",
+    "game_in_series",
+    "round",
+    "elimination_flag"
+  ],
+  "aggregate": {
+    "model": {
+      "n": 914,
+      "accuracy": 0.523,
+      "brier": 0.2513,
+      "log_loss": 0.696,
+      "mean_pred": 0.5283,
+      "mean_actual": 0.5164
+    },
+    "prior_only": {
+      "n": 914,
+      "accuracy": 0.5066,
+      "brier": 0.251,
+      "log_loss": 0.6952,
+      "mean_pred": 0.5379,
+      "mean_actual": 0.5164
+    },
+    "home_0545": {
+      "n": 914,
+      "accuracy": 0.5164,
+      "brier": 0.2505,
+      "log_loss": 0.6943,
+      "mean_pred": 0.545,
+      "mean_actual": 0.5164
+    },
+    "coin_flip": {
+      "n": 914,
+      "accuracy": 0.5164,
+      "brier": 0.25,
+      "log_loss": 0.6931,
+      "mean_pred": 0.5,
+      "mean_actual": 0.5164
+    }
+  },
+  "calibration_model": [
+    {
+      "bin": [
+        0.0,
+        0.1
+      ],
+      "n": 0
+    },
+    {
+      "bin": [
+        0.1,
+        0.2
+      ],
+      "n": 0
+    },
+    {
+      "bin": [
+        0.2,
+        0.3
+      ],
+      "n": 1,
+      "mean_pred": 0.2832,
+      "actual_rate": 0.0
+    },
+    {
+      "bin": [
+        0.3,
+        0.4
+      ],
+      "n": 19,
+      "mean_pred": 0.3721,
+      "actual_rate": 0.3684
+    },
+    {
+      "bin": [
+        0.4,
+        0.5
+      ],
+      "n": 352,
+      "mean_pred": 0.4669,
+      "actual_rate": 0.5
+    },
+    {
+      "bin": [
+        0.5,
+        0.6
+      ],
+      "n": 395,
+      "mean_pred": 0.5438,
+      "actual_rate": 0.5241
+    },
+    {
+      "bin": [
+        0.6,
+        0.7
+      ],
+      "n": 118,
+      "mean_pred": 0.6404,
+      "actual_rate": 0.5169
+    },
+    {
+      "bin": [
+        0.7,
+        0.8
+      ],
+      "n": 29,
+      "mean_pred": 0.7174,
+      "actual_rate": 0.7241
+    },
+    {
+      "bin": [
+        0.8,
+        0.9
+      ],
+      "n": 0
+    },
+    {
+      "bin": [
+        0.9,
+        1.0
+      ],
+      "n": 0
+    }
+  ],
+  "per_season": {
+    "20152016": {
+      "model": {
+        "n": 91,
+        "accuracy": 0.5824,
+        "brier": 0.25,
+        "log_loss": 0.694,
+        "mean_pred": 0.5932,
+        "mean_actual": 0.5055
+      },
+      "prior_only": {
+        "n": 91,
+        "accuracy": 0.5275,
+        "brier": 0.2546,
+        "log_loss": 0.7025,
+        "mean_pred": 0.5372,
+        "mean_actual": 0.5055
+      },
+      "train_rows": 354,
+      "platt_season": 20142015
+    },
+    "20162017": {
+      "model": {
+        "n": 87,
+        "accuracy": 0.5402,
+        "brier": 0.2511,
+        "log_loss": 0.6955,
+        "mean_pred": 0.5247,
+        "mean_actual": 0.5402
+      },
+      "prior_only": {
+        "n": 87,
+        "accuracy": 0.5057,
+        "brier": 0.2453,
+        "log_loss": 0.6836,
+        "mean_pred": 0.5377,
+        "mean_actual": 0.5402
+      },
+      "train_rows": 443,
+      "platt_season": 20152016
+    },
+    "20172018": {
+      "model": {
+        "n": 84,
+        "accuracy": 0.3929,
+        "brier": 0.2664,
+        "log_loss": 0.7264,
+        "mean_pred": 0.5548,
+        "mean_actual": 0.4762
+      },
+      "prior_only": {
+        "n": 84,
+        "accuracy": 0.5357,
+        "brier": 0.2479,
+        "log_loss": 0.6889,
+        "mean_pred": 0.5399,
+        "mean_actual": 0.4762
+      },
+      "train_rows": 534,
+      "platt_season": 20162017
+    },
+    "20182019": {
+      "model": {
+        "n": 87,
+        "accuracy": 0.4828,
+        "brier": 0.2514,
+        "log_loss": 0.6959,
+        "mean_pred": 0.4762,
+        "mean_actual": 0.5172
+      },
+      "prior_only": {
+        "n": 87,
+        "accuracy": 0.4943,
+        "brier": 0.257,
+        "log_loss": 0.7076,
+        "mean_pred": 0.5355,
+        "mean_actual": 0.5172
+      },
+      "train_rows": 621,
+      "platt_season": 20172018
+    },
+    "20192020": {
+      "model": {
+        "n": 130,
+        "accuracy": 0.5077,
+        "brier": 0.2502,
+        "log_loss": 0.6935,
+        "mean_pred": 0.5088,
+        "mean_actual": 0.4538
+      },
+      "prior_only": {
+        "n": 130,
+        "accuracy": 0.4692,
+        "brier": 0.2525,
+        "log_loss": 0.6983,
+        "mean_pred": 0.5382,
+        "mean_actual": 0.4538
+      },
+      "train_rows": 705,
+      "platt_season": 20182019
+    },
+    "20202021": {
+      "model": {
+        "n": 84,
+        "accuracy": 0.5476,
+        "brier": 0.2506,
+        "log_loss": 0.6944,
+        "mean_pred": 0.4726,
+        "mean_actual": 0.5476
+      },
+      "prior_only": {
+        "n": 84,
+        "accuracy": 0.5714,
+        "brier": 0.2443,
+        "log_loss": 0.6818,
+        "mean_pred": 0.5386,
+        "mean_actual": 0.5476
+      },
+      "train_rows": 792,
+      "platt_season": 20192020
+    },
+    "20212022": {
+      "model": {
+        "n": 89,
+        "accuracy": 0.5618,
+        "brier": 0.2459,
+        "log_loss": 0.6849,
+        "mean_pred": 0.5245,
+        "mean_actual": 0.6067
+      },
+      "prior_only": {
+        "n": 89,
+        "accuracy": 0.5393,
+        "brier": 0.2451,
+        "log_loss": 0.6834,
+        "mean_pred": 0.536,
+        "mean_actual": 0.6067
+      },
+      "train_rows": 922,
+      "platt_season": 20202021
+    },
+    "20222023": {
+      "model": {
+        "n": 88,
+        "accuracy": 0.4659,
+        "brier": 0.2729,
+        "log_loss": 0.7411,
+        "mean_pred": 0.6238,
+        "mean_actual": 0.4659
+      },
+      "prior_only": {
+        "n": 88,
+        "accuracy": 0.4659,
+        "brier": 0.2572,
+        "log_loss": 0.7076,
+        "mean_pred": 0.5361,
+        "mean_actual": 0.4659
+      },
+      "train_rows": 1006,
+      "platt_season": 20212022
+    },
+    "20232024": {
+      "model": {
+        "n": 88,
+        "accuracy": 0.5227,
+        "brier": 0.252,
+        "log_loss": 0.6972,
+        "mean_pred": 0.4617,
+        "mean_actual": 0.4773
+      },
+      "prior_only": {
+        "n": 88,
+        "accuracy": 0.4659,
+        "brier": 0.2583,
+        "log_loss": 0.71,
+        "mean_pred": 0.5392,
+        "mean_actual": 0.4773
+      },
+      "train_rows": 1095,
+      "platt_season": 20222023
+    },
+    "20242025": {
+      "model": {
+        "n": 86,
+        "accuracy": 0.6279,
+        "brier": 0.2232,
+        "log_loss": 0.6382,
+        "mean_pred": 0.5485,
+        "mean_actual": 0.6047
+      },
+      "prior_only": {
+        "n": 86,
+        "accuracy": 0.5116,
+        "brier": 0.2463,
+        "log_loss": 0.6855,
+        "mean_pred": 0.5409,
+        "mean_actual": 0.6047
+      },
+      "train_rows": 1183,
+      "platt_season": 20232024
+    }
+  },
+  "feature_importance_total_gain": {
+    "a_pk": 683,
+    "a_pp": 593,
+    "h_ga": 513,
+    "d_sf": 492,
+    "h_sa": 479,
+    "d_pk": 478,
+    "d_point_pct": 451,
+    "d_pp": 437,
+    "d_ga": 430,
+    "h_pk": 418,
+    "d_sa": 399,
+    "h_sf": 383,
+    "d_gf": 376,
+    "d_gd": 364,
+    "a_ga": 344,
+    "a_sf": 308,
+    "h_pp": 282,
+    "a_sa": 261,
+    "h_point_pct": 254,
+    "home_series_wins": 229,
+    "away_series_wins": 225,
+    "h_gf": 201,
+    "h_gd": 200,
+    "a_gf": 187,
+    "a_point_pct": 175,
+    "game_in_series": 159,
+    "a_gd": 152,
+    "round": 138,
+    "days_rest_away": 78,
+    "days_rest_home": 69,
+    "elimination_flag": 49
+  }
+}
