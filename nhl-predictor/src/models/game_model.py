@@ -32,6 +32,22 @@ FEATURES = [
     "game_in_series", "round", "elimination_flag",
 ]
 
+_FEATURE_LABELS = {
+    "h_point_pct": "Home points %", "h_gf": "Home goals-for/gm", "h_ga": "Home goals-against/gm",
+    "h_gd": "Home goal diff", "h_pp": "Home power play %", "h_pk": "Home penalty kill %",
+    "h_sf": "Home shots-for/gm", "h_sa": "Home shots-against/gm",
+    "a_point_pct": "Away points %", "a_gf": "Away goals-for/gm", "a_ga": "Away goals-against/gm",
+    "a_gd": "Away goal diff", "a_pp": "Away power play %", "a_pk": "Away penalty kill %",
+    "a_sf": "Away shots-for/gm", "a_sa": "Away shots-against/gm",
+    "d_point_pct": "Points-% edge", "d_gf": "Scoring edge", "d_ga": "Defense edge (GA)",
+    "d_gd": "Goal-diff edge", "d_pp": "Power-play edge", "d_pk": "Penalty-kill edge",
+    "d_sf": "Shots-for edge", "d_sa": "Shots-against edge",
+    "days_rest_home": "Home rest days", "days_rest_away": "Away rest days",
+    "home_series_wins": "Home series lead", "away_series_wins": "Away series lead",
+    "game_in_series": "Game # in series", "round": "Playoff round",
+    "elimination_flag": "Elimination game",
+}
+
 DEFAULT_TEAM_STATS = {
     "point_pct": 0.5, "gf": 2.9, "ga": 2.9, "pp": 0.20, "pk": 0.80,
     "sf": 30.0, "sa": 30.0,
@@ -259,6 +275,43 @@ class GameModel:
         raw = float(self.booster.predict(x)[0])
         p = 1.0 / (1.0 + np.exp(-(self.platt_a * raw + self.platt_b)))
         return max(0.05, min(0.95, float(p)))
+
+    def explain(self, home_team_id: int | None, away_team_id: int | None,
+                season: int, round_: int = 1,
+                home_wins: int = 0, away_wins: int = 0,
+                game_in_series: int = 1,
+                days_rest_home: int = 2, days_rest_away: int = 2,
+                top_k: int = 3) -> list[dict]:
+        """Rank model features by |SHAP contribution| for this matchup.
+
+        Returns a list of up to `top_k` dicts: {feature, label, shap, favors}
+        where `favors` is 'home' or 'away' by sign of the log-odds shift.
+        """
+        if not self.trained or self.booster is None:
+            return []
+        hs = self._stats_for(home_team_id, season)
+        as_ = self._stats_for(away_team_id, season)
+        feats = _build_feats(hs, as_, round_, home_wins, away_wins,
+                             game_in_series, days_rest_home, days_rest_away)
+        x = np.array([feats], dtype=float)
+        try:
+            shap = self.booster.predict(x, pred_contrib=True)[0]
+        except Exception:
+            return []
+        items = []
+        for i, name in enumerate(FEATURES):
+            v = float(shap[i])
+            if not v:
+                continue
+            items.append({
+                "feature": name,
+                "label": _FEATURE_LABELS.get(name, name),
+                "shap": round(v, 4),
+                "favors": "home" if v > 0 else "away",
+                "value": round(float(feats[i]), 3),
+            })
+        items.sort(key=lambda d: -abs(d["shap"]))
+        return items[:top_k]
 
     def _save(self) -> None:
         try:

@@ -6,7 +6,7 @@
       "home": {
         "team": "BOS",
         "name": "Boston",
-        "win_pct": 0.646,
+        "win_pct": 0.4304,
         "goalie": "J. Swayman",
         "goalie_score": 0.621,
         "goalie_confirmed": true,
@@ -15,7 +15,7 @@
       "away": {
         "team": "BUF",
         "name": "Buffalo",
-        "win_pct": 0.354,
+        "win_pct": 0.5696,
         "goalie": "U. Luukkonen",
         "goalie_score": 0.494,
         "goalie_confirmed": false,
@@ -29,7 +29,7 @@
       "home": {
         "team": "OTT",
         "name": "Ottawa",
-        "win_pct": 0.6919,
+        "win_pct": 0.606,
         "goalie": "L. Ullmark",
         "goalie_score": 0.597,
         "goalie_confirmed": true,
@@ -38,7 +38,7 @@
       "away": {
         "team": "CAR",
         "name": "Carolina",
-        "win_pct": 0.3081,
+        "win_pct": 0.394,
         "goalie": "F. Andersen",
         "goalie_score": 0.606,
         "goalie_confirmed": true,
@@ -52,7 +52,7 @@
       "home": {
         "team": "LAK",
         "name": "Los Angeles",
-        "win_pct": 0.6919,
+        "win_pct": 0.5504,
         "goalie": "A. Forsberg",
         "goalie_score": 0.582,
         "goalie_confirmed": true,
@@ -61,7 +61,7 @@
       "away": {
         "team": "COL",
         "name": "Colorado",
-        "win_pct": 0.3081,
+        "win_pct": 0.4496,
         "goalie": "S. Wedgewood",
         "goalie_score": 0.584,
         "goalie_confirmed": true,
@@ -75,7 +75,7 @@
       "home": {
         "team": "MTL",
         "name": "Montr\u00e9al",
-        "win_pct": 0.646,
+        "win_pct": 0.3364,
         "goalie": "J. Dobes",
         "goalie_score": 0.509,
         "goalie_confirmed": true,
@@ -84,7 +84,7 @@
       "away": {
         "team": "TBL",
         "name": "Tampa Bay",
-        "win_pct": 0.354,
+        "win_pct": 0.6636,
         "goalie": "A. Vasilevskiy",
         "goalie_score": 0.629,
         "goalie_confirmed": true,
@@ -98,7 +98,7 @@
       "home": {
         "team": "UTA",
         "name": "Utah",
-        "win_pct": 0.646,
+        "win_pct": 0.6893,
         "goalie": "K. Vejmelka",
         "goalie_score": 0.531,
         "goalie_confirmed": true,
@@ -107,7 +107,7 @@
       "away": {
         "team": "VGK",
         "name": "Vegas",
-        "win_pct": 0.354,
+        "win_pct": 0.3107,
         "goalie": "C. Hart",
         "goalie_score": 0.596,
         "goalie_confirmed": true,
@@ -121,7 +121,7 @@
       "home": {
         "team": "ANA",
         "name": "Anaheim",
-        "win_pct": 0.646,
+        "win_pct": 0.7272,
         "goalie": "L. Dostal",
         "goalie_score": 0.513,
         "goalie_confirmed": true,
@@ -130,7 +130,7 @@
       "away": {
         "team": "EDM",
         "name": "Edmonton",
-        "win_pct": 0.354,
+        "win_pct": 0.2728,
         "goalie": "C. Ingram",
         "goalie_score": 0.485,
         "goalie_confirmed": true,

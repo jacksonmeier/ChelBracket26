@@ -571,6 +571,20 @@ def _compose_payload(series_list: list[dict]) -> dict:
                                  fallback_home_q=hq, fallback_away_q=aq)
         sim = _series_sim(p_home_at_home, p_home_at_away, s["home_wins"], s["away_wins"],
                           n=8000, seed=hash((s["home"], s["away"])) & 0xFFFFFFFF)
+        drivers = []
+        gm = _game_model()
+        if gm is not None and gm.trained:
+            try:
+                drivers = gm.explain(
+                    s.get("home_id"), s.get("away_id"),
+                    season=CURRENT_SEASON, round_=1,
+                    home_wins=hw0, away_wins=aw0,
+                    game_in_series=hw0 + aw0 + 1,
+                    days_rest_home=2, days_rest_away=2,
+                    top_k=3,
+                )
+            except Exception as e:
+                log.warning("explain failed for %s-%s: %s", s["home"], s["away"], e)
         series_models[s["letter"]] = {
             "p_home_game_home_ice": round(p_home_at_home, 4),
             "p_home_series": round(sim["p_home_series"], 4),
@@ -579,6 +593,7 @@ def _compose_payload(series_list: list[dict]) -> dict:
             "joint_distribution": sim["joint_distribution"],
             "home_goalie": {"name": hg[0], "score": hg[1]},
             "away_goalie": {"name": ag[0], "score": ag[1]},
+            "drivers": drivers,
         }
 
     # 2. Full bracket Monte Carlo for Cup odds + sample retention for pool scoring.
@@ -627,6 +642,7 @@ def _compose_payload(series_list: list[dict]) -> dict:
             "length_distribution": ld,
             "joint_distribution": m.get("joint_distribution"),
             "most_likely": {"winner": winner, "games": most_likely_len},
+            "drivers": m.get("drivers") or [],
         })
 
     upcoming = _upcoming_games_live(active_series)

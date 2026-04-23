@@ -628,6 +628,7 @@ function renderPredSeries(data) {
       }
       most = { winner: s[bestSide].team, games: bestLen };
     }
+    const drivers = renderDriverStrip(s.drivers, s.home.team, s.away.team);
     return `
       <div class="series-card">
         <div class="series-top">
@@ -646,8 +647,31 @@ function renderPredSeries(data) {
           </div>
         </div>
         <div class="series-lengths">${lengths}</div>
+        ${drivers}
       </div>`;
   }).join('');
+}
+
+function renderDriverStrip(drivers, homeAbbr, awayAbbr) {
+  if (!drivers || !drivers.length) return '';
+  const fmtVal = (feature, v) => {
+    if (v == null) return '';
+    if (/pct$/.test(feature) || /^(h|a|d)_pp$|^(h|a|d)_pk$|^(h|a|d)_point_pct$/.test(feature)) {
+      return (v * 100).toFixed(1) + '%';
+    }
+    return Number(v).toFixed(2);
+  };
+  const relabel = (label) => label.replace(/^Home\b/, homeAbbr).replace(/^Away\b/, awayAbbr);
+  const pills = drivers.map(d => {
+    const favors = d.favors === 'home' ? homeAbbr : awayAbbr;
+    const valTxt = fmtVal(d.feature, d.value);
+    return `<span class="driver-pill driver-${d.favors}" title="SHAP log-odds: ${d.shap}">
+      <span class="driver-label">${esc(relabel(d.label))}</span>
+      ${valTxt ? `<span class="driver-value">${valTxt}</span>` : ''}
+      <span class="driver-favors">→ ${favors}</span>
+    </span>`;
+  }).join('');
+  return `<div class="series-drivers"><div class="drivers-label">Top model drivers</div><div class="drivers-row">${pills}</div></div>`;
 }
 
 function renderPredGames(data) {

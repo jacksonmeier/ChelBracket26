@@ -247,6 +247,44 @@
   .pool-table .team-name { font-size: 0.72rem; }
 }
 
+.series-drivers {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed var(--border);
+}
+.drivers-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  margin-bottom: 0.4rem;
+}
+.drivers-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.driver-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.55rem;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--text-2);
+  line-height: 1.15;
+}
+.driver-arrow { color: var(--text-3); font-size: 0.7rem; }
+.driver-label { color: var(--text); font-weight: 500; }
+.driver-value { font-family: var(--font-m); color: var(--text-2); }
+.driver-favors { color: var(--text-3); font-size: 0.68rem; }
+.driver-pill.driver-home { border-color: rgba(58,122,255,0.35); }
+.driver-pill.driver-home .driver-favors { color: #3a7aff; }
+.driver-pill.driver-away { border-color: rgba(217,26,41,0.35); }
+.driver-pill.driver-away .driver-favors { color: var(--accent); }
+
 .cal-wrap {
   display: grid;
   grid-template-columns: minmax(220px, 1fr) minmax(320px, 1.6fr);
