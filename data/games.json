@@ -121,7 +121,7 @@
       "home": {
         "team": "ANA",
         "name": "Anaheim",
-        "win_pct": 0.7049,
+        "win_pct": 0.646,
         "goalie": "L. Dostal",
         "goalie_score": 0.513,
         "goalie_confirmed": true,
@@ -130,7 +130,7 @@
       "away": {
         "team": "EDM",
         "name": "Edmonton",
-        "win_pct": 0.2951,
+        "win_pct": 0.354,
         "goalie": "C. Ingram",
         "goalie_score": 0.485,
         "goalie_confirmed": true,
