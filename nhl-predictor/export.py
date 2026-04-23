@@ -21,6 +21,26 @@ WEB_DATA.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
 from ingestion import nhl_client, starter_lookup  # noqa: E402
+from features.goalie_sub_model import GoalieSubModel, load as _load_goalie_model  # noqa: E402
+
+_GOALIE_MODEL: GoalieSubModel | None = None
+
+
+def _goalie_model() -> GoalieSubModel | None:
+    """Return the trained goalie sub-model, caching across calls.
+
+    Falls back to None if load/train fails so callers can default to
+    GOALIE_PRIOR without crashing the whole export.
+    """
+    global _GOALIE_MODEL
+    if _GOALIE_MODEL is not None:
+        return _GOALIE_MODEL
+    try:
+        _GOALIE_MODEL = _load_goalie_model()
+    except Exception as e:
+        log.warning("goalie sub-model unavailable: %s", e)
+        _GOALIE_MODEL = None
+    return _GOALIE_MODEL
 
 log = logging.getLogger(__name__)
 
@@ -63,6 +83,62 @@ GOALIE_PRIOR = {
 
 def _goalie_for(abbrev: str | None) -> tuple[str, float]:
     return GOALIE_PRIOR.get(abbrev or "", ("TBD", 0.50))
+
+
+def _model_quality(player_id: int | None, opp_id: int | None, as_of_date: str,
+                   fallback: float) -> float:
+    """Score a probable starter via the goalie sub-model, else return `fallback`."""
+    if player_id is None:
+        return fallback
+    m = _goalie_model()
+    if m is None or not getattr(m, "trained", False):
+        return fallback
+    try:
+        return float(m.score(player_id, opp_id, as_of_date))
+    except Exception as e:
+        log.warning("goalie_sub_model.score failed for %s: %s", player_id, e)
+        return fallback
+
+
+def _probable_starters(active_series: list[dict]) -> dict[str, dict]:
+    """Best-effort: for each team in an active series, find a scheduled game
+    in the next 7 days and run starter_lookup on it.
+
+    Returns {team_abbrev: {"player_id", "name", "confirmed"}}.
+    """
+    out: dict[str, dict] = {}
+    teams_needed = {s["home"] for s in active_series} | {s["away"] for s in active_series}
+    today = datetime.now(timezone.utc).date()
+    for offset in range(0, 8):
+        if not teams_needed:
+            break
+        day = (today + timedelta(days=offset)).strftime("%Y-%m-%d")
+        sched = nhl_client.fetch(
+            f"{nhl_client.WEB_BASE}/schedule/{day}",
+            f"schedule_{day}",
+            PLAYOFF_YEAR * 10000,
+        )
+        if not sched:
+            continue
+        for week in sched.get("gameWeek", []):
+            for g in week.get("games", []):
+                if g.get("gameType") != 3:
+                    continue
+                h_ab = (g.get("homeTeam") or {}).get("abbrev")
+                a_ab = (g.get("awayTeam") or {}).get("abbrev")
+                if h_ab not in teams_needed and a_ab not in teams_needed:
+                    continue
+                starters = starter_lookup.lookup(g.get("id"))
+                for side, ab in (("home", h_ab), ("away", a_ab)):
+                    s = starters.get(side) or {}
+                    if ab in teams_needed and s.get("player_id"):
+                        out[ab] = {
+                            "player_id": s.get("player_id"),
+                            "name": s.get("name"),
+                            "confirmed": bool(s.get("confirmed")),
+                        }
+                        teams_needed.discard(ab)
+    return out
 
 
 def _game_prob_home(home_goalie_q: float, away_goalie_q: float, home_ice: bool = True) -> float:
@@ -234,7 +310,8 @@ def _upcoming_games_live(active_series: list[dict]) -> list[dict]:
 
 
 def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000,
-                      n_samples_keep: int = 5_000) -> dict:
+                      n_samples_keep: int = 5_000,
+                      team_quality=None) -> dict:
     """Monte Carlo the entire remaining bracket.
 
     NHL bracket pairing: R1 series A–H advance to R2 pairs (A|B, C|D, E|F, G|H),
@@ -260,11 +337,16 @@ def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000,
 
     rng = random.Random(42)
 
+    def _tq(abbrev: str) -> float:
+        if team_quality is not None:
+            return team_quality(abbrev)
+        return _goalie_for(abbrev)[1]
+
     # Precompute per-R1 per-game probs; series state starts at current wins.
     r1_probs: dict[str, tuple[float, float]] = {}
     for letter, s in by_letter.items():
-        hg = _goalie_for(s["home"])[1]
-        ag = _goalie_for(s["away"])[1]
+        hg = _tq(s["home"])
+        ag = _tq(s["away"])
         r1_probs[letter] = (_game_prob_home(hg, ag, True), _game_prob_home(hg, ag, False))
 
     samples: list[dict] = []
@@ -299,7 +381,7 @@ def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000,
             if a not in r1_winners or b not in r1_winners:
                 continue
             w1, w2 = r1_winners[a], r1_winners[b]
-            q1, q2 = _goalie_for(w1)[1], _goalie_for(w2)[1]
+            q1, q2 = _tq(w1), _tq(w2)
             ph_home = _game_prob_home(q1, q2, home_ice=True)
             ph_away = _game_prob_home(q1, q2, home_ice=False)
             home_won, games = _sim_one_series(ph_home, ph_away, 0, 0, rng)
@@ -316,7 +398,7 @@ def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000,
             if a not in r2_winners or b not in r2_winners:
                 continue
             w1, w2 = r2_winners[a], r2_winners[b]
-            q1, q2 = _goalie_for(w1)[1], _goalie_for(w2)[1]
+            q1, q2 = _tq(w1), _tq(w2)
             ph_home = _game_prob_home(q1, q2, home_ice=True)
             ph_away = _game_prob_home(q1, q2, home_ice=False)
             home_won, games = _sim_one_series(ph_home, ph_away, 0, 0, rng)
@@ -329,7 +411,7 @@ def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000,
         # Stanley Cup Final: M|N=O
         if "M" in r3_winners and "N" in r3_winners:
             w1, w2 = r3_winners["M"], r3_winners["N"]
-            q1, q2 = _goalie_for(w1)[1], _goalie_for(w2)[1]
+            q1, q2 = _tq(w1), _tq(w2)
             ph_home = _game_prob_home(q1, q2, home_ice=True)
             ph_away = _game_prob_home(q1, q2, home_ice=False)
             home_won, games = _sim_one_series(ph_home, ph_away, 0, 0, rng)
@@ -357,12 +439,24 @@ def _compose_payload(series_list: list[dict]) -> dict:
     """Run series + bracket simulations and build the four output dicts."""
     # 1. Series-level simulations for every active round-1 series.
     active_series = [s for s in series_list if (s.get("round") == 1) and (s["home_wins"] < 4 and s["away_wins"] < 4)]
+    today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    starter_map = _probable_starters(active_series)
+
+    def team_quality(abbrev: str) -> float:
+        prior = _goalie_for(abbrev)[1]
+        st = starter_map.get(abbrev)
+        if not st:
+            return prior
+        return _model_quality(st.get("player_id"), None, today_iso, prior)
+
     series_models = {}
     for i, s in enumerate(active_series):
         hg = _goalie_for(s["home"])
         ag = _goalie_for(s["away"])
-        p_home_at_home = _game_prob_home(hg[1], ag[1], home_ice=True)
-        p_home_at_away = _game_prob_home(hg[1], ag[1], home_ice=False)
+        hq = team_quality(s["home"])
+        aq = team_quality(s["away"])
+        p_home_at_home = _game_prob_home(hq, aq, home_ice=True)
+        p_home_at_away = _game_prob_home(hq, aq, home_ice=False)
         sim = _series_sim(p_home_at_home, p_home_at_away, s["home_wins"], s["away_wins"],
                           n=8000, seed=hash((s["home"], s["away"])) & 0xFFFFFFFF)
         series_models[s["letter"]] = {
@@ -376,7 +470,8 @@ def _compose_payload(series_list: list[dict]) -> dict:
         }
 
     # 2. Full bracket Monte Carlo for Cup odds + sample retention for pool scoring.
-    bracket_result = _full_bracket_sim(active_series, n_sims=20_000, n_samples_keep=5_000)
+    bracket_result = _full_bracket_sim(active_series, n_sims=20_000, n_samples_keep=5_000,
+                                       team_quality=team_quality)
     bracket_probs = bracket_result["probs"]
     raw_samples = bracket_result["samples"]
     cup_rows = []
