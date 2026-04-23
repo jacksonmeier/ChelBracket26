@@ -150,15 +150,32 @@ const TEAM_CITY = {
   'Anaheim Ducks':        'Anaheim',
 };
 
+function logoVariant() {
+  // NHL asset convention: _light.svg is for light backgrounds (dark-colored logo),
+  // _dark.svg is for dark backgrounds (light-colored logo).
+  return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+}
+function logoUrlForAbbr(abbr) {
+  return abbr ? `https://assets.nhle.com/logos/nhl/svg/${abbr}_${logoVariant()}.svg` : '';
+}
 function logoUrl(name) {
-  const abbr = TEAM_ABBR[name];
-  return abbr ? `https://assets.nhle.com/logos/nhl/svg/${abbr}_light.svg` : '';
+  return logoUrlForAbbr(TEAM_ABBR[name]);
 }
 
 function logoImg(name, cls) {
   const url = logoUrl(name);
   if (!url) return '';
   return `<img class="${cls}" src="${url}" alt="" onerror="this.style.display='none'">`;
+}
+
+// Re-render logos when the color scheme changes
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+    document.querySelectorAll('img[src*="assets.nhle.com/logos/nhl/svg/"]').forEach(img => {
+      img.src = img.src.replace(/_(light|dark)\.svg/, `_${logoVariant()}.svg`);
+      img.style.display = '';
+    });
+  });
 }
 
 // Update a team-pick button's abbr + text in place
@@ -548,7 +565,7 @@ function predFmtPct(p) {
 function predLogoImg(abbrev) {
   if (!abbrev) return '';
   const safe = String(abbrev).replace(/[^A-Z]/g, '');
-  return `<img class="team-logo" src="https://assets.nhle.com/logos/nhl/svg/${safe}_dark.svg" alt="${safe}" loading="lazy" onerror="this.style.display='none'">`;
+  return `<img class="team-logo" src="${logoUrlForAbbr(safe)}" alt="${safe}" loading="lazy" onerror="this.style.display='none'">`;
 }
 
 function predBar(pct, side) {
@@ -1372,8 +1389,8 @@ function gameCard(g) {
 
   const awayDim = !isFut && !awayLead && home.score > 0;
   const homeDim = !isFut && !homeLead && away.score > 0;
-  const awayLogoUrl = `https://assets.nhle.com/logos/nhl/svg/${awayAbbr}_light.svg`;
-  const homeLogoUrl = `https://assets.nhle.com/logos/nhl/svg/${homeAbbr}_light.svg`;
+  const awayLogoUrl = logoUrlForAbbr(awayAbbr);
+  const homeLogoUrl = logoUrlForAbbr(homeAbbr);
 
   if (g.id) state.gameById[g.id] = g;
 
@@ -1444,12 +1461,12 @@ function buildGameModalShell(g) {
     : `<div class="gm-vs">VS</div>`;
   return `<div class="sm-matchup-header">
     <div class="sm-team-side">
-      <img class="sm-team-logo-lg" src="https://assets.nhle.com/logos/nhl/svg/${awayAbbr}_light.svg" onerror="this.style.display='none'" alt="">
+      <img class="sm-team-logo-lg" src="${logoUrlForAbbr(awayAbbr)}" onerror="this.style.display='none'" alt="">
       <div class="sm-team-name-lg">${esc(away.name?.default || awayAbbr)}</div>
     </div>
     <div class="sm-matchup-center">${scoreHtml}<div class="gm-loading series-modal-loading" style="margin-top:0.5rem">Loading…</div></div>
     <div class="sm-team-side sm-team-side-right">
-      <img class="sm-team-logo-lg" src="https://assets.nhle.com/logos/nhl/svg/${homeAbbr}_light.svg" onerror="this.style.display='none'" alt="">
+      <img class="sm-team-logo-lg" src="${logoUrlForAbbr(homeAbbr)}" onerror="this.style.display='none'" alt="">
       <div class="sm-team-name-lg">${esc(home.name?.default || homeAbbr)}</div>
     </div>
   </div>`;
@@ -1509,7 +1526,7 @@ function buildGameModalFull(data, fromSeriesId) {
     : '';
   html += `<div class="sm-matchup-header">
     <div class="sm-team-side">
-      <img class="sm-team-logo-lg" src="https://assets.nhle.com/logos/nhl/svg/${awayAbbr}_light.svg" onerror="this.style.display='none'" alt="">
+      <img class="sm-team-logo-lg" src="${logoUrlForAbbr(awayAbbr)}" onerror="this.style.display='none'" alt="">
       <div class="sm-team-name-lg">${esc(away.name?.default || awayAbbr)}</div>
       ${away.sog != null ? `<div class="gm-sog">${away.sog} SOG</div>` : ''}
     </div>
@@ -1520,7 +1537,7 @@ function buildGameModalFull(data, fromSeriesId) {
       ${venue}
     </div>
     <div class="sm-team-side sm-team-side-right">
-      <img class="sm-team-logo-lg" src="https://assets.nhle.com/logos/nhl/svg/${homeAbbr}_light.svg" onerror="this.style.display='none'" alt="">
+      <img class="sm-team-logo-lg" src="${logoUrlForAbbr(homeAbbr)}" onerror="this.style.display='none'" alt="">
       <div class="sm-team-name-lg">${esc(home.name?.default || homeAbbr)}</div>
       ${home.sog != null ? `<div class="gm-sog">${home.sog} SOG</div>` : ''}
     </div>
@@ -1733,7 +1750,7 @@ function buildLeaderboardTable(ranked, results, mini = false, totalCount = null)
     const cupWinner = b.picks && b.picks['SCF'] && b.picks['SCF'].winner;
     const cupAbbr = cupWinner ? (TEAM_ABBR[cupWinner] || cupWinner.split(' ').pop()) : null;
     const cupCity = cupWinner ? (TEAM_CITY[cupWinner] || cupWinner) : null;
-    const cupLogoUrl = cupAbbr ? `https://assets.nhle.com/logos/nhl/svg/${cupAbbr}_light.svg` : '';
+    const cupLogoUrl = logoUrlForAbbr(cupAbbr);
     const cupCell = cupAbbr
       ? `<img class="lb-cup-logo" src="${cupLogoUrl}" onerror="this.style.display='none'" alt="${esc(cupAbbr)}"><span class="lb-cup-abbr">${esc(cupAbbr)}</span>`
       : `<span style="color:var(--text-3)">—</span>`;
