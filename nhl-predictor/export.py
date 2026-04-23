@@ -660,6 +660,37 @@ def _compose_payload(series_list: list[dict]) -> dict:
     }
 
 
+def _write_model_calibration() -> None:
+    """Emit a compact calibration report for the Predictions UI.
+
+    Pulls from the walk-forward backtest (honest OOS metrics across 2015-25)
+    plus the trained production model's Platt-holdout stats.
+    """
+    bt_path = Path(__file__).resolve().parent / "data" / "processed" / "game_model_backtest.json"
+    out: dict = {"generated_at": datetime.now(timezone.utc).isoformat()}
+    if bt_path.exists():
+        try:
+            bt = json.loads(bt_path.read_text())
+            agg = bt.get("aggregate", {})
+            out["walk_forward"] = {
+                "n_games": bt.get("n_games_scored"),
+                "min_season": bt.get("min_target_season"),
+                "model": agg.get("model"),
+                "baselines": {
+                    "coin_flip": agg.get("coin_flip"),
+                    "home_ice_0545": agg.get("home_0545"),
+                    "prior_only": agg.get("prior_only"),
+                },
+                "calibration": bt.get("calibration_model", []),
+            }
+        except Exception as e:
+            log.warning("calibration: backtest read failed: %s", e)
+    m = _game_model()
+    if m is not None and getattr(m, "metrics", None):
+        out["production_model"] = m.metrics
+    (WEB_DATA / "model_calibration.json").write_text(json.dumps(out, indent=2))
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     series_list = _bracket_live()
@@ -674,8 +705,9 @@ def main() -> None:
     (WEB_DATA / "last_updated.json").write_text(json.dumps(payload["last_updated"], indent=2))
     # Samples file is large and doesn't benefit from pretty-printing.
     (WEB_DATA / "bracket_samples.json").write_text(json.dumps(payload["bracket_samples"]))
+    _write_model_calibration()
 
-    print(f"wrote 5 JSON files to {WEB_DATA}")
+    print(f"wrote 6 JSON files to {WEB_DATA}")
     print(f"  teams in bracket: {len(payload['bracket']['teams'])}")
     print(f"  active series:    {len(payload['series']['active'])}")
     print(f"  upcoming games:   {len(payload['games']['upcoming'])}")

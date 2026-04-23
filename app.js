@@ -508,6 +508,7 @@ const PRED_DATA = [
   ['games',         'data/games.json'],
   ['lastUpdated',   'data/last_updated.json'],
   ['samples',       'data/bracket_samples.json'],
+  ['calibration',   'data/model_calibration.json'],
 ];
 
 // Score one bracket against a sample outcome {seriesId: [abbr, games]}.
@@ -719,6 +720,60 @@ function renderPoolOdds(ranked, entryCount) {
     <p class="view-sub" style="margin-top:0.6rem;color:var(--text-3);font-size:0.78rem">Across ${entryCount} entries · 5,000 simulated brackets · ties split evenly.</p>`;
 }
 
+function renderModelCalibration(data) {
+  if (!data) return '<div class="empty-state">No calibration data.</div>';
+  const wf = data.walk_forward;
+  if (!wf || !wf.model) return '<div class="empty-state">No backtest data available.</div>';
+  const m = wf.model, cf = wf.baselines?.coin_flip, hi = wf.baselines?.home_ice_0545;
+  const metricCard = (label, value, sub) => `
+    <div class="cal-metric">
+      <div class="cal-metric-label">${label}</div>
+      <div class="cal-metric-value">${value}</div>
+      ${sub ? `<div class="cal-metric-sub">${sub}</div>` : ''}
+    </div>`;
+  const metrics = [
+    metricCard('Games', m.n.toLocaleString(), `since ${String(wf.min_season).slice(0,4)}–${String(wf.min_season).slice(6,8)} playoffs`),
+    metricCard('Accuracy', (m.accuracy * 100).toFixed(1) + '%', `coin flip ${(cf.accuracy*100).toFixed(1)}% · home-ice ${(hi.accuracy*100).toFixed(1)}%`),
+    metricCard('Brier', m.brier.toFixed(4), `coin flip ${cf.brier.toFixed(4)} · home-ice ${hi.brier.toFixed(4)}`),
+    metricCard('Log loss', m.log_loss.toFixed(4), `coin flip ${cf.log_loss.toFixed(4)}`),
+  ].join('');
+
+  const bins = (wf.calibration || []).filter(b => b.n > 0);
+  const W = 420, H = 260, PAD = 36;
+  const sx = (p) => PAD + p * (W - 2 * PAD);
+  const sy = (p) => H - PAD - p * (H - 2 * PAD);
+  const maxN = Math.max(1, ...bins.map(b => b.n));
+  const dots = bins.map(b => {
+    const r = 4 + 8 * (b.n / maxN);
+    return `<circle cx="${sx(b.mean_pred).toFixed(1)}" cy="${sy(b.actual_rate).toFixed(1)}" r="${r.toFixed(1)}" fill="var(--accent)" fill-opacity="0.75" stroke="var(--accent)" stroke-width="1.5"><title>pred ${(b.mean_pred*100).toFixed(1)}% · actual ${(b.actual_rate*100).toFixed(1)}% · n=${b.n}</title></circle>`;
+  }).join('');
+  const gridTicks = [0, 0.25, 0.5, 0.75, 1].map(t => `
+    <line x1="${sx(t)}" y1="${sy(0)}" x2="${sx(t)}" y2="${sy(1)}" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="${sx(0)}" y1="${sy(t)}" x2="${sx(1)}" y2="${sy(t)}" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3"/>
+    <text x="${sx(t)}" y="${H - PAD + 14}" text-anchor="middle" fill="var(--text-3)" font-size="10">${(t*100).toFixed(0)}%</text>
+    <text x="${PAD - 6}" y="${sy(t) + 3}" text-anchor="end" fill="var(--text-3)" font-size="10">${(t*100).toFixed(0)}%</text>`).join('');
+  const svg = `
+    <svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" class="cal-plot">
+      ${gridTicks}
+      <line x1="${sx(0)}" y1="${sy(0)}" x2="${sx(1)}" y2="${sy(1)}" stroke="var(--text-3)" stroke-width="1.5" stroke-dasharray="4,4"/>
+      ${dots}
+      <text x="${W/2}" y="${H - 6}" text-anchor="middle" fill="var(--text-2)" font-size="11">Predicted probability</text>
+      <text x="12" y="${H/2}" text-anchor="middle" fill="var(--text-2)" font-size="11" transform="rotate(-90 12 ${H/2})">Actual win rate</text>
+    </svg>`;
+  const prodNote = data.production_model
+    ? `Production model: Platt-calibrated on season ${String(data.production_model.holdout_season).slice(0,4)}–${String(data.production_model.holdout_season).slice(6)} (n=${data.production_model.holdout_rows}, Brier ${data.production_model.holdout_brier?.toFixed(3)}).`
+    : '';
+  return `
+    <div class="cal-wrap">
+      <div class="cal-metrics">${metrics}</div>
+      <div class="cal-chart-wrap">
+        <div class="cal-chart-title">Reliability curve (walk-forward OOS)</div>
+        ${svg}
+        <p class="cal-caption">Each dot is a 10%-wide bin of predicted probabilities. Dot size = games in that bin. Dashes = perfect calibration. ${prodNote}</p>
+      </div>
+    </div>`;
+}
+
 async function renderPredictions() {
   const fetchJson = async (p) => {
     const r = await fetch(p, { cache: 'no-store' });
@@ -730,11 +785,12 @@ async function renderPredictions() {
   if (!state._predictionsLoaded) {
     state._predictionsLoaded = true;
     const results = await Promise.allSettled(PRED_DATA.map(([, p]) => fetchJson(p)));
-    const [bracket, series, games, lastUpdated, samples] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+    const [bracket, series, games, lastUpdated, samples, calibration] = results.map(r => r.status === 'fulfilled' ? r.value : null);
     state._predSamples = samples;
     try { set('cupOdds',       bracket && renderCupOdds(bracket),   "Couldn't load Cup odds."); } catch (e) { console.error(e); set('cupOdds', null, 'Failed to render odds.'); }
     try { set('activeSeries',  series  && renderPredSeries(series), "Couldn't load series."); }   catch (e) { console.error(e); set('activeSeries', null, 'Failed to render series.'); }
     try { set('upcomingGames', games   && renderPredGames(games),   "Couldn't load games."); }    catch (e) { console.error(e); set('upcomingGames', null, 'Failed to render games.'); }
+    try { set('modelCalibration', calibration && renderModelCalibration(calibration), "Couldn't load calibration."); } catch (e) { console.error(e); set('modelCalibration', null, 'Failed to render calibration.'); }
     renderPredLastUpdated(lastUpdated);
   }
 

@@ -246,3 +246,62 @@
   .pool-table .team-abbr { font-size: 0.82rem; letter-spacing: 0.02em; }
   .pool-table .team-name { font-size: 0.72rem; }
 }
+
+.cal-wrap {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(320px, 1.6fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+.cal-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+.cal-metric {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.75rem;
+}
+.cal-metric-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+.cal-metric-value {
+  font-family: var(--font-m);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 0.15rem;
+}
+.cal-metric-sub {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  margin-top: 0.2rem;
+}
+.cal-chart-wrap {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.85rem 0.5rem;
+}
+.cal-chart-title {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.4rem;
+}
+.cal-plot { display: block; max-width: 520px; margin: 0 auto; }
+.cal-caption {
+  margin: 0.4rem 0 0;
+  font-size: 0.72rem;
+  color: var(--text-3);
+  line-height: 1.45;
+}
+@media (max-width: 720px) {
+  .cal-wrap { grid-template-columns: 1fr; }
+}
