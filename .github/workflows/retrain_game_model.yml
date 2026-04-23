@@ -1,0 +1,75 @@
+name: Retrain Game Model
+
+on:
+  schedule:
+    # Mondays 08:00 UTC — re-ingest playoff games + team stats, retrain LightGBM.
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: retrain-game-model
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r nhl-predictor/requirements.txt
+
+      - name: Ingest playoff games
+        run: |
+          cd nhl-predictor
+          python -c "
+          import sys; sys.path.insert(0, 'src')
+          import logging; logging.basicConfig(level=logging.INFO)
+          from ingestion import fetch_games
+          fetch_games.fetch_all()
+          "
+
+      - name: Ingest regular-season team stats
+        run: |
+          cd nhl-predictor
+          python -c "
+          import sys; sys.path.insert(0, 'src')
+          import logging; logging.basicConfig(level=logging.INFO)
+          from ingestion import fetch_team_stats
+          fetch_team_stats.fetch_all()
+          "
+
+      - name: Retrain game model
+        run: |
+          cd nhl-predictor
+          python -c "
+          import sys; sys.path.insert(0, 'src')
+          import logging; logging.basicConfig(level=logging.INFO)
+          from models.game_model import GameModel
+          m = GameModel()
+          print(m.train())
+          "
+
+      - name: Rerun walk-forward backtest
+        run: |
+          cd nhl-predictor
+          PYTHONPATH=src python src/evaluation/game_model_backtest.py
+
+      - name: Commit retrained artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add nhl-predictor/data/processed/game_model.pkl \
+                  nhl-predictor/data/processed/game_model_backtest.json || true
+          git diff --staged --quiet || git commit -m "Auto-retrain game model $(date -u '+%Y-%m-%d')"
+          git push || echo "nothing to push"

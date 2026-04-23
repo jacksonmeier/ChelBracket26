@@ -45,7 +45,7 @@ def _iter_seasons(start: int, end: int):
         s = (yr + 1) * 10000 + (yr + 2)
 
 
-def fetch_all(start: int = 20102011, end: int = 20242025, game_type: int = 2) -> int:
+def fetch_all(start: int = 20102011, end: int = 20252026, game_type: int = 2) -> int:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.executescript(SCHEMA)

@@ -123,7 +123,7 @@ def init_db() -> sqlite3.Connection:
     return conn
 
 
-def fetch_all(start_season: int = 20102011, end_season: int = 20242025) -> int:
+def fetch_all(start_season: int = 20102011, end_season: int = 20252026) -> int:
     conn = init_db()
     seen: set[int] = set()
     written = 0
