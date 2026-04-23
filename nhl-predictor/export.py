@@ -22,8 +22,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
 from ingestion import nhl_client, starter_lookup  # noqa: E402
 from features.goalie_sub_model import GoalieSubModel, load as _load_goalie_model  # noqa: E402
+from models.game_model import GameModel, load as _load_game_model  # noqa: E402
 
 _GOALIE_MODEL: GoalieSubModel | None = None
+_GAME_MODEL: GameModel | None = None
+
+
+def _game_model() -> GameModel | None:
+    global _GAME_MODEL
+    if _GAME_MODEL is not None:
+        return _GAME_MODEL
+    try:
+        _GAME_MODEL = _load_game_model()
+    except Exception as e:
+        log.warning("game model unavailable: %s", e)
+        _GAME_MODEL = None
+    return _GAME_MODEL
 
 
 def _goalie_model() -> GoalieSubModel | None:
@@ -141,10 +155,45 @@ def _probable_starters(active_series: list[dict]) -> dict[str, dict]:
     return out
 
 
+CURRENT_SEASON = 20252026
+
+
 def _game_prob_home(home_goalie_q: float, away_goalie_q: float, home_ice: bool = True) -> float:
-    """Logistic over goalie quality diff + home-ice bump."""
+    """Fallback formula: logistic over goalie quality diff + home-ice bump."""
     z = 0.15 * (1.0 if home_ice else -1.0) + 2.4 * (home_goalie_q - away_goalie_q)
     return max(0.05, min(0.95, 1.0 / (1.0 + math.exp(-z))))
+
+
+def _p_game(home_abbrev: str, away_abbrev: str,
+            home_id: int | None, away_id: int | None,
+            season: int = CURRENT_SEASON, round_: int = 1,
+            home_wins: int = 0, away_wins: int = 0,
+            game_in_series: int = 1,
+            at_home_arena: bool = True,
+            fallback_home_q: float = 0.5,
+            fallback_away_q: float = 0.5) -> float:
+    """P(the team whose arena we care about wins this game).
+
+    `home_abbrev` / `home_id` = the team with home-ice advantage in the series.
+    `at_home_arena=True`  → game is at home team's arena (games 1,2,5,7).
+    `at_home_arena=False` → game is at away team's arena (games 3,4,6); we
+    flip the matchup into the model and invert.
+
+    Falls back to `_game_prob_home` if the model is untrained/unavailable.
+    """
+    m = _game_model()
+    if m is not None and m.trained:
+        if at_home_arena:
+            p = m.predict_p_home(home_id, away_id, season, round_,
+                                 home_wins, away_wins, game_in_series)
+        else:
+            p = m.predict_p_home(away_id, home_id, season, round_,
+                                 away_wins, home_wins, game_in_series)
+            p = None if p is None else 1.0 - p
+        if p is not None:
+            return max(0.05, min(0.95, p))
+    return _game_prob_home(fallback_home_q, fallback_away_q,
+                           home_ice=at_home_arena)
 
 
 def _series_sim(p_home_at_home: float, p_home_at_away: float,
@@ -227,6 +276,22 @@ def _bracket_live() -> list[dict] | None:
     return out
 
 
+def _series_state_for(home_ab: str, away_ab: str,
+                      active_series: list[dict]) -> tuple[int, int, int, int]:
+    """Return (round, this_home_wins, this_away_wins, game_in_series) for the
+    series containing these two teams, viewed from the perspective of home_ab.
+    Defaults to (1, 0, 0, 1) when no matching series found.
+    """
+    for s in active_series or []:
+        if {s["home"], s["away"]} == {home_ab, away_ab}:
+            if s["home"] == home_ab:
+                hw, aw = s.get("home_wins", 0), s.get("away_wins", 0)
+            else:
+                hw, aw = s.get("away_wins", 0), s.get("home_wins", 0)
+            return (s.get("round") or 1, hw, aw, hw + aw + 1)
+    return (1, 0, 0, 1)
+
+
 def _upcoming_games_live(active_series: list[dict]) -> list[dict]:
     """Fetch next 48h of playoff games via /schedule/<today>."""
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -281,7 +346,13 @@ def _upcoming_games_live(active_series: list[dict]) -> list[dict]:
             hg_name = home_st.get("name") or hg_prior[0]
             ag_name = away_st.get("name") or ag_prior[0]
 
-            p_home = _game_prob_home(hg_q, ag_q, home_ice=True)
+            h_id = (g.get("homeTeam") or {}).get("id")
+            a_id = (g.get("awayTeam") or {}).get("id")
+            rnd, hw, aw, gis = _series_state_for(h_ab, a_ab, active_series)
+            p_home = _p_game(h_ab, a_ab, h_id, a_id,
+                             round_=rnd, home_wins=hw, away_wins=aw,
+                             game_in_series=gis, at_home_arena=True,
+                             fallback_home_q=hg_q, fallback_away_q=ag_q)
             out.append({
                 "game_id": g.get("id"),
                 "date": start_iso,
@@ -342,12 +413,27 @@ def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000,
             return team_quality(abbrev)
         return _goalie_for(abbrev)[1]
 
+    abbrev_to_id: dict[str, int | None] = {}
+    for s in active_series:
+        abbrev_to_id[s["home"]] = s.get("home_id")
+        abbrev_to_id[s["away"]] = s.get("away_id")
+
     # Precompute per-R1 per-game probs; series state starts at current wins.
     r1_probs: dict[str, tuple[float, float]] = {}
     for letter, s in by_letter.items():
         hg = _tq(s["home"])
         ag = _tq(s["away"])
-        r1_probs[letter] = (_game_prob_home(hg, ag, True), _game_prob_home(hg, ag, False))
+        hw, aw = s["home_wins"], s["away_wins"]
+        r1_probs[letter] = (
+            _p_game(s["home"], s["away"], s.get("home_id"), s.get("away_id"),
+                    round_=1, home_wins=hw, away_wins=aw,
+                    game_in_series=hw + aw + 1, at_home_arena=True,
+                    fallback_home_q=hg, fallback_away_q=ag),
+            _p_game(s["home"], s["away"], s.get("home_id"), s.get("away_id"),
+                    round_=1, home_wins=hw, away_wins=aw,
+                    game_in_series=hw + aw + 1, at_home_arena=False,
+                    fallback_home_q=hg, fallback_away_q=ag),
+        )
 
     samples: list[dict] = []
 
@@ -382,8 +468,13 @@ def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000,
                 continue
             w1, w2 = r1_winners[a], r1_winners[b]
             q1, q2 = _tq(w1), _tq(w2)
-            ph_home = _game_prob_home(q1, q2, home_ice=True)
-            ph_away = _game_prob_home(q1, q2, home_ice=False)
+            _rnd = 2
+            ph_home = _p_game(w1, w2, abbrev_to_id.get(w1), abbrev_to_id.get(w2),
+                              round_=_rnd, at_home_arena=True,
+                              fallback_home_q=q1, fallback_away_q=q2)
+            ph_away = _p_game(w1, w2, abbrev_to_id.get(w1), abbrev_to_id.get(w2),
+                              round_=_rnd, at_home_arena=False,
+                              fallback_home_q=q1, fallback_away_q=q2)
             home_won, games = _sim_one_series(ph_home, ph_away, 0, 0, rng)
             winner = w1 if home_won else w2
             r2_winners[rkey] = winner
@@ -399,8 +490,13 @@ def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000,
                 continue
             w1, w2 = r2_winners[a], r2_winners[b]
             q1, q2 = _tq(w1), _tq(w2)
-            ph_home = _game_prob_home(q1, q2, home_ice=True)
-            ph_away = _game_prob_home(q1, q2, home_ice=False)
+            _rnd = 3
+            ph_home = _p_game(w1, w2, abbrev_to_id.get(w1), abbrev_to_id.get(w2),
+                              round_=_rnd, at_home_arena=True,
+                              fallback_home_q=q1, fallback_away_q=q2)
+            ph_away = _p_game(w1, w2, abbrev_to_id.get(w1), abbrev_to_id.get(w2),
+                              round_=_rnd, at_home_arena=False,
+                              fallback_home_q=q1, fallback_away_q=q2)
             home_won, games = _sim_one_series(ph_home, ph_away, 0, 0, rng)
             winner = w1 if home_won else w2
             r3_winners[rkey] = winner
@@ -412,8 +508,13 @@ def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000,
         if "M" in r3_winners and "N" in r3_winners:
             w1, w2 = r3_winners["M"], r3_winners["N"]
             q1, q2 = _tq(w1), _tq(w2)
-            ph_home = _game_prob_home(q1, q2, home_ice=True)
-            ph_away = _game_prob_home(q1, q2, home_ice=False)
+            _rnd = 4
+            ph_home = _p_game(w1, w2, abbrev_to_id.get(w1), abbrev_to_id.get(w2),
+                              round_=_rnd, at_home_arena=True,
+                              fallback_home_q=q1, fallback_away_q=q2)
+            ph_away = _p_game(w1, w2, abbrev_to_id.get(w1), abbrev_to_id.get(w2),
+                              round_=_rnd, at_home_arena=False,
+                              fallback_home_q=q1, fallback_away_q=q2)
             home_won, games = _sim_one_series(ph_home, ph_away, 0, 0, rng)
             champ = w1 if home_won else w2
             teams[champ]["cup"] += 1
@@ -455,8 +556,19 @@ def _compose_payload(series_list: list[dict]) -> dict:
         ag = _goalie_for(s["away"])
         hq = team_quality(s["home"])
         aq = team_quality(s["away"])
-        p_home_at_home = _game_prob_home(hq, aq, home_ice=True)
-        p_home_at_away = _game_prob_home(hq, aq, home_ice=False)
+        hw0, aw0 = s["home_wins"], s["away_wins"]
+        p_home_at_home = _p_game(s["home"], s["away"],
+                                 s.get("home_id"), s.get("away_id"),
+                                 round_=1, home_wins=hw0, away_wins=aw0,
+                                 game_in_series=hw0 + aw0 + 1,
+                                 at_home_arena=True,
+                                 fallback_home_q=hq, fallback_away_q=aq)
+        p_home_at_away = _p_game(s["home"], s["away"],
+                                 s.get("home_id"), s.get("away_id"),
+                                 round_=1, home_wins=hw0, away_wins=aw0,
+                                 game_in_series=hw0 + aw0 + 1,
+                                 at_home_arena=False,
+                                 fallback_home_q=hq, fallback_away_q=aq)
         sim = _series_sim(p_home_at_home, p_home_at_away, s["home_wins"], s["away_wins"],
                           n=8000, seed=hash((s["home"], s["away"])) & 0xFFFFFFFF)
         series_models[s["letter"]] = {
