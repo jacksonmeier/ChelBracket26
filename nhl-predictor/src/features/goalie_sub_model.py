@@ -100,7 +100,8 @@ class GoalieSubModel:
         self.holdout_season: int | None = None
         self.metrics: dict = {}
 
-    def train(self, as_of_season: int | str = "current", holdout_season: int = 20232024) -> dict:
+    def train(self, as_of_season: int | str = "current", holdout_season: int = 20232024,
+              save: bool = True) -> dict:
         """Fit LightGBM on all games before `holdout_season`, Platt-calibrate on holdout."""
         import lightgbm as lgb
 
@@ -108,14 +109,14 @@ class GoalieSubModel:
         if not rows:
             log.warning("goalie_sub_model: no training data at %s", DB_PATH)
             self.trained = False
-            self._save()
+            self._save() if save else None
             return {"rows": 0}
 
         X, y, meta = _build_features(rows)
         if len(X) == 0:
             log.warning("goalie_sub_model: zero usable rows after feature build")
             self.trained = False
-            self._save()
+            self._save() if save else None
             return {"rows": 0}
 
         train_mask = np.array([m["season"] < holdout_season for m in meta])
@@ -124,7 +125,7 @@ class GoalieSubModel:
         if train_mask.sum() < 100:
             log.warning("goalie_sub_model: not enough training rows (%d)", train_mask.sum())
             self.trained = False
-            self._save()
+            self._save() if save else None
             return {"rows": int(len(X))}
 
         Xtr, ytr = X[train_mask], y[train_mask]
@@ -171,7 +172,7 @@ class GoalieSubModel:
 
         self.trained = True
         self.metrics = metrics
-        self._save()
+        self._save() if save else None
         log.info("goalie_sub_model trained: %s", metrics)
         return metrics
 
