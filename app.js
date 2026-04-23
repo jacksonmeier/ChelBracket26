@@ -797,7 +797,23 @@ function renderModelCalibration(data) {
     </div>`;
 }
 
+function setupPredPills() {
+  const nav = document.getElementById('predPills');
+  if (!nav || nav._wired) return;
+  nav._wired = true;
+  nav.addEventListener('click', (e) => {
+    const btn = e.target.closest('.pred-pill');
+    if (!btn) return;
+    const pane = btn.dataset.pane;
+    nav.querySelectorAll('.pred-pill').forEach(p => p.classList.toggle('active', p === btn));
+    document.querySelectorAll('#view-predictions .sec[data-pane]').forEach(sec => {
+      sec.hidden = sec.dataset.pane !== pane;
+    });
+  });
+}
+
 async function renderPredictions() {
+  setupPredPills();
   const fetchJson = async (p) => {
     const r = await fetch(p, { cache: 'no-store' });
     if (!r.ok) throw new Error(`${p} ${r.status}`);

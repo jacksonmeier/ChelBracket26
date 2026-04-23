@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=47">
-  <link rel="stylesheet" href="predictions/style.css?v=10">
+  <link rel="stylesheet" href="predictions/style.css?v=11">
   <style>
     /* Critical: loading overlay — inlined to avoid cache issues */
     #loadingOverlay { position:fixed; inset:0; background:#060914; display:flex; align-items:center; justify-content:center; z-index:9000; }
@@ -320,7 +320,14 @@
       </div>
     </div>
 
-    <div class="sec">
+    <nav class="pred-pills" id="predPills" role="tablist">
+      <button class="pred-pill active" data-pane="cup" role="tab">Cup Odds</button>
+      <button class="pred-pill" data-pane="series" role="tab">Active Series</button>
+      <button class="pred-pill" data-pane="games" role="tab">Upcoming Games</button>
+      <button class="pred-pill" data-pane="pool" role="tab">Pool Odds</button>
+    </nav>
+
+    <div class="sec" data-pane="cup">
       <div class="sec-hdr">
         <div>
           <div class="sec-num">01 — Stanley Cup Odds</div>
@@ -330,7 +337,7 @@
       <div id="cupOdds"><div class="scores-loading">Loading odds…</div></div>
     </div>
 
-    <div class="sec">
+    <div class="sec" data-pane="series" hidden>
       <div class="sec-hdr">
         <div>
           <div class="sec-num">02 — Active Series</div>
@@ -340,7 +347,7 @@
       <div id="activeSeries"><div class="scores-loading">Loading series…</div></div>
     </div>
 
-    <div class="sec">
+    <div class="sec" data-pane="games" hidden>
       <div class="sec-hdr">
         <div>
           <div class="sec-num">03 — Upcoming Games</div>
@@ -350,7 +357,7 @@
       <div id="upcomingGames"><div class="scores-loading">Loading games…</div></div>
     </div>
 
-    <div class="sec">
+    <div class="sec" data-pane="pool" hidden>
       <div class="sec-hdr">
         <div>
           <div class="sec-num">04 — Pool Odds</div>

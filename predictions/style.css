@@ -247,6 +247,40 @@
   .pool-table .team-name { font-size: 0.72rem; }
 }
 
+.pred-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0 0 1.2rem;
+  padding: 0.35rem;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  width: fit-content;
+}
+.pred-pill {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+.pred-pill:hover { color: var(--text); background: var(--bg-3, rgba(0,0,0,0.04)); }
+.pred-pill.active {
+  background: var(--accent);
+  color: #fff;
+}
+@media (max-width: 560px) {
+  .pred-pills { width: 100%; justify-content: space-between; }
+  .pred-pill { flex: 1 1 auto; text-align: center; padding: 0.45rem 0.55rem; font-size: 0.75rem; }
+}
+
 .series-drivers {
   margin-top: 0.75rem;
   padding-top: 0.65rem;
