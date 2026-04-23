@@ -235,6 +235,7 @@
         <button class="comm-tab" data-tab="results">Results</button>
         <button class="comm-tab" data-tab="settings">Settings</button>
         <button class="comm-tab" data-tab="manage">Manage</button>
+        <button class="comm-tab" data-tab="model">Model</button>
       </div>
 
       <!-- Teams -->
@@ -295,6 +296,13 @@
         <p class="pane-desc">Review or delete submitted brackets.</p>
         <div id="manageEntriesGrid"></div>
       </div>
+
+      <!-- Model -->
+      <div class="comm-pane" id="commPane-model">
+        <h3 class="pane-title">Model Calibration</h3>
+        <p class="pane-desc">Walk-forward OOS performance of the game-level LightGBM vs baselines.</p>
+        <div id="modelCalibration"><div class="scores-loading">Loading calibration…</div></div>
+      </div>
     </div>
 
   </section>
@@ -350,16 +358,6 @@
         </div>
       </div>
       <div id="poolOdds"><div class="scores-loading">Loading pool odds…</div></div>
-    </div>
-
-    <div class="sec">
-      <div class="sec-hdr">
-        <div>
-          <div class="sec-num">05 — Model Calibration</div>
-          <div class="sec-title">How well-calibrated are these probabilities?</div>
-        </div>
-      </div>
-      <div id="modelCalibration"><div class="scores-loading">Loading calibration…</div></div>
     </div>
   </section>
 

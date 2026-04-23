@@ -508,7 +508,6 @@ const PRED_DATA = [
   ['games',         'data/games.json'],
   ['lastUpdated',   'data/last_updated.json'],
   ['samples',       'data/bracket_samples.json'],
-  ['calibration',   'data/model_calibration.json'],
 ];
 
 // Score one bracket against a sample outcome {seriesId: [abbr, games]}.
@@ -785,12 +784,11 @@ async function renderPredictions() {
   if (!state._predictionsLoaded) {
     state._predictionsLoaded = true;
     const results = await Promise.allSettled(PRED_DATA.map(([, p]) => fetchJson(p)));
-    const [bracket, series, games, lastUpdated, samples, calibration] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+    const [bracket, series, games, lastUpdated, samples] = results.map(r => r.status === 'fulfilled' ? r.value : null);
     state._predSamples = samples;
     try { set('cupOdds',       bracket && renderCupOdds(bracket),   "Couldn't load Cup odds."); } catch (e) { console.error(e); set('cupOdds', null, 'Failed to render odds.'); }
     try { set('activeSeries',  series  && renderPredSeries(series), "Couldn't load series."); }   catch (e) { console.error(e); set('activeSeries', null, 'Failed to render series.'); }
     try { set('upcomingGames', games   && renderPredGames(games),   "Couldn't load games."); }    catch (e) { console.error(e); set('upcomingGames', null, 'Failed to render games.'); }
-    try { set('modelCalibration', calibration && renderModelCalibration(calibration), "Couldn't load calibration."); } catch (e) { console.error(e); set('modelCalibration', null, 'Failed to render calibration.'); }
     renderPredLastUpdated(lastUpdated);
   }
 
@@ -2454,10 +2452,23 @@ function renderCommissioner() {
   if (state.commLoggedIn) {
     document.getElementById('commLogin').style.display = 'none';
     document.getElementById('commPanel').style.display = '';
-    renderCommTeams(); renderCommResults(); renderCommSettings(); renderCommManage();
+    renderCommTeams(); renderCommResults(); renderCommSettings(); renderCommManage(); renderCommModel();
   } else {
     document.getElementById('commLogin').style.display = '';
     document.getElementById('commPanel').style.display = 'none';
+  }
+}
+
+async function renderCommModel() {
+  const el = document.getElementById('modelCalibration');
+  if (!el) return;
+  try {
+    const r = await fetch('data/model_calibration.json', { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    el.innerHTML = renderModelCalibration(await r.json());
+  } catch (e) {
+    console.error(e);
+    el.innerHTML = '<div class="empty-state">Couldn\'t load calibration.</div>';
   }
 }
 
