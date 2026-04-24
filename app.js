@@ -508,6 +508,7 @@ const PRED_DATA = [
   ['games',         'data/games.json'],
   ['lastUpdated',   'data/last_updated.json'],
   ['samples',       'data/bracket_samples.json'],
+  ['cupHistory',    'data/cup_odds_history.json'],
 ];
 
 // Score one bracket against a sample outcome {seriesId: [abbr, games]}.
@@ -562,6 +563,28 @@ function predFmtPct(p) {
   return (p * 100).toFixed(1) + '%';
 }
 
+// Pull deltas from the committed history file written by export.py. Returns
+// null if no usable prior day is found so the caller can fall back to the
+// localStorage-based path.
+function getHistoryDeltas(history, currentValues, field) {
+  const entries = (history && Array.isArray(history.history)) ? history.history : [];
+  if (entries.length === 0) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  const priorEntries = entries.filter(e => e && e.date && e.date < today);
+  if (priorEntries.length === 0) return null;
+  const prev = priorEntries[priorEntries.length - 1];
+  const prevTeams = (prev && prev.teams) || {};
+  const out = {};
+  for (const key of Object.keys(currentValues)) {
+    const prevTeam = prevTeams[key];
+    if (!prevTeam) continue;
+    const prevVal = prevTeam[field];
+    if (prevVal == null || currentValues[key] == null) continue;
+    out[key] = currentValues[key] - prevVal;
+  }
+  return out;
+}
+
 // Compute per-key deltas vs a stored daily snapshot. Rolls today→snapshot on a new calendar day.
 function getDailyDeltas(storageKey, currentValues) {
   const today = new Date().toISOString().slice(0, 10);
@@ -611,12 +634,16 @@ function predBar(pct, side) {
   return `<div class="prob-bar prob-${side}"><div class="prob-fill" style="width:${width.toFixed(1)}%"></div><span class="prob-label">${predFmtPct(pct)}</span></div>`;
 }
 
-function renderCupOdds(data) {
+function renderCupOdds(data, cupHistory) {
   const teams = (data && data.teams) || [];
   if (!teams.length) return '<div class="empty-state">No odds available yet.</div>';
   const current = {};
   for (const t of teams) if (t.team != null && t.cup_win_pct != null) current[t.team] = t.cup_win_pct;
-  const deltas = getDailyDeltas('cupOddsDaily', current);
+  // Prefer the committed history file (persists across browsers/devices);
+  // fall back to the per-browser localStorage snapshot if history is missing
+  // or hasn't yet recorded a prior day.
+  const historyDeltas = getHistoryDeltas(cupHistory, current, 'cup');
+  const deltas = historyDeltas || getDailyDeltas('cupOddsDaily', current);
   const rows = teams.map((t, i) => `
     <tr class="${i === 0 ? 'cup-leader' : ''}">
       <td class="rank">${i + 1}</td>
@@ -805,15 +832,19 @@ function renderModelCalibration(data) {
     metricCard('Log loss', m.log_loss.toFixed(4), `coin flip ${cf.log_loss.toFixed(4)}`),
   ].join('');
 
-  const bins = (wf.calibration || []).filter(b => b.n > 0);
+  const gameBins = (wf.calibration || []).filter(b => b.n > 0);
+  const seriesWf = data.series_walk_forward || {};
+  const seriesBins = (seriesWf.calibration || []).filter(b => b.n > 0);
   const W = 420, H = 260, PAD = 36;
   const sx = (p) => PAD + p * (W - 2 * PAD);
   const sy = (p) => H - PAD - p * (H - 2 * PAD);
-  const maxN = Math.max(1, ...bins.map(b => b.n));
-  const dots = bins.map(b => {
+  const maxN = Math.max(1, ...gameBins.map(b => b.n), ...seriesBins.map(b => b.n));
+  const plotDot = (b, color, label) => {
     const r = 4 + 8 * (b.n / maxN);
-    return `<circle cx="${sx(b.mean_pred).toFixed(1)}" cy="${sy(b.actual_rate).toFixed(1)}" r="${r.toFixed(1)}" fill="var(--accent)" fill-opacity="0.75" stroke="var(--accent)" stroke-width="1.5"><title>pred ${(b.mean_pred*100).toFixed(1)}% · actual ${(b.actual_rate*100).toFixed(1)}% · n=${b.n}</title></circle>`;
-  }).join('');
+    return `<circle cx="${sx(b.mean_pred).toFixed(1)}" cy="${sy(b.actual_rate).toFixed(1)}" r="${r.toFixed(1)}" fill="${color}" fill-opacity="0.7" stroke="${color}" stroke-width="1.5"><title>${label}: pred ${(b.mean_pred*100).toFixed(1)}% · actual ${(b.actual_rate*100).toFixed(1)}% · n=${b.n}</title></circle>`;
+  };
+  const gameDots = gameBins.map(b => plotDot(b, 'var(--accent)', 'Games')).join('');
+  const seriesDots = seriesBins.map(b => plotDot(b, 'var(--warning, #e0a93b)', 'Series')).join('');
   const gridTicks = [0, 0.25, 0.5, 0.75, 1].map(t => `
     <line x1="${sx(t)}" y1="${sy(0)}" x2="${sx(t)}" y2="${sy(1)}" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3"/>
     <line x1="${sx(0)}" y1="${sy(t)}" x2="${sx(1)}" y2="${sy(t)}" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3"/>
@@ -823,10 +854,18 @@ function renderModelCalibration(data) {
     <svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" class="cal-plot">
       ${gridTicks}
       <line x1="${sx(0)}" y1="${sy(0)}" x2="${sx(1)}" y2="${sy(1)}" stroke="var(--text-3)" stroke-width="1.5" stroke-dasharray="4,4"/>
-      ${dots}
+      ${gameDots}
+      ${seriesDots}
       <text x="${W/2}" y="${H - 6}" text-anchor="middle" fill="var(--text-2)" font-size="11">Predicted probability</text>
       <text x="12" y="${H/2}" text-anchor="middle" fill="var(--text-2)" font-size="11" transform="rotate(-90 12 ${H/2})">Actual win rate</text>
     </svg>`;
+  const legend = seriesBins.length
+    ? `<div class="cal-legend"><span class="cal-legend-swatch" style="background:var(--accent)"></span>Games <span class="cal-legend-swatch" style="background:var(--warning, #e0a93b);margin-left:0.8rem"></span>Series</div>`
+    : '';
+  const seriesAgg = seriesWf.model;
+  const seriesNote = seriesAgg
+    ? `Series replay: n=${seriesAgg.n}, Brier ${seriesAgg.brier?.toFixed(3)}, mean pred ${(seriesAgg.mean_pred*100).toFixed(1)}% vs actual ${(seriesAgg.mean_actual*100).toFixed(1)}%.`
+    : '';
   const prodNote = data.production_model
     ? `Production model: Platt-calibrated on season ${String(data.production_model.holdout_season).slice(0,4)}–${String(data.production_model.holdout_season).slice(6)} (n=${data.production_model.holdout_rows}, Brier ${data.production_model.holdout_brier?.toFixed(3)}).`
     : '';
@@ -835,8 +874,9 @@ function renderModelCalibration(data) {
       <div class="cal-metrics">${metrics}</div>
       <div class="cal-chart-wrap">
         <div class="cal-chart-title">Reliability curve (walk-forward OOS)</div>
+        ${legend}
         ${svg}
-        <p class="cal-caption">Each dot is a 10%-wide bin of predicted probabilities. Dot size = games in that bin. Dashes = perfect calibration. ${prodNote}</p>
+        <p class="cal-caption">Each dot is a 10%-wide bin of predicted probabilities. Dot size = sample count in that bin. Dashes = perfect calibration. ${seriesNote} ${prodNote}</p>
       </div>
     </div>`;
 }
@@ -868,9 +908,9 @@ async function renderPredictions() {
   if (!state._predictionsLoaded) {
     state._predictionsLoaded = true;
     const results = await Promise.allSettled(PRED_DATA.map(([, p]) => fetchJson(p)));
-    const [bracket, series, games, lastUpdated, samples] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+    const [bracket, series, games, lastUpdated, samples, cupHistory] = results.map(r => r.status === 'fulfilled' ? r.value : null);
     state._predSamples = samples;
-    try { set('cupOdds',       bracket && renderCupOdds(bracket),   "Couldn't load Cup odds."); } catch (e) { console.error(e); set('cupOdds', null, 'Failed to render odds.'); }
+    try { set('cupOdds',       bracket && renderCupOdds(bracket, cupHistory),   "Couldn't load Cup odds."); } catch (e) { console.error(e); set('cupOdds', null, 'Failed to render odds.'); }
     try { set('activeSeries',  series  && renderPredSeries(series), "Couldn't load series."); }   catch (e) { console.error(e); set('activeSeries', null, 'Failed to render series.'); }
     try { set('upcomingGames', games   && renderPredGames(games),   "Couldn't load games."); }    catch (e) { console.error(e); set('upcomingGames', null, 'Failed to render games.'); }
     renderPredLastUpdated(lastUpdated);

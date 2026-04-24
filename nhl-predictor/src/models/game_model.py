@@ -54,7 +54,21 @@ DEFAULT_TEAM_STATS = {
 }
 
 
+RECENCY_BLEND_WEIGHT = 0.25  # weight on prior-season carry-over for stability
+
+
 def _team_stats_map() -> dict[tuple[int, int], dict]:
+    """Per-(team, season) stats, lightly recency-blended with the prior season.
+
+    We'd rather blend a true rolling L20 window with full-season averages, but
+    the DB only stores full-season aggregates (no game-level regular-season
+    log). As a modest recency substitute, each (team, season) row is blended
+    ``RECENCY_BLEND_WEIGHT`` of that team's prior-season stats with
+    ``1 - RECENCY_BLEND_WEIGHT`` of the current season — smoothing single-year
+    noise and making this year's stats more stable at the cost of being
+    slower to respond to real roster changes. If we later ingest game-level
+    regular-season stats this should be replaced with an actual L20 blend.
+    """
     if not DB_PATH.exists():
         return {}
     conn = sqlite3.connect(DB_PATH)
@@ -68,11 +82,29 @@ def _team_stats_map() -> dict[tuple[int, int], dict]:
         return {}
     finally:
         conn.close()
-    return {(r[0], r[1]): {
-        "point_pct": r[2] or 0.5, "gf": r[3] or 2.9, "ga": r[4] or 2.9,
-        "pp": r[5] or 0.20, "pk": r[6] or 0.80,
-        "sf": r[7] or 30.0, "sa": r[8] or 30.0,
-    } for r in rows}
+    base: dict[tuple[int, int], dict] = {
+        (r[0], r[1]): {
+            "point_pct": r[2] or 0.5, "gf": r[3] or 2.9, "ga": r[4] or 2.9,
+            "pp": r[5] or 0.20, "pk": r[6] or 0.80,
+            "sf": r[7] or 30.0, "sa": r[8] or 30.0,
+        } for r in rows
+    }
+
+    def _prev_season(season: int) -> int:
+        start_yr = season // 10000
+        return (start_yr - 1) * 10000 + start_yr
+
+    out: dict[tuple[int, int], dict] = {}
+    w = RECENCY_BLEND_WEIGHT
+    for (team_id, season), stats in base.items():
+        prev = base.get((team_id, _prev_season(season)))
+        if prev is None:
+            out[(team_id, season)] = stats
+            continue
+        out[(team_id, season)] = {
+            k: (1 - w) * stats[k] + w * prev[k] for k in stats
+        }
+    return out
 
 
 def _games_with_context() -> list[dict]:
@@ -149,14 +181,32 @@ def _build_feats(home_stats: dict, away_stats: dict, round_: int,
     return [row[f] for f in FEATURES]
 
 
-class GameModel:
-    """LightGBM binary classifier over 30 pre-game features."""
+DEFAULT_CLIP_LO = 0.02
+DEFAULT_CLIP_HI = 0.98
+# Platt default: isotonic needs >> one season of held-out games to generalize
+# in the extreme-probability bins (with n<20 per tail bin we observed isotonic
+# saying 97% when actuals were 64%). Revisit isotonic once the calibration
+# holdout window grows past ~3 seasons.
+DEFAULT_CALIBRATION = "platt"  # "isotonic" | "platt"
+# Temperature scaling on top of Platt/isotonic. Pulls p toward 0.5 by factor
+# β ∈ (0,1], mitigating compounding overconfidence when per-game probs feed a
+# 4-round Monte Carlo. Fit on holdout log-loss; 1.0 = identity.
+DEFAULT_TEMPERATURE = 1.0
 
+
+class GameModel:
     def __init__(self) -> None:
         self.trained = False
         self.booster = None
+        # Platt (legacy) parameters — retained for backward compat.
         self.platt_a = 1.0
         self.platt_b = 0.0
+        # Isotonic calibrator — sklearn IsotonicRegression, set when fitted.
+        self.calibration_method = DEFAULT_CALIBRATION
+        self.iso = None
+        self.clip_lo = DEFAULT_CLIP_LO
+        self.clip_hi = DEFAULT_CLIP_HI
+        self.temperature = DEFAULT_TEMPERATURE
         self.metrics: dict = {}
         self._team_stats: dict | None = None
 
@@ -172,14 +222,17 @@ class GameModel:
 
     def train(self, cutoff_season: int | None = None,
               platt_holdout: int | None = None,
+              calibration_method: str = DEFAULT_CALIBRATION,
               save: bool = True) -> dict:
-        """Train on all playoff games <= cutoff_season (excluding platt_holdout),
-        Platt-calibrate on platt_holdout.
+        """Train on all playoff games <= cutoff_season (excluding holdout),
+        calibrate on the holdout season.
 
-        Defaults: train on everything, Platt-calibrate on the most recent season.
+        Args:
+          calibration_method: "isotonic" (default) or "platt".
         """
         import lightgbm as lgb
         from sklearn.linear_model import LogisticRegression
+        from sklearn.isotonic import IsotonicRegression
 
         rows = _games_with_context()
         if not rows:
@@ -225,6 +278,7 @@ class GameModel:
                       bagging_fraction=0.9, bagging_freq=1, verbose=-1)
         dtrain = lgb.Dataset(X[fit_mask], label=y[fit_mask], feature_name=FEATURES)
         callbacks = [lgb.log_evaluation(period=0)]
+        self.calibration_method = calibration_method if calibration_method in ("isotonic", "platt") else DEFAULT_CALIBRATION
         if hold_mask.sum() > 20:
             dval = lgb.Dataset(X[hold_mask], label=y[hold_mask],
                                reference=dtrain, feature_name=FEATURES)
@@ -232,26 +286,55 @@ class GameModel:
             self.booster = lgb.train(params, dtrain, num_boost_round=500,
                                      valid_sets=[dval], callbacks=callbacks)
             raw_ho = self.booster.predict(X[hold_mask])
-            lr = LogisticRegression(C=1e4, solver="lbfgs")
-            lr.fit(raw_ho.reshape(-1, 1), y[hold_mask])
-            self.platt_a = float(lr.coef_[0, 0])
-            self.platt_b = float(lr.intercept_[0])
+            if self.calibration_method == "isotonic":
+                iso = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0)
+                iso.fit(raw_ho, y[hold_mask])
+                self.iso = iso
+                # Keep identity Platt params so the Platt math path is a safe no-op.
+                self.platt_a, self.platt_b = 1.0, 0.0
+                cal = iso.predict(raw_ho)
+            else:
+                lr = LogisticRegression(C=1e4, solver="lbfgs")
+                lr.fit(raw_ho.reshape(-1, 1), y[hold_mask])
+                self.platt_a = float(lr.coef_[0, 0])
+                self.platt_b = float(lr.intercept_[0])
+                self.iso = None
+                cal = 1.0 / (1.0 + np.exp(-(self.platt_a * raw_ho + self.platt_b)))
             from sklearn.metrics import log_loss, brier_score_loss
-            cal = 1.0 / (1.0 + np.exp(-(self.platt_a * raw_ho + self.platt_b)))
+            cal_clipped = np.clip(cal, self.clip_lo, self.clip_hi)
+            pre_temp_ll = float(log_loss(y[hold_mask], cal_clipped, labels=[0, 1]))
+            # Temperature scaling: find β ∈ [0.5, 1.0] minimizing holdout
+            # log-loss. Pulling toward 0.5 compounds favorably across rounds.
+            best_t, best_ll = 1.0, pre_temp_ll
+            for t in np.linspace(0.50, 1.00, 26):
+                p_t = 0.5 + t * (cal_clipped - 0.5)
+                p_t = np.clip(p_t, self.clip_lo, self.clip_hi)
+                ll = float(log_loss(y[hold_mask], p_t, labels=[0, 1]))
+                if ll < best_ll:
+                    best_t, best_ll = float(t), ll
+            self.temperature = best_t
+            cal_tempered = np.clip(0.5 + best_t * (cal_clipped - 0.5),
+                                   self.clip_lo, self.clip_hi)
             self.metrics = {
                 "rows": int(len(X)),
                 "fit_rows": int(fit_mask.sum()),
                 "holdout_rows": int(hold_mask.sum()),
                 "holdout_season": int(platt_holdout),
-                "holdout_log_loss": float(log_loss(y[hold_mask], cal, labels=[0, 1])),
-                "holdout_brier": float(brier_score_loss(y[hold_mask], cal)),
-                "holdout_mean_pred": float(cal.mean()),
+                "calibration_method": self.calibration_method,
+                "clip_lo": self.clip_lo,
+                "clip_hi": self.clip_hi,
+                "temperature": self.temperature,
+                "holdout_log_loss": float(log_loss(y[hold_mask], cal_tempered, labels=[0, 1])),
+                "holdout_log_loss_pre_temp": pre_temp_ll,
+                "holdout_brier": float(brier_score_loss(y[hold_mask], cal_tempered)),
+                "holdout_mean_pred": float(cal_tempered.mean()),
                 "holdout_actual_rate": float(y[hold_mask].mean()),
             }
         else:
             self.booster = lgb.train(params, dtrain, num_boost_round=200,
                                      callbacks=callbacks)
-            self.metrics = {"rows": int(len(X))}
+            self.iso = None
+            self.metrics = {"rows": int(len(X)), "calibration_method": "none"}
 
         self.trained = True
         if save: self._save()
@@ -273,8 +356,17 @@ class GameModel:
                              game_in_series, days_rest_home, days_rest_away)
         x = np.array([feats], dtype=float)
         raw = float(self.booster.predict(x)[0])
-        p = 1.0 / (1.0 + np.exp(-(self.platt_a * raw + self.platt_b)))
-        return max(0.05, min(0.95, float(p)))
+        method = getattr(self, "calibration_method", DEFAULT_CALIBRATION)
+        if getattr(self, "iso", None) is not None and method == "isotonic":
+            p = float(self.iso.predict([raw])[0])
+        else:
+            p = 1.0 / (1.0 + np.exp(-(self.platt_a * raw + self.platt_b)))
+        temp = getattr(self, "temperature", DEFAULT_TEMPERATURE)
+        if temp != 1.0:
+            p = 0.5 + temp * (p - 0.5)
+        lo = getattr(self, "clip_lo", DEFAULT_CLIP_LO)
+        hi = getattr(self, "clip_hi", DEFAULT_CLIP_HI)
+        return max(lo, min(hi, float(p)))
 
     def explain(self, home_team_id: int | None, away_team_id: int | None,
                 season: int, round_: int = 1,

@@ -378,6 +378,22 @@
   margin-bottom: 0.4rem;
 }
 .cal-plot { display: block; max-width: 520px; margin: 0 auto; }
+.cal-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--text-3);
+  margin: 0.2rem 0 0.3rem;
+}
+.cal-legend-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 0.25rem;
+  vertical-align: middle;
+}
 .cal-caption {
   margin: 0.4rem 0 0;
   font-size: 0.72rem;

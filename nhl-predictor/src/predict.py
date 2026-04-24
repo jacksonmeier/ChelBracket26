@@ -23,7 +23,6 @@ def cmd_game(args) -> None:
         "warnings": pred["warnings"],
         "home_goalie_score": feats["home_goalie_score"],
         "away_goalie_score": feats["away_goalie_score"],
-        "uncertainty_flag": feats["uncertainty_flag"],
     }, indent=2))
 
 

@@ -23,7 +23,7 @@ MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 FEATURE_COLS = [
     "sv_pct_l10", "shots_faced_l10", "starts_l10",
-    "sv_pct_career", "starts_career", "playoff_starts_career",
+    "sv_pct_career", "starts_career",
 ]
 
 
@@ -68,7 +68,6 @@ def _build_features(rows: list[dict]) -> tuple[np.ndarray, np.ndarray, list[dict
             "starts_l10": float(len(last10)),
             "sv_pct_career": float(np.mean(career_sv)) if career_sv else 0.905,
             "starts_career": float(len(hist)),
-            "playoff_starts_career": float(len(hist)),
         }
 
         if label is not None and r.get("shots_faced") is not None:
@@ -221,7 +220,6 @@ class GoalieSubModel:
             "starts_l10": float(len(last10)),
             "sv_pct_career": float(np.mean(career_sv)) if career_sv else 0.905,
             "starts_career": float(len(rows)),
-            "playoff_starts_career": float(len(rows)),
         }
 
     def _save(self) -> None:

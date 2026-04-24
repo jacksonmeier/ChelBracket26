@@ -73,30 +73,143 @@ LETTER_TO_POOL_SERIES = {
 }
 
 
-# Fallback goalie quality scores keyed by team abbrev. These stand in until
-# we wire a live starter lookup. Values are hand-set in [0.45, 0.72].
-GOALIE_PRIOR = {
-    "BOS": ("J. Swayman",   0.62), "BUF": ("U. Luukkonen",  0.55),
-    "TBL": ("A. Vasilevskiy", 0.67), "MTL": ("S. Montembeault", 0.52),
-    "CAR": ("F. Andersen",  0.58), "OTT": ("L. Ullmark",    0.59),
-    "PIT": ("T. Jarry",     0.54), "PHI": ("S. Ersson",     0.53),
-    "COL": ("M. Blackwood", 0.56), "LAK": ("D. Kuemper",    0.57),
-    "DAL": ("J. Oettinger", 0.65), "MIN": ("F. Gustavsson", 0.56),
-    "VGK": ("A. Hill",      0.59), "UTA": ("K. Vejmelka",   0.54),
-    "EDM": ("S. Skinner",   0.52), "ANA": ("L. Dostal",     0.53),
-    "WSH": ("L. Thompson",  0.60), "NJD": ("J. Markstrom",  0.57),
-    "WPG": ("C. Hellebuyck", 0.72), "TOR": ("A. Stolarz",   0.61),
-    "FLA": ("S. Bobrovsky", 0.63), "NYR": ("I. Shesterkin", 0.66),
-    "NYI": ("I. Sorokin",   0.60), "CBJ": ("E. Merzlikins", 0.51),
-    "DET": ("A. Lyon",      0.50), "STL": ("J. Binnington", 0.54),
-    "NSH": ("J. Saros",     0.61), "CGY": ("D. Wolf",       0.55),
-    "VAN": ("T. Demko",     0.60), "SEA": ("J. Daccord",    0.55),
-    "CHI": ("P. Mrazek",    0.48), "SJS": ("M. Blackwood",  0.47),
+# Display-only names for when the live starter lookup fails. NOT used by the
+# model — the quality score comes from _goalie_priors() below, computed from
+# DB playoff history. Names are just cosmetic UI labels.
+_STARTER_NAME_HINTS = {
+    "BOS": "J. Swayman",     "BUF": "U. Luukkonen",
+    "TBL": "A. Vasilevskiy", "MTL": "S. Montembeault",
+    "CAR": "F. Andersen",    "OTT": "L. Ullmark",
+    "PIT": "T. Jarry",       "PHI": "S. Ersson",
+    "COL": "M. Blackwood",   "LAK": "D. Kuemper",
+    "DAL": "J. Oettinger",   "MIN": "F. Gustavsson",
+    "VGK": "A. Hill",        "UTA": "K. Vejmelka",
+    "EDM": "S. Skinner",     "ANA": "L. Dostal",
+    "WSH": "L. Thompson",    "NJD": "J. Markstrom",
+    "WPG": "C. Hellebuyck",  "TOR": "A. Stolarz",
+    "FLA": "S. Bobrovsky",   "NYR": "I. Shesterkin",
+    "NYI": "I. Sorokin",     "CBJ": "E. Merzlikins",
+    "DET": "A. Lyon",        "STL": "J. Binnington",
+    "NSH": "J. Saros",       "CGY": "D. Wolf",
+    "VAN": "T. Demko",       "SEA": "J. Daccord",
+    "CHI": "P. Mrazek",      "SJS": "M. Blackwood",
 }
+
+LEAGUE_AVG_SV_PCT = 0.905
+RECENT_PLAYOFF_WINDOW_SEASONS = 2
+MIN_STARTS_FOR_CAREER_PRIOR = 5
+
+
+def _sv_to_quality(sv_pct: float) -> float:
+    """Map playoff sv% → quality score in [0.25, 0.75]. Same formula the live
+    blender uses, so priors and live signals are on the same scale."""
+    q = 0.5 + (sv_pct - 0.910) * 6.0
+    return max(0.25, min(0.75, q))
+
+
+def _compute_goalie_priors_from_db() -> dict[str, tuple[str, float]]:
+    """Build team→(name, quality) priors from historical playoff data.
+
+    For each team, find the goalie_id with the most playoff saves in the last
+    ``RECENT_PLAYOFF_WINDOW_SEASONS`` seasons. If that goalie has ≥5 career
+    playoff starts use their career playoff sv%; else fall back to the team's
+    aggregate recent-playoff sv%; else league average. No hand-tuning.
+    """
+    import sqlite3
+    db_path = Path(__file__).resolve().parent / "data" / "nhl.sqlite"
+    if not db_path.exists():
+        return {}
+
+    conn = sqlite3.connect(str(db_path))
+    try:
+        abbrevs = {
+            row[0] for row in conn.execute(
+                "SELECT DISTINCT team_id FROM goalie_game_log WHERE team_id IS NOT NULL"
+            )
+        }
+        # Include teams that have never made playoffs so they still get a
+        # sensible league-average prior (e.g. UTA in 2026).
+        abbrevs |= set(_STARTER_NAME_HINTS.keys())
+
+        max_season_row = conn.execute(
+            "SELECT MAX(season) FROM goalie_game_log"
+        ).fetchone()
+        max_season = (max_season_row or [None])[0] or 0
+        # Seasons are encoded as YYYYYYYY (e.g. 20242025); subtract 10001 per
+        # season-step.
+        cutoff_season = max_season - 10001 * RECENT_PLAYOFF_WINDOW_SEASONS
+
+        out: dict[str, tuple[str, float]] = {}
+        for abbrev in abbrevs:
+            top_goalie = conn.execute(
+                """
+                SELECT goalie_id, SUM(shots_faced) AS shots
+                FROM goalie_game_log
+                WHERE team_id = ? AND season >= ? AND shots_faced IS NOT NULL
+                GROUP BY goalie_id
+                HAVING shots > 0
+                ORDER BY shots DESC LIMIT 1
+                """,
+                (abbrev, cutoff_season),
+            ).fetchone()
+
+            svp: float | None = None
+            if top_goalie is not None:
+                gid = top_goalie[0]
+                career = conn.execute(
+                    """
+                    SELECT SUM(shots_faced), SUM(saves), COUNT(*)
+                    FROM goalie_game_log
+                    WHERE goalie_id = ? AND shots_faced IS NOT NULL
+                    """,
+                    (gid,),
+                ).fetchone()
+                if career and career[0] and career[2] >= MIN_STARTS_FOR_CAREER_PRIOR:
+                    svp = float(career[1]) / float(career[0])
+
+            if svp is None:
+                team_recent = conn.execute(
+                    """
+                    SELECT SUM(shots_faced), SUM(saves)
+                    FROM goalie_game_log
+                    WHERE team_id = ? AND season >= ?
+                      AND shots_faced IS NOT NULL
+                    """,
+                    (abbrev, cutoff_season),
+                ).fetchone()
+                if team_recent and team_recent[0]:
+                    svp = float(team_recent[1]) / float(team_recent[0])
+
+            if svp is None:
+                svp = LEAGUE_AVG_SV_PCT
+
+            name = _STARTER_NAME_HINTS.get(abbrev, "TBD")
+            out[abbrev] = (name, _sv_to_quality(svp))
+
+        return out
+    finally:
+        conn.close()
+
+
+_GOALIE_PRIORS_CACHE: dict[str, tuple[str, float]] | None = None
+
+
+def _goalie_priors() -> dict[str, tuple[str, float]]:
+    global _GOALIE_PRIORS_CACHE
+    if _GOALIE_PRIORS_CACHE is None:
+        try:
+            _GOALIE_PRIORS_CACHE = _compute_goalie_priors_from_db()
+        except Exception as e:
+            log.warning("goalie prior compute failed: %s", e)
+            _GOALIE_PRIORS_CACHE = {}
+    return _GOALIE_PRIORS_CACHE
 
 
 def _goalie_for(abbrev: str | None) -> tuple[str, float]:
-    return GOALIE_PRIOR.get(abbrev or "", ("TBD", 0.50))
+    priors = _goalie_priors()
+    fallback = (_STARTER_NAME_HINTS.get(abbrev or "", "TBD"),
+                _sv_to_quality(LEAGUE_AVG_SV_PCT))
+    return priors.get(abbrev or "", fallback)
 
 
 def _model_quality(player_id: int | None, opp_id: int | None, as_of_date: str,
@@ -158,10 +271,125 @@ def _probable_starters(active_series: list[dict]) -> dict[str, dict]:
 CURRENT_SEASON = 20252026
 
 
+CLIP_LO = 0.02
+CLIP_HI = 0.98
+
+
+_SERIES_CAL_CACHE: dict | None = None
+
+
+def _series_calibrator() -> dict | None:
+    """Load the walk-forward-fit series-level calibrator if present.
+
+    Returns a dict with ``knots_x`` / ``knots_y`` (sorted, equal-length) that we
+    interpolate linearly. Monotonic by construction (isotonic fit). Returns
+    None if the artifact is missing, so the pipeline degrades to raw sim.
+    """
+    global _SERIES_CAL_CACHE
+    if _SERIES_CAL_CACHE is not None:
+        return _SERIES_CAL_CACHE or None
+    path = Path(__file__).resolve().parent / "data" / "processed" / "series_calibration.json"
+    if not path.exists():
+        _SERIES_CAL_CACHE = {}
+        return None
+    try:
+        raw = json.loads(path.read_text())
+    except Exception as e:
+        log.warning("series calibrator load failed: %s", e)
+        _SERIES_CAL_CACHE = {}
+        return None
+    if raw.get("method") not in ("isotonic", "platt_logit") or not raw.get("knots_x"):
+        _SERIES_CAL_CACHE = {}
+        return None
+    _SERIES_CAL_CACHE = raw
+    return raw
+
+
+def _apply_series_calibrator(p_raw: float) -> float:
+    cal = _series_calibrator()
+    if not cal:
+        return p_raw
+    xs, ys = cal["knots_x"], cal["knots_y"]
+    p = max(xs[0], min(xs[-1], p_raw))
+    # Linear interp over the isotonic knot grid (monotonic, ~97 knots).
+    lo = 0
+    hi = len(xs) - 1
+    while hi - lo > 1:
+        mid = (lo + hi) // 2
+        if xs[mid] <= p:
+            lo = mid
+        else:
+            hi = mid
+    x0, x1 = xs[lo], xs[hi]
+    y0, y1 = ys[lo], ys[hi]
+    if x1 == x0:
+        return float(y0)
+    return float(y0 + (y1 - y0) * (p - x0) / (x1 - x0))
+
+
+def _series_prob_exact(p_hh: float, p_ha: float,
+                       hw0: int = 0, aw0: int = 0) -> float:
+    """Exact P(home-ice side wins a best-of-7) via full enumeration.
+
+    O(64) paths per call, deterministic (unlike MC). Uses HOME_SCHED to decide
+    which per-game prob applies at each game index.
+    """
+    from functools import lru_cache
+
+    @lru_cache(maxsize=None)
+    def rec(hw: int, aw: int) -> float:
+        if hw == 4:
+            return 1.0
+        if aw == 4:
+            return 0.0
+        g = hw + aw
+        p = p_hh if HOME_SCHED[g] else p_ha
+        return p * rec(hw + 1, aw) + (1 - p) * rec(hw, aw + 1)
+
+    return rec(hw0, aw0)
+
+
+def _shrink_to_target(p_hh: float, p_ha: float,
+                      target_p_series: float,
+                      hw0: int = 0, aw0: int = 0,
+                      max_iter: int = 30) -> tuple[float, float]:
+    """Find β ∈ [0, 1] such that series prob with per-game probs shrunk toward
+    0.5 by β matches ``target_p_series``. Preserves the ratio between home-
+    arena and away-arena probs. Returns the shrunk (p_hh, p_ha).
+    """
+    raw = _series_prob_exact(p_hh, p_ha, hw0, aw0)
+    # If raw already equals 0.5 (coin-flip series) the calibrator can't move
+    # the prob by shrinking — any β yields 0.5. Early-out.
+    if abs(raw - 0.5) < 1e-6 or abs(target_p_series - raw) < 1e-4:
+        return p_hh, p_ha
+
+    def scaled(beta: float) -> tuple[float, float]:
+        h = 0.5 + beta * (p_hh - 0.5)
+        a = 0.5 + beta * (p_ha - 0.5)
+        return (max(CLIP_LO, min(CLIP_HI, h)),
+                max(CLIP_LO, min(CLIP_HI, a)))
+
+    lo, hi = 0.0, 1.0
+    best = (p_hh, p_ha)
+    for _ in range(max_iter):
+        mid = 0.5 * (lo + hi)
+        h_m, a_m = scaled(mid)
+        p_mid = _series_prob_exact(h_m, a_m, hw0, aw0)
+        best = (h_m, a_m)
+        # Monotone in β: f(β) moves from 0.5 toward raw as β grows.
+        if (raw > 0.5 and p_mid > target_p_series) or (raw < 0.5 and p_mid < target_p_series):
+            hi = mid
+        else:
+            lo = mid
+        if abs(p_mid - target_p_series) < 1e-4:
+            break
+    return best
+
+
 def _game_prob_home(home_goalie_q: float, away_goalie_q: float, home_ice: bool = True) -> float:
     """Fallback formula: logistic over goalie quality diff + home-ice bump."""
     z = 0.15 * (1.0 if home_ice else -1.0) + 2.4 * (home_goalie_q - away_goalie_q)
-    return max(0.05, min(0.95, 1.0 / (1.0 + math.exp(-z))))
+    return max(CLIP_LO, min(CLIP_HI, 1.0 / (1.0 + math.exp(-z))))
 
 
 def _p_game(home_abbrev: str, away_abbrev: str,
@@ -191,7 +419,7 @@ def _p_game(home_abbrev: str, away_abbrev: str,
                                  away_wins, home_wins, game_in_series)
             p = None if p is None else 1.0 - p
         if p is not None:
-            return max(0.05, min(0.95, p))
+            return max(CLIP_LO, min(CLIP_HI, p))
     return _game_prob_home(fallback_home_q, fallback_away_q,
                            home_ice=at_home_arena)
 
@@ -419,23 +647,30 @@ def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000,
         abbrev_to_id[s["away"]] = s.get("away_id")
 
     # Precompute per-R1 per-game probs; series state starts at current wins.
+    # Each (p_hh, p_ha) is shrunk toward 0.5 so the simulated series prob
+    # matches the calibrator's target — collapsing compounding overconfidence.
     r1_probs: dict[str, tuple[float, float]] = {}
     for letter, s in by_letter.items():
         hg = _tq(s["home"])
         ag = _tq(s["away"])
         hw, aw = s["home_wins"], s["away_wins"]
-        r1_probs[letter] = (
-            _p_game(s["home"], s["away"], s.get("home_id"), s.get("away_id"),
-                    round_=1, home_wins=hw, away_wins=aw,
-                    game_in_series=hw + aw + 1, at_home_arena=True,
-                    fallback_home_q=hg, fallback_away_q=ag),
-            _p_game(s["home"], s["away"], s.get("home_id"), s.get("away_id"),
-                    round_=1, home_wins=hw, away_wins=aw,
-                    game_in_series=hw + aw + 1, at_home_arena=False,
-                    fallback_home_q=hg, fallback_away_q=ag),
-        )
+        raw_hh = _p_game(s["home"], s["away"], s.get("home_id"), s.get("away_id"),
+                         round_=1, home_wins=hw, away_wins=aw,
+                         game_in_series=hw + aw + 1, at_home_arena=True,
+                         fallback_home_q=hg, fallback_away_q=ag)
+        raw_ha = _p_game(s["home"], s["away"], s.get("home_id"), s.get("away_id"),
+                         round_=1, home_wins=hw, away_wins=aw,
+                         game_in_series=hw + aw + 1, at_home_arena=False,
+                         fallback_home_q=hg, fallback_away_q=ag)
+        raw_series = _series_prob_exact(raw_hh, raw_ha, hw, aw)
+        target = _apply_series_calibrator(raw_series)
+        r1_probs[letter] = _shrink_to_target(raw_hh, raw_ha, target, hw, aw)
 
     samples: list[dict] = []
+    # Shared across all sim iterations: R2/R3/Final matchups depend on who
+    # advances, but for any given (w1, w2, round) pair the calibrated per-game
+    # probs are deterministic — cache once, reuse across 20k sims.
+    matchup_cache: dict[tuple[str, str, int], tuple[float, float]] = {}
 
     for sim_i in range(n_sims):
         sample: dict[str, list] = {}
@@ -460,6 +695,22 @@ def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000,
             if sim_i < n_samples_keep:
                 sample[letter] = [winner, games]
 
+        def _matchup_probs(w1: str, w2: str, rnd: int) -> tuple[float, float]:
+            if (w1, w2, rnd) in matchup_cache:
+                return matchup_cache[(w1, w2, rnd)]
+            q1, q2 = _tq(w1), _tq(w2)
+            raw_hh = _p_game(w1, w2, abbrev_to_id.get(w1), abbrev_to_id.get(w2),
+                             round_=rnd, at_home_arena=True,
+                             fallback_home_q=q1, fallback_away_q=q2)
+            raw_ha = _p_game(w1, w2, abbrev_to_id.get(w1), abbrev_to_id.get(w2),
+                             round_=rnd, at_home_arena=False,
+                             fallback_home_q=q1, fallback_away_q=q2)
+            raw_p = _series_prob_exact(raw_hh, raw_ha, 0, 0)
+            target = _apply_series_calibrator(raw_p)
+            probs = _shrink_to_target(raw_hh, raw_ha, target, 0, 0)
+            matchup_cache[(w1, w2, rnd)] = probs
+            return probs
+
         # Round 2 pairings: A|B=I, C|D=J, E|F=K, G|H=L
         r2_pairs = [("A", "B", "I"), ("C", "D", "J"), ("E", "F", "K"), ("G", "H", "L")]
         r2_winners: dict[str, str] = {}
@@ -467,14 +718,7 @@ def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000,
             if a not in r1_winners or b not in r1_winners:
                 continue
             w1, w2 = r1_winners[a], r1_winners[b]
-            q1, q2 = _tq(w1), _tq(w2)
-            _rnd = 2
-            ph_home = _p_game(w1, w2, abbrev_to_id.get(w1), abbrev_to_id.get(w2),
-                              round_=_rnd, at_home_arena=True,
-                              fallback_home_q=q1, fallback_away_q=q2)
-            ph_away = _p_game(w1, w2, abbrev_to_id.get(w1), abbrev_to_id.get(w2),
-                              round_=_rnd, at_home_arena=False,
-                              fallback_home_q=q1, fallback_away_q=q2)
+            ph_home, ph_away = _matchup_probs(w1, w2, 2)
             home_won, games = _sim_one_series(ph_home, ph_away, 0, 0, rng)
             winner = w1 if home_won else w2
             r2_winners[rkey] = winner
@@ -489,14 +733,7 @@ def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000,
             if a not in r2_winners or b not in r2_winners:
                 continue
             w1, w2 = r2_winners[a], r2_winners[b]
-            q1, q2 = _tq(w1), _tq(w2)
-            _rnd = 3
-            ph_home = _p_game(w1, w2, abbrev_to_id.get(w1), abbrev_to_id.get(w2),
-                              round_=_rnd, at_home_arena=True,
-                              fallback_home_q=q1, fallback_away_q=q2)
-            ph_away = _p_game(w1, w2, abbrev_to_id.get(w1), abbrev_to_id.get(w2),
-                              round_=_rnd, at_home_arena=False,
-                              fallback_home_q=q1, fallback_away_q=q2)
+            ph_home, ph_away = _matchup_probs(w1, w2, 3)
             home_won, games = _sim_one_series(ph_home, ph_away, 0, 0, rng)
             winner = w1 if home_won else w2
             r3_winners[rkey] = winner
@@ -507,14 +744,7 @@ def _full_bracket_sim(active_series: list[dict], n_sims: int = 20_000,
         # Stanley Cup Final: M|N=O
         if "M" in r3_winners and "N" in r3_winners:
             w1, w2 = r3_winners["M"], r3_winners["N"]
-            q1, q2 = _tq(w1), _tq(w2)
-            _rnd = 4
-            ph_home = _p_game(w1, w2, abbrev_to_id.get(w1), abbrev_to_id.get(w2),
-                              round_=_rnd, at_home_arena=True,
-                              fallback_home_q=q1, fallback_away_q=q2)
-            ph_away = _p_game(w1, w2, abbrev_to_id.get(w1), abbrev_to_id.get(w2),
-                              round_=_rnd, at_home_arena=False,
-                              fallback_home_q=q1, fallback_away_q=q2)
+            ph_home, ph_away = _matchup_probs(w1, w2, 4)
             home_won, games = _sim_one_series(ph_home, ph_away, 0, 0, rng)
             champ = w1 if home_won else w2
             teams[champ]["cup"] += 1
@@ -557,18 +787,22 @@ def _compose_payload(series_list: list[dict]) -> dict:
         hq = team_quality(s["home"])
         aq = team_quality(s["away"])
         hw0, aw0 = s["home_wins"], s["away_wins"]
-        p_home_at_home = _p_game(s["home"], s["away"],
-                                 s.get("home_id"), s.get("away_id"),
-                                 round_=1, home_wins=hw0, away_wins=aw0,
-                                 game_in_series=hw0 + aw0 + 1,
-                                 at_home_arena=True,
-                                 fallback_home_q=hq, fallback_away_q=aq)
-        p_home_at_away = _p_game(s["home"], s["away"],
-                                 s.get("home_id"), s.get("away_id"),
-                                 round_=1, home_wins=hw0, away_wins=aw0,
-                                 game_in_series=hw0 + aw0 + 1,
-                                 at_home_arena=False,
-                                 fallback_home_q=hq, fallback_away_q=aq)
+        raw_p_hh = _p_game(s["home"], s["away"],
+                           s.get("home_id"), s.get("away_id"),
+                           round_=1, home_wins=hw0, away_wins=aw0,
+                           game_in_series=hw0 + aw0 + 1,
+                           at_home_arena=True,
+                           fallback_home_q=hq, fallback_away_q=aq)
+        raw_p_ha = _p_game(s["home"], s["away"],
+                           s.get("home_id"), s.get("away_id"),
+                           round_=1, home_wins=hw0, away_wins=aw0,
+                           game_in_series=hw0 + aw0 + 1,
+                           at_home_arena=False,
+                           fallback_home_q=hq, fallback_away_q=aq)
+        raw_series = _series_prob_exact(raw_p_hh, raw_p_ha, hw0, aw0)
+        cal_target = _apply_series_calibrator(raw_series)
+        p_home_at_home, p_home_at_away = _shrink_to_target(
+            raw_p_hh, raw_p_ha, cal_target, hw0, aw0)
         sim = _series_sim(p_home_at_home, p_home_at_away, s["home_wins"], s["away_wins"],
                           n=8000, seed=hash((s["home"], s["away"])) & 0xFFFFFFFF)
         drivers = []
@@ -683,7 +917,24 @@ def _write_model_calibration() -> None:
     plus the trained production model's Platt-holdout stats.
     """
     bt_path = Path(__file__).resolve().parent / "data" / "processed" / "game_model_backtest.json"
+    goalie_wf_path = Path(__file__).resolve().parent / "data" / "processed" / "backtest_walkforward.json"
     out: dict = {"generated_at": datetime.now(timezone.utc).isoformat()}
+    if goalie_wf_path.exists():
+        try:
+            gwf = json.loads(goalie_wf_path.read_text())
+            gagg = gwf.get("aggregate") or {}
+            out["goalie_walk_forward"] = {
+                "n_games": gwf.get("n_games_scored") or gwf.get("n_games"),
+                "model": gagg.get("model"),
+                "baselines": {
+                    "prior_only": gagg.get("prior_only"),
+                    "home_ice_0545": gagg.get("home_0545"),
+                    "coin_flip": gagg.get("coin_flip"),
+                },
+                "calibration": gwf.get("calibration_model", []),
+            }
+        except Exception as e:
+            log.warning("calibration: goalie wf read failed: %s", e)
     if bt_path.exists():
         try:
             bt = json.loads(bt_path.read_text())
@@ -699,12 +950,68 @@ def _write_model_calibration() -> None:
                 },
                 "calibration": bt.get("calibration_model", []),
             }
+            # Series-level replay through the MC pipeline the UI actually uses.
+            series = bt.get("series") or {}
+            if series.get("n_series"):
+                out["series_walk_forward"] = {
+                    "n_series": series["n_series"],
+                    "model": (series.get("aggregate") or {}).get("model"),
+                    "baselines": {
+                        "coin_flip": (series.get("aggregate") or {}).get("coin_flip"),
+                        "home_ice_058": (series.get("aggregate") or {}).get("home_ice_058"),
+                    },
+                    "calibration": series.get("calibration", []),
+                    "by_round": series.get("by_round", {}),
+                }
         except Exception as e:
             log.warning("calibration: backtest read failed: %s", e)
     m = _game_model()
     if m is not None and getattr(m, "metrics", None):
         out["production_model"] = m.metrics
     (WEB_DATA / "model_calibration.json").write_text(json.dumps(out, indent=2))
+
+
+CUP_HISTORY_MAX_DAYS = 90
+
+
+def _write_cup_odds_history(bracket_payload: dict) -> None:
+    """Append today's per-team Cup/round odds to ``data/cup_odds_history.json``.
+
+    One entry per calendar date (UTC). Re-running on the same day overwrites
+    that day's entry so late refreshes win. Capped at the last
+    ``CUP_HISTORY_MAX_DAYS`` days so the file stays small and cheap to fetch.
+    """
+    path = WEB_DATA / "cup_odds_history.json"
+    try:
+        existing = json.loads(path.read_text()) if path.exists() else {}
+    except Exception as e:
+        log.warning("cup history: read failed, starting fresh: %s", e)
+        existing = {}
+    if not isinstance(existing, dict):
+        existing = {}
+    history = existing.get("history") if isinstance(existing.get("history"), list) else []
+
+    today = datetime.now(timezone.utc).date().isoformat()
+    snapshot = {
+        "date": today,
+        "teams": {
+            t["team"]: {
+                "cup": t.get("cup_win_pct"),
+                "r1": t.get("round1_win_pct"),
+                "r2": t.get("round2_win_pct"),
+                "r3": t.get("round3_win_pct"),
+            }
+            for t in bracket_payload.get("teams", [])
+            if t.get("team")
+        },
+    }
+    history = [h for h in history if h.get("date") != today]
+    history.append(snapshot)
+    history.sort(key=lambda h: h.get("date", ""))
+    if len(history) > CUP_HISTORY_MAX_DAYS:
+        history = history[-CUP_HISTORY_MAX_DAYS:]
+
+    path.write_text(json.dumps({"history": history}, indent=2))
 
 
 def main() -> None:
@@ -722,6 +1029,7 @@ def main() -> None:
     # Samples file is large and doesn't benefit from pretty-printing.
     (WEB_DATA / "bracket_samples.json").write_text(json.dumps(payload["bracket_samples"]))
     _write_model_calibration()
+    _write_cup_odds_history(payload["bracket"])
 
     print(f"wrote 6 JSON files to {WEB_DATA}")
     print(f"  teams in bracket: {len(payload['bracket']['teams'])}")
