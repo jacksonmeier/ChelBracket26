@@ -1044,11 +1044,8 @@ function buildActualBracketCanvas() {
         ${t1Html}${t2Html}
         ${seriesScore}`;
     }
-    // Clickable if both teams are known
-    if (t1 !== 'TBD' && t2 !== 'TBD') {
-      box.style.cursor = 'pointer';
-      box.addEventListener('click', () => showSeriesModal(s.id));
-    }
+    box.style.cursor = 'pointer';
+    box.addEventListener('click', () => showSeriesModal(s.id));
     canvas.appendChild(box);
   }
 }
@@ -1093,6 +1090,12 @@ async function showSeriesModal(sid) {
   const fmtPct = p => (p * 100).toFixed(1) + '%';
   const oddsBadge = abbr => modelOdds && modelOdds[abbr] != null
     ? `<div class="sm-team-odds">${fmtPct(modelOdds[abbr])}</div>` : '';
+
+  // TBD branch — series hasn't been set yet; show bracket picks for teams to advance here
+  if (t1 === 'TBD' || t2 === 'TBD') {
+    renderTbdSeriesModal(content, sid, t1, t2, brackets);
+    return;
+  }
 
   // All games in this series (match by both team abbrevs)
   const allGames = Object.entries(state.apiGames)
@@ -1220,6 +1223,87 @@ async function showSeriesModal(sid) {
       ${pickBlock(t1, a1, t1Entries)}
       ${pickBlock(t2, a2, t2Entries)}
     </div>`;
+}
+
+function renderTbdSeriesModal(content, sid, t1, t2, brackets) {
+  const s = BY_ID[sid];
+  const total = brackets.length;
+  const roundName = ROUND_NAMES[s.round] || s.abbr;
+
+  const tbdSide = (team) => team === 'TBD'
+    ? `<div class="sm-team-logo-lg sm-team-logo-tbd">?</div>
+       <div class="sm-team-name-lg">To Be Determined</div>`
+    : `<img class="sm-team-logo-lg" src="${logoUrl(team)}" onerror="this.style.display='none'" alt="">
+       <div class="sm-team-name-lg">${esc(team)}</div>`;
+
+  // For each upstream slot, group brackets by the team they picked to advance
+  const renderSlot = (slotId) => {
+    const slotSeries = BY_ID[slotId];
+    const slotLabel = slotSeries ? slotSeries.abbr : slotId;
+    const byTeam = {};
+    brackets.forEach(b => {
+      const adv = b.picks?.[slotId]?.winner;
+      if (!adv) return;
+      if (!byTeam[adv]) byTeam[adv] = [];
+      const winsThis = b.picks?.[sid]?.winner === adv;
+      byTeam[adv].push({
+        id: b.id,
+        bracketLabel: esc(b.bracketName || b.name),
+        byLabel: (b.bracketName && b.playerName) ? esc(b.playerName) : '',
+        winsThis,
+      });
+    });
+    const sorted = Object.entries(byTeam).sort((a, b) => b[1].length - a[1].length);
+    if (sorted.length === 0) {
+      return `<div class="sm-tbd-col">
+        <div class="sm-tbd-col-hdr">${esc(slotLabel)} Winner</div>
+        <div class="sm-pick-none" style="padding:0.75rem">No picks yet.</div>
+      </div>`;
+    }
+    const isSCF = sid === 'SCF';
+    const flagClass = isSCF ? 'sm-pill-winner' : 'sm-pill-advance';
+    const flagText  = isSCF ? 'winner' : 'advances';
+    const blocks = sorted.map(([team, list]) => {
+      const pct = total > 0 ? Math.round(list.length / total * 100) : 0;
+      const pills = list.map(e => `
+        <div class="sm-pill" data-bid="${e.id}" style="cursor:pointer">
+          <div class="sm-pill-main">${e.bracketLabel}${e.byLabel ? `<span class="sm-pill-by">${e.byLabel}</span>` : ''}</div>
+          ${e.winsThis ? `<span class="${flagClass}">${flagText}</span>` : ''}
+        </div>`).join('');
+      return `<div class="sm-pick-block">
+        <div class="sm-pick-hdr">
+          <img class="sm-pick-logo" src="${logoUrl(team)}" onerror="this.style.display='none'" alt="">
+          <span class="sm-pick-team-name">${esc(team)}</span>
+          <span class="sm-pick-badge">${list.length} <span class="sm-pick-pct">${pct}%</span></span>
+        </div>
+        <div class="sm-pill-list">${pills}</div>
+      </div>`;
+    }).join('');
+    return `<div class="sm-tbd-col">
+      <div class="sm-tbd-col-hdr">${esc(slotLabel)} Winner</div>
+      ${blocks}
+    </div>`;
+  };
+
+  const slots = s.from || [];
+  const slotHtml = slots.length === 2
+    ? `<div class="sm-tbd-grid">${renderSlot(slots[0])}${renderSlot(slots[1])}</div>`
+    : '';
+
+  content.innerHTML = `
+    <div class="sm-matchup-header">
+      <div class="sm-team-side">${tbdSide(t1)}</div>
+      <div class="sm-matchup-center">
+        <div class="sm-matchup-round">${esc(s.abbr)}</div>
+        <div class="sm-matchup-vs">VS</div>
+        <div class="sm-status-wrap"><span class="sm-status">Awaiting teams</span></div>
+      </div>
+      <div class="sm-team-side sm-team-side-right">${tbdSide(t2)}</div>
+    </div>
+
+    <div class="sm-section-label">Teams Picked to Reach the ${esc(roundName)}</div>
+    <p class="sm-tbd-help">Each side shows which teams brackets picked to win their upstream series. Pills flagged ${sid === 'SCF' ? '<span class="sm-pill-winner-inline">winner</span> also picked that team to win the Cup.' : '<span class="sm-pill-advance-inline">advances</span> also picked that team to win this series.'}</p>
+    ${slotHtml}`;
 }
 
 function closeSeriesModal() {
