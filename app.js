@@ -562,6 +562,44 @@ function predFmtPct(p) {
   return (p * 100).toFixed(1) + '%';
 }
 
+// Compute per-key deltas vs a stored daily snapshot. Rolls today→snapshot on a new calendar day.
+function getDailyDeltas(storageKey, currentValues) {
+  const today = new Date().toISOString().slice(0, 10);
+  let store = {};
+  try { store = JSON.parse(localStorage.getItem(storageKey) || '{}') || {}; } catch { store = {}; }
+  const deltas = {};
+  if (store.snapshot && store.snapshot.values) {
+    for (const k of Object.keys(currentValues)) {
+      const prev = store.snapshot.values[k];
+      if (prev != null && currentValues[k] != null) deltas[k] = currentValues[k] - prev;
+    }
+  }
+  if (!store.today) {
+    store.today = { date: today, values: currentValues };
+  } else if (store.today.date !== today) {
+    store.snapshot = store.today;
+    store.today = { date: today, values: currentValues };
+    // Recompute deltas against the newly-promoted snapshot.
+    for (const k of Object.keys(currentValues)) {
+      const prev = store.snapshot.values[k];
+      if (prev != null) deltas[k] = currentValues[k] - prev;
+    }
+  } else {
+    store.today.values = currentValues;
+  }
+  try { localStorage.setItem(storageKey, JSON.stringify(store)); } catch {}
+  return deltas;
+}
+
+function renderPctDelta(delta) {
+  if (delta == null || isNaN(delta) || Math.abs(delta) < 0.0005) return '';
+  const pp = delta * 100;
+  const up = pp > 0;
+  const arrow = up ? '▲' : '▼';
+  const cls = up ? 'delta-up' : 'delta-down';
+  return `<span class="pct-delta ${cls}">${arrow} ${Math.abs(pp).toFixed(1)}%</span>`;
+}
+
 function predLogoImg(abbrev) {
   if (!abbrev) return '';
   const safe = String(abbrev).replace(/[^A-Z]/g, '');
@@ -576,6 +614,9 @@ function predBar(pct, side) {
 function renderCupOdds(data) {
   const teams = (data && data.teams) || [];
   if (!teams.length) return '<div class="empty-state">No odds available yet.</div>';
+  const current = {};
+  for (const t of teams) if (t.team != null && t.cup_win_pct != null) current[t.team] = t.cup_win_pct;
+  const deltas = getDailyDeltas('cupOddsDaily', current);
   const rows = teams.map((t, i) => `
     <tr class="${i === 0 ? 'cup-leader' : ''}">
       <td class="rank">${i + 1}</td>
@@ -584,7 +625,7 @@ function renderCupOdds(data) {
       <td>${predFmtPct(t.round1_win_pct)}</td>
       <td>${predFmtPct(t.round2_win_pct)}</td>
       <td>${predFmtPct(t.round3_win_pct)}</td>
-      <td class="cup-pct">${predFmtPct(t.cup_win_pct)}</td>
+      <td class="cup-pct">${predFmtPct(t.cup_win_pct)}${renderPctDelta(deltas[t.team])}</td>
     </tr>
   `).join('');
   return `
@@ -720,6 +761,9 @@ function renderPredLastUpdated(d) {
 
 function renderPoolOdds(ranked, entryCount) {
   if (!ranked.length) return '<div class="empty-state">No pool entries yet.</div>';
+  const current = {};
+  for (const r of ranked) if (r.id != null && r.winPoolPct != null) current[r.id] = r.winPoolPct;
+  const deltas = getDailyDeltas('poolOddsDaily', current);
   const rows = ranked.map((r, i) => {
     const cupAbbr = r.cupPick ? (TEAM_ABBR[r.cupPick] || '') : '';
     return `
@@ -728,7 +772,7 @@ function renderPoolOdds(ranked, entryCount) {
       <td><div class="team-cell"><span class="team-abbr">${r.bracketName || '—'}</span><span class="team-name">${r.playerName || ''}</span></div></td>
       <td><div class="team-cell">${cupAbbr ? predLogoImg(cupAbbr) : ''}<span class="team-abbr">${cupAbbr}</span></div></td>
       <td>${r.expectedPts.toFixed(1)}</td>
-      <td class="cup-pct">${predFmtPct(r.winPoolPct)}</td>
+      <td class="cup-pct">${predFmtPct(r.winPoolPct)}${renderPctDelta(deltas[r.id])}</td>
     </tr>`;
   }).join('');
   return `

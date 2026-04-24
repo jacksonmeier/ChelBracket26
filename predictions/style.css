@@ -43,10 +43,20 @@
 .pred-table .cup-pct {
   font-family: var(--font-m);
   font-weight: 700;
-  color: var(--gold);
+  color: #5ab8ff;
+  white-space: nowrap;
 }
-.pred-table tr.cup-leader .cup-pct { color: var(--red); }
+.pred-table tr.cup-leader .cup-pct { color: #1d6fd6; }
 .pred-table tr.cup-leader td { background: linear-gradient(90deg, var(--red-dim), transparent); }
+
+.pct-delta {
+  margin-left: 0.35rem;
+  font-size: 0.78rem;
+  font-family: var(--font-m);
+  font-weight: 700;
+}
+.pct-delta.delta-up { color: var(--green); }
+.pct-delta.delta-down { color: var(--red); }
 
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-card); }
 
