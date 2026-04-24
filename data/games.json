@@ -1,75 +1,6 @@
 {
   "upcoming": [
     {
-      "game_id": 2025030113,
-      "date": "2026-04-23T23:00:00Z",
-      "home": {
-        "team": "BOS",
-        "name": "Boston",
-        "win_pct": 0.4304,
-        "goalie": "J. Swayman",
-        "goalie_score": 0.621,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "BUF",
-        "name": "Buffalo",
-        "win_pct": 0.5696,
-        "goalie": "U. Luukkonen",
-        "goalie_score": 0.494,
-        "goalie_confirmed": false,
-        "rest_days": 2
-      },
-      "uncertain_starter": true
-    },
-    {
-      "game_id": 2025030133,
-      "date": "2026-04-23T23:30:00Z",
-      "home": {
-        "team": "OTT",
-        "name": "Ottawa",
-        "win_pct": 0.606,
-        "goalie": "L. Ullmark",
-        "goalie_score": 0.597,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "CAR",
-        "name": "Carolina",
-        "win_pct": 0.394,
-        "goalie": "F. Andersen",
-        "goalie_score": 0.606,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
-      "game_id": 2025030153,
-      "date": "2026-04-24T02:00:00Z",
-      "home": {
-        "team": "LAK",
-        "name": "Los Angeles",
-        "win_pct": 0.5504,
-        "goalie": "A. Forsberg",
-        "goalie_score": 0.582,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "COL",
-        "name": "Colorado",
-        "win_pct": 0.4496,
-        "goalie": "S. Wedgewood",
-        "goalie_score": 0.584,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
       "game_id": 2025030123,
       "date": "2026-04-24T23:00:00Z",
       "home": {
@@ -133,6 +64,75 @@
         "win_pct": 0.3205,
         "goalie": "C. Ingram",
         "goalie_score": 0.485,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030134,
+      "date": "2026-04-25T19:00:00Z",
+      "home": {
+        "team": "OTT",
+        "name": "Ottawa",
+        "win_pct": 0.6337,
+        "goalie": "L. Ullmark",
+        "goalie_score": 0.597,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "CAR",
+        "name": "Carolina",
+        "win_pct": 0.3663,
+        "goalie": "F. Andersen",
+        "goalie_score": 0.617,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030164,
+      "date": "2026-04-25T21:30:00Z",
+      "home": {
+        "team": "MIN",
+        "name": "Minnesota",
+        "win_pct": 0.5978,
+        "goalie": "J. Wallstedt",
+        "goalie_score": 0.556,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "DAL",
+        "name": "Dallas",
+        "win_pct": 0.4022,
+        "goalie": "J. Oettinger",
+        "goalie_score": 0.609,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030144,
+      "date": "2026-04-26T00:00:00Z",
+      "home": {
+        "team": "PHI",
+        "name": "Philadelphia",
+        "win_pct": 0.7724,
+        "goalie": "D. Vladar",
+        "goalie_score": 0.558,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "PIT",
+        "name": "Pittsburgh",
+        "win_pct": 0.2276,
+        "goalie": "S. Skinner",
+        "goalie_score": 0.501,
         "goalie_confirmed": true,
         "rest_days": 2
       },
