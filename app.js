@@ -2478,7 +2478,7 @@ async function drawBracket(bid) {
   buildBracketCanvas(bracket.picks, results, teams, breakdown);
 }
 
-function buildBracketCanvas(picks, results, teams, breakdown, canvasId) {
+function buildBracketCanvas(picks, results, teams, breakdown, canvasId, onSeriesClick) {
   const canvas = document.getElementById(canvasId || 'bracketCanvas');
   if (!canvas) return;
   canvas.innerHTML = '';
@@ -2613,8 +2613,13 @@ function buildBracketCanvas(picks, results, teams, breakdown, canvasId) {
     }
     canvas.appendChild(box);
 
-    // Make clickable if actual teams are known (same rule as actual bracket)
-    if (actualTeamsKnown) {
+    // Make clickable. If a custom handler was provided (e.g. what-if picker),
+    // every box becomes clickable. Otherwise default to the read-only series
+    // detail modal, which only makes sense once both teams are known.
+    if (onSeriesClick) {
+      box.style.cursor = 'pointer';
+      box.addEventListener('click', () => onSeriesClick(s.id));
+    } else if (actualTeamsKnown) {
       box.style.cursor = 'pointer';
       box.addEventListener('click', () => showSeriesModal(s.id));
     }
@@ -3296,93 +3301,6 @@ function renderStats() {
 
 // ── What If ────────────────────────────────────────────────
 
-function buildWhatIfSeriesCard(s, teams) {
-  const [t1, t2] = getSeriesTeams(s.id, state.whatIfPicks, teams);
-  const a1 = TEAM_ABBR[t1] || t1.split(' ').pop().toUpperCase().slice(0, 3);
-  const a2 = TEAM_ABBR[t2] || t2.split(' ').pop().toUpperCase().slice(0, 3);
-  const n1 = t1 === 'TBD' ? '' : (TEAM_CITY[t1] || t1);
-  const n2 = t2 === 'TBD' ? '' : (TEAM_CITY[t2] || t2);
-  return `
-    <div class="series-card" id="wcard-${s.id}" data-sid="${s.id}">
-      <div class="sc-top series-card-label"><span>${esc(s.abbr)}</span></div>
-      <div class="sc-pick-row team-picks">
-        <button class="sc-pick wif-team-btn" data-sid="${s.id}" data-team="t1">
-          <div class="sc-pick-abbr team-abbr-txt">${esc(a1)}</div>
-          ${n1 ? `<div class="sc-pick-name team-name-txt">${esc(n1)}</div>` : ''}
-        </button>
-        <div class="sc-vs">vs</div>
-        <button class="sc-pick wif-team-btn" data-sid="${s.id}" data-team="t2">
-          <div class="sc-pick-abbr team-abbr-txt">${esc(a2)}</div>
-          ${n2 ? `<div class="sc-pick-name team-name-txt">${esc(n2)}</div>` : ''}
-        </button>
-      </div>
-      <div class="sc-games-lbl games-label">Series Length</div>
-      <div class="sc-games games-btns">
-        ${[4,5,6,7].map(g=>`<button class="sc-g wif-game-btn" data-sid="${s.id}" data-games="${g}">${g}</button>`).join('')}
-      </div>
-    </div>`;
-}
-
-function renderWhatIfPicker() {
-  const teams = getTeams();
-  const byRound = {};
-  SERIES.forEach(s => {
-    if (!byRound[s.round]) byRound[s.round] = { East:[], West:[], Final:[] };
-    byRound[s.round][s.conf].push(s);
-  });
-  let html = '';
-  for (let round = 1; round <= 4; round++) {
-    const pts = ROUND_PTS[round];
-    html += `<div class="entry-round-header">
-      <span class="entry-round-title">${ROUND_NAMES[round]}</span>
-      <span class="entry-round-pts">${pts.w} pts / ${pts.g} bonus for games</span>
-    </div>`;
-    const confs = round < 4 ? ['East','West'] : ['Final'];
-    for (const conf of confs) {
-      const confSeries = byRound[round][conf] || [];
-      if (!confSeries.length) continue;
-      if (round < 4) {
-        const label = round < 3 ? `${conf}ern Conference` : `${conf}ern Conference Final`;
-        html += `<div class="entry-conf-label">${label}</div>`;
-      }
-      html += `<div class="entry-series-grid">`;
-      confSeries.forEach(s => { html += buildWhatIfSeriesCard(s, teams); });
-      html += `</div>`;
-    }
-  }
-  const el = document.getElementById('whatIfRounds');
-  if (el) el.innerHTML = html;
-  syncWhatIfPicksToDOM();
-}
-
-function syncWhatIfPicksToDOM() {
-  const teams = getTeams();
-  for (const s of SERIES) {
-    if (s.round === 1) continue;
-    const [t1, t2] = getSeriesTeams(s.id, state.whatIfPicks, teams);
-    const card = document.getElementById('wcard-' + s.id);
-    if (!card) continue;
-    const btns = card.querySelectorAll('.wif-team-btn');
-    setTeamBtn(btns[0], t1);
-    setTeamBtn(btns[1], t2);
-  }
-  for (const s of SERIES) {
-    const card = document.getElementById('wcard-' + s.id);
-    if (!card) continue;
-    const pick = state.whatIfPicks[s.id];
-    const [t1, t2] = getSeriesTeams(s.id, state.whatIfPicks, teams);
-    card.querySelectorAll('.wif-team-btn').forEach(btn => {
-      const teamVal = btn.dataset.team === 't1' ? t1 : t2;
-      const sel = !!pick && teamVal === pick.winner;
-      btn.classList.toggle('selected', sel);
-    });
-    card.querySelectorAll('.wif-game-btn').forEach(btn => {
-      btn.classList.toggle('selected', !!pick && parseInt(btn.dataset.games) === pick.games);
-    });
-    card.classList.toggle('complete', !!(pick && pick.winner && pick.games));
-  }
-}
-
 function clearDependentWhatIfPicks(changedSid) {
   for (const s of SERIES) {
     if (s.from && s.from.includes(changedSid)) {
@@ -3401,10 +3319,26 @@ function handleWhatIfPick(sid, winnerTeam, games) {
     }
   }
   if (games !== undefined) state.whatIfPicks[sid].games = games;
-  // Re-render dependent cards (R2+ teams may have changed) and refresh stats/canvas.
-  renderWhatIfPicker();
   renderWhatIfBracket();
   renderWhatIfStats();
+  // If the picker modal is open for this series (or any series, since R2+
+  // matchups change as upstream picks change), re-render its contents.
+  const modal = document.getElementById('seriesModal');
+  if (modal && modal.classList.contains('open') && state._whatIfModalSid) {
+    renderWhatIfModalContent();
+  }
+}
+
+function clearWhatIfPick(sid) {
+  if (!state.whatIfPicks[sid]) return;
+  delete state.whatIfPicks[sid];
+  clearDependentWhatIfPicks(sid);
+  renderWhatIfBracket();
+  renderWhatIfStats();
+  const modal = document.getElementById('seriesModal');
+  if (modal && modal.classList.contains('open') && state._whatIfModalSid) {
+    renderWhatIfModalContent();
+  }
 }
 
 function prefillWhatIfFromCurrent() {
@@ -3468,7 +3402,64 @@ function fmtWhatIfProb(prob) {
 
 function renderWhatIfBracket() {
   const results = buildWhatIfResults(state.whatIfPicks);
-  buildBracketCanvas(state.whatIfPicks, results, getTeams(), {}, 'whatIfCanvas');
+  buildBracketCanvas(state.whatIfPicks, results, getTeams(), {}, 'whatIfCanvas', openWhatIfPickerModal);
+}
+
+function buildWhatIfModalCard(s, teams) {
+  const [t1, t2] = getSeriesTeams(s.id, state.whatIfPicks, teams);
+  const t1TBD = t1 === 'TBD', t2TBD = t2 === 'TBD';
+  const a1 = t1TBD ? 'TBD' : (TEAM_ABBR[t1] || t1.split(' ').pop().toUpperCase().slice(0, 3));
+  const a2 = t2TBD ? 'TBD' : (TEAM_ABBR[t2] || t2.split(' ').pop().toUpperCase().slice(0, 3));
+  const n1 = t1TBD ? '' : (TEAM_CITY[t1] || t1);
+  const n2 = t2TBD ? '' : (TEAM_CITY[t2] || t2);
+  const pick = state.whatIfPicks[s.id];
+  const pts = ROUND_PTS[s.round];
+  const hint = (t1TBD || t2TBD)
+    ? `<div class="wif-modal-hint">Pick the upstream series first to set this matchup.</div>`
+    : '';
+  const sel = (cond) => cond ? ' selected' : '';
+  return `
+    <div class="wif-modal-hdr">
+      <div class="wif-modal-kicker">${ROUND_NAMES[s.round]} · ${pts.w} pts / ${pts.g} bonus</div>
+      <div class="wif-modal-title">${esc(s.abbr)}</div>
+    </div>
+    ${hint}
+    <div class="series-card wif-modal-card complete-${pick && pick.winner && pick.games ? 'yes' : 'no'}" data-sid="${s.id}">
+      <div class="sc-pick-row team-picks">
+        <button class="sc-pick wif-team-btn${sel(pick && pick.winner === t1)}" data-sid="${s.id}" data-team="t1" ${t1TBD ? 'disabled' : ''}>
+          <div class="sc-pick-abbr team-abbr-txt">${esc(a1)}</div>
+          ${n1 ? `<div class="sc-pick-name team-name-txt">${esc(n1)}</div>` : ''}
+        </button>
+        <div class="sc-vs">vs</div>
+        <button class="sc-pick wif-team-btn${sel(pick && pick.winner === t2)}" data-sid="${s.id}" data-team="t2" ${t2TBD ? 'disabled' : ''}>
+          <div class="sc-pick-abbr team-abbr-txt">${esc(a2)}</div>
+          ${n2 ? `<div class="sc-pick-name team-name-txt">${esc(n2)}</div>` : ''}
+        </button>
+      </div>
+      <div class="sc-games-lbl games-label">Series Length</div>
+      <div class="sc-games games-btns">
+        ${[4,5,6,7].map(g=>`<button class="sc-g wif-game-btn${sel(pick && pick.games === g)}" data-sid="${s.id}" data-games="${g}">${g}</button>`).join('')}
+      </div>
+      ${pick && pick.winner ? `<button class="btn btn-sm btn-ghost wif-modal-clear" data-sid="${s.id}">Clear pick</button>` : ''}
+    </div>`;
+}
+
+function renderWhatIfModalContent() {
+  const sid = state._whatIfModalSid;
+  const content = document.getElementById('seriesModalContent');
+  if (!sid || !content) return;
+  const s = BY_ID[sid];
+  if (!s) return;
+  content.innerHTML = buildWhatIfModalCard(s, getTeams());
+  content.dataset.whatif = '1';
+}
+
+function openWhatIfPickerModal(sid) {
+  const modal = document.getElementById('seriesModal');
+  if (!modal) return;
+  state._whatIfModalSid = sid;
+  renderWhatIfModalContent();
+  modal.classList.add('open');
 }
 
 function renderWhatIfStats() {
@@ -3529,7 +3520,6 @@ function setWhatIfMode(mode) {
   });
   if (mode === 'current') prefillWhatIfFromCurrent();
   else state.whatIfPicks = {};
-  renderWhatIfPicker();
   renderWhatIfBracket();
   renderWhatIfStats();
 }
@@ -3548,7 +3538,6 @@ async function renderWhatIf() {
   if (Object.keys(state.apiSeriesWins).length === 0) {
     fetchApiSeriesWins().then(() => { if (state.view === 'whatif') renderWhatIfBracket(); }).catch(()=>{});
   }
-  renderWhatIfPicker();
   renderWhatIfBracket();
   renderWhatIfStats();
 }
@@ -3802,16 +3791,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('submitBracketBtn').addEventListener('click', submitBracket);
 
-  // What-If picks (delegated)
-  document.getElementById('whatIfRounds').addEventListener('click', e => {
+  // What-If picks (delegated on the shared series modal)
+  document.getElementById('seriesModalContent').addEventListener('click', e => {
+    if (document.getElementById('seriesModalContent').dataset.whatif !== '1') return;
     const teamBtn = e.target.closest('.wif-team-btn');
-    if (teamBtn) {
+    if (teamBtn && !teamBtn.disabled) {
       const [t1, t2] = getSeriesTeams(teamBtn.dataset.sid, state.whatIfPicks, getTeams());
       handleWhatIfPick(teamBtn.dataset.sid, teamBtn.dataset.team==='t1'?t1:t2, undefined);
       return;
     }
     const gameBtn = e.target.closest('.wif-game-btn');
-    if (gameBtn) handleWhatIfPick(gameBtn.dataset.sid, undefined, parseInt(gameBtn.dataset.games));
+    if (gameBtn) { handleWhatIfPick(gameBtn.dataset.sid, undefined, parseInt(gameBtn.dataset.games)); return; }
+    const clearBtn = e.target.closest('.wif-modal-clear');
+    if (clearBtn) clearWhatIfPick(clearBtn.dataset.sid);
+  });
+
+  // Drop the what-if marker when the modal closes so the regular series-modal
+  // doesn't leak through this handler.
+  document.getElementById('seriesModalClose').addEventListener('click', () => {
+    document.getElementById('seriesModalContent').dataset.whatif = '';
+    state._whatIfModalSid = null;
+  });
+  document.getElementById('seriesModal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) {
+      document.getElementById('seriesModalContent').dataset.whatif = '';
+      state._whatIfModalSid = null;
+    }
   });
 
   // What-If mode toggle
@@ -3823,7 +3828,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('whatIfResetBtn').addEventListener('click', () => {
     if (state.whatIfMode === 'current') prefillWhatIfFromCurrent();
     else state.whatIfPicks = {};
-    renderWhatIfPicker();
     renderWhatIfBracket();
     renderWhatIfStats();
   });

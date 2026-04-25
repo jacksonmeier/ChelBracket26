@@ -6,7 +6,7 @@
   <title>Bracket Challenge 26 — NHL Playoff Pool</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=50">
+  <link rel="stylesheet" href="style.css?v=51">
   <link rel="stylesheet" href="predictions/style.css?v=12">
   <style>
     /* Critical: loading overlay — inlined to avoid cache issues */
@@ -402,7 +402,7 @@
       </div>
     </div>
     <p class="view-sub" style="margin-bottom:1.25rem;color:var(--text-2)">
-      Fill in a hypothetical bracket — see what the standings would look like and how likely the scenario is.
+      Click any series in the bracket to pick a winner — see how standings would shift and how likely the scenario is.
     </p>
 
     <div class="whatif-toolbar">
@@ -430,7 +430,7 @@
       <div class="sec-hdr">
         <div>
           <div class="sec-num">01 — Hypothetical Bracket</div>
-          <div class="sec-title">Your scenario</div>
+          <div class="sec-title">Click any series to pick a winner</div>
         </div>
       </div>
       <div class="bracket-scroll-wrap">
@@ -446,16 +446,6 @@
         </div>
       </div>
       <div id="whatIfStandings"><div class="empty-state">Pick at least one series to see how standings change.</div></div>
-    </div>
-
-    <div class="sec">
-      <div class="sec-hdr">
-        <div>
-          <div class="sec-num">03 — Pick the Series</div>
-          <div class="sec-title">Build your scenario</div>
-        </div>
-      </div>
-      <div id="whatIfRounds"></div>
     </div>
   </section>
 
@@ -486,6 +476,6 @@
 </div>
 
 <script src="config.js"></script>
-<script src="app.js?v=68"></script>
+<script src="app.js?v=69"></script>
 </body>
 </html>

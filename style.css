@@ -3044,3 +3044,36 @@ body {
   .whatif-stat:last-child { border-bottom: none; }
   .whatif-mode-btn { padding: 0.5rem 0.8rem; font-size: 0.68rem; }
 }
+
+.wif-modal-hdr { margin-bottom: 0.85rem; }
+.wif-modal-kicker {
+  font-family: var(--font-m);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.wif-modal-title {
+  font-family: var(--font-h);
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 0.2rem;
+}
+.wif-modal-hint {
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: var(--r-md);
+  padding: 0.65rem 0.85rem;
+  font-size: 0.85rem;
+  color: var(--text-2);
+  margin-bottom: 0.75rem;
+}
+.wif-modal-card { margin: 0; }
+.wif-modal-clear {
+  margin-top: 0.85rem;
+  width: 100%;
+}
+.bk-box { transition: box-shadow 0.15s, transform 0.15s; }
+.bk-box[style*="cursor: pointer"]:hover { box-shadow: 0 0 0 2px var(--accent); }
