@@ -1,75 +1,6 @@
 {
   "upcoming": [
     {
-      "game_id": 2025030123,
-      "date": "2026-04-24T23:00:00Z",
-      "home": {
-        "team": "MTL",
-        "name": "Montr\u00e9al",
-        "win_pct": 0.3988,
-        "goalie": "J. Dobes",
-        "goalie_score": 0.464,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "TBL",
-        "name": "Tampa Bay",
-        "win_pct": 0.6012,
-        "goalie": "A. Vasilevskiy",
-        "goalie_score": 0.449,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
-      "game_id": 2025030173,
-      "date": "2026-04-25T01:30:00Z",
-      "home": {
-        "team": "UTA",
-        "name": "Utah",
-        "win_pct": 0.6113,
-        "goalie": "K. Vejmelka",
-        "goalie_score": 0.468,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "VGK",
-        "name": "Vegas",
-        "win_pct": 0.3887,
-        "goalie": "C. Hart",
-        "goalie_score": 0.488,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
-      "game_id": 2025030183,
-      "date": "2026-04-25T02:00:00Z",
-      "home": {
-        "team": "ANA",
-        "name": "Anaheim",
-        "win_pct": 0.5386,
-        "goalie": "L. Dostal",
-        "goalie_score": 0.459,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "EDM",
-        "name": "Edmonton",
-        "win_pct": 0.4614,
-        "goalie": "C. Ingram",
-        "goalie_score": 0.44,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
       "game_id": 2025030134,
       "date": "2026-04-25T19:00:00Z",
       "home": {
@@ -133,6 +64,98 @@
         "win_pct": 0.384,
         "goalie": "S. Skinner",
         "goalie_score": 0.441,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030114,
+      "date": "2026-04-26T18:00:00Z",
+      "home": {
+        "team": "BOS",
+        "name": "Boston",
+        "win_pct": 0.5303,
+        "goalie": "J. Swayman",
+        "goalie_score": 0.493,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "BUF",
+        "name": "Buffalo",
+        "win_pct": 0.4697,
+        "goalie": "A. Lyon",
+        "goalie_score": 0.508,
+        "goalie_confirmed": false,
+        "rest_days": 2
+      },
+      "uncertain_starter": true
+    },
+    {
+      "game_id": 2025030154,
+      "date": "2026-04-26T20:30:00Z",
+      "home": {
+        "team": "LAK",
+        "name": "Los Angeles",
+        "win_pct": 0.5132,
+        "goalie": "A. Forsberg",
+        "goalie_score": 0.485,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "COL",
+        "name": "Colorado",
+        "win_pct": 0.4868,
+        "goalie": "S. Wedgewood",
+        "goalie_score": 0.508,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030124,
+      "date": "2026-04-26T23:00:00Z",
+      "home": {
+        "team": "MTL",
+        "name": "Montr\u00e9al",
+        "win_pct": 0.3988,
+        "goalie": "J. Dobes",
+        "goalie_score": 0.458,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "TBL",
+        "name": "Tampa Bay",
+        "win_pct": 0.6012,
+        "goalie": "A. Vasilevskiy",
+        "goalie_score": 0.447,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030184,
+      "date": "2026-04-27T01:30:00Z",
+      "home": {
+        "team": "ANA",
+        "name": "Anaheim",
+        "win_pct": 0.5386,
+        "goalie": "L. Dostal",
+        "goalie_score": 0.459,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "EDM",
+        "name": "Edmonton",
+        "win_pct": 0.4614,
+        "goalie": "C. Ingram",
+        "goalie_score": 0.44,
         "goalie_confirmed": true,
         "rest_days": 2
       },
