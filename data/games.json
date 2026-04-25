@@ -146,7 +146,7 @@
         "name": "Anaheim",
         "win_pct": 0.5386,
         "goalie": "L. Dostal",
-        "goalie_score": 0.459,
+        "goalie_score": 0.442,
         "goalie_confirmed": true,
         "rest_days": 2
       },
@@ -155,7 +155,7 @@
         "name": "Edmonton",
         "win_pct": 0.4614,
         "goalie": "C. Ingram",
-        "goalie_score": 0.44,
+        "goalie_score": 0.42,
         "goalie_confirmed": true,
         "rest_days": 2
       },
