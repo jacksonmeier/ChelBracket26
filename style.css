@@ -265,7 +265,16 @@ body {
   border-bottom: 1px solid var(--border);
   padding: 0.5rem;
 }
-.mobile-menu.open { display: flex; }
+.mobile-menu.open {
+  display: flex;
+  position: fixed;
+  top: var(--nav-h);
+  left: 0;
+  right: 0;
+  z-index: 199;
+  max-height: calc(100vh - var(--nav-h));
+  overflow-y: auto;
+}
 .mobile-menu .nav-btn { text-align: left; padding: 0.6rem 1rem; }
 
 /* ── Views ────────────────────────────────────────────────── */
@@ -2326,6 +2335,16 @@ body {
   .nav-cta   { display: none; }
   .nav-hamburger { display: flex; }
 
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+  }
+  body { padding-top: var(--nav-h); }
+  .ticker, .rink-line { display: none; }
+
   .view { padding: 1.5rem 1rem 3rem; }
   .view-title { font-size: clamp(1.5rem, 7vw, 2rem); }
 }
@@ -2333,7 +2352,6 @@ body {
 @media (max-width: 600px) {
   .entry-series-grid, .series-grid { grid-template-columns: 1fr; }
   .matchup-grid, .tg-grid, .tg-grid-wide { grid-template-columns: 1fr; }
-  .ticker { display: none; }
 }
 
 /* ── Series modal mobile ──────────────────────────────────── */

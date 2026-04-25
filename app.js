@@ -3098,14 +3098,14 @@ function renderStats() {
     playoffsHtml = '<div class="stats-section"><div class="empty-state">Loading playoff game history…</div></div>';
   } else {
     // Playoffs at a Glance
-    let otGames = 0, soGames = 0, oneGoal = 0, totalGoals = 0, homeW = 0, roadW = 0;
+    let otGames = 0, multiOtGames = 0, oneGoal = 0, totalGoals = 0, homeW = 0, roadW = 0;
     let biggest = { margin: -1, game: null };
     for (const g of apiGames) {
       const hs = g.homeTeam?.score ?? 0, as = g.awayTeam?.score ?? 0;
       const pt = g.periodDescriptor?.periodType;
+      const pn = g.periodDescriptor?.number || 0;
       totalGoals += hs + as;
-      if (pt === 'OT') otGames++;
-      if (pt === 'SO') soGames++;
+      if (pt === 'OT') { otGames++; if (pn > 4) multiOtGames++; }
       if (Math.abs(hs - as) === 1) oneGoal++;
       if (hs > as) homeW++; else roadW++;
       const margin = Math.abs(hs - as);
@@ -3124,7 +3124,7 @@ function renderStats() {
         <div class="stats-pulse stats-pulse-lg">
           <div class="stats-pill"><div class="stats-pill-val">${gamesPlayed}</div><div class="stats-pill-lbl">Games Played</div></div>
           <div class="stats-pill"><div class="stats-pill-val">${otGames}</div><div class="stats-pill-lbl">OT Games</div></div>
-          <div class="stats-pill"><div class="stats-pill-val">${soGames}</div><div class="stats-pill-lbl">Shootouts</div></div>
+          <div class="stats-pill"><div class="stats-pill-val">${multiOtGames}</div><div class="stats-pill-lbl">Multi-OT Games</div></div>
           <div class="stats-pill"><div class="stats-pill-val">${avgGoals}</div><div class="stats-pill-lbl">Avg Goals / Game</div></div>
           <div class="stats-pill"><div class="stats-pill-val">${oneGoal}</div><div class="stats-pill-lbl">1-Goal Games</div></div>
           <div class="stats-pill"><div class="stats-pill-val">${biggest.margin >= 0 ? biggest.margin : '—'}</div><div class="stats-pill-lbl">Biggest Margin</div></div>
