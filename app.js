@@ -209,6 +209,7 @@ const state = {
   apiSeriesWins: {}, // abbrev → wins
   apiGames:      {}, // dateStr → [game objects] — cached playoff game data
   gameById:      {}, // gameId → game object (for modal lookup)
+  feedFilter:    { bracketId: '', team: '' },
 };
 
 // In-memory data store (loaded from GitHub on startup)
@@ -479,6 +480,196 @@ function maxPossible(bracket, results) {
     }
   }
   return max;
+}
+
+// ── Live Feed ──────────────────────────────────────────────
+
+function buildFeedEvents() {
+  const brackets = appData.brackets || [];
+  const results  = appData.results  || {};
+  const teams    = getTeams();
+  const events   = [];
+
+  for (const b of brackets) {
+    for (let i = 0; i < SERIES.length; i++) {
+      const s = SERIES[i];
+      const pick = b.picks?.[s.id];
+      if (!pick?.winner) continue;
+      const result = results[s.id];
+      const p = ROUND_PTS[s.round];
+      const base = {
+        bracketId: b.id,
+        bracketName: b.bracketName || b.name,
+        playerName: b.playerName || '',
+        seriesId: s.id,
+        seriesAbbr: s.abbr,
+        round: s.round,
+        seriesIndex: i,
+        pickedTeam: pick.winner,
+        pickedGames: pick.games,
+      };
+
+      if (result?.completed) {
+        if (pick.winner === result.winner) {
+          const gamesMatch = pick.games === result.games;
+          events.push({
+            ...base,
+            type: 'won',
+            team: result.winner,
+            points: p.w + (gamesMatch ? p.g : 0),
+            gamesMatch,
+            actualGames: result.games,
+          });
+        } else {
+          events.push({
+            ...base,
+            type: 'missed',
+            team: pick.winner,
+            actualWinner: result.winner,
+            points: p.max,
+          });
+        }
+        continue;
+      }
+
+      // In-progress: check eliminated / games-dead
+      const [t1, t2] = getActualTeams(s.id, results, teams);
+      if (!t1 || !t2 || t1 === 'TBD' || t2 === 'TBD') continue;
+      const opponent = pick.winner === t1 ? t2 : (pick.winner === t2 ? t1 : null);
+      if (!opponent) continue;
+      const oppAbbr = TEAM_ABBR[opponent];
+      const oppWins = oppAbbr ? (state.apiSeriesWins[oppAbbr] ?? 0) : 0;
+
+      if (oppWins >= 4) {
+        events.push({
+          ...base,
+          type: 'eliminated',
+          team: pick.winner,
+          opponent,
+          points: p.max,
+        });
+      } else if (pick.games && isGamesImpossible(pick.games, oppWins)) {
+        events.push({
+          ...base,
+          type: 'games_dead',
+          team: pick.winner,
+          opponent,
+          points: p.g,
+        });
+      }
+    }
+  }
+
+  // Newest-feeling first: later rounds, then later series, losses before gains for drama
+  const typeRank = { eliminated: 0, games_dead: 1, missed: 2, won: 3 };
+  events.sort((a, b) =>
+    (b.round - a.round) ||
+    (b.seriesIndex - a.seriesIndex) ||
+    (typeRank[a.type] - typeRank[b.type]) ||
+    a.bracketName.localeCompare(b.bracketName)
+  );
+  return events;
+}
+
+function feedTeamChip(name) {
+  if (!name) return '';
+  const abbr = TEAM_ABBR[name] || name.split(' ').pop().toUpperCase().slice(0, 3);
+  const url  = logoUrlForAbbr(abbr);
+  return `<span class="feed-team"><img class="feed-team-logo" src="${url}" alt="" onerror="this.style.display='none'"><b>${esc(abbr)}</b></span>`;
+}
+
+function feedMessage(e) {
+  const bName = esc(e.bracketName);
+  const pName = esc(e.playerName);
+  const team  = feedTeamChip(e.team);
+  const who = `<strong>${bName}</strong>${pName ? ` by ${pName}` : ''}`;
+  switch (e.type) {
+    case 'won':
+      return `${who} <span class="feed-pts feed-pts--pos">+${e.points} pts</span> — ${team} won` +
+             (e.gamesMatch ? ` in ${e.actualGames}` : '');
+    case 'missed':
+      return `${who} <span class="feed-pts feed-pts--neg">missed ${e.points} pts</span> — had ${feedTeamChip(e.pickedTeam)}, but ${feedTeamChip(e.actualWinner)} took the series`;
+    case 'eliminated':
+      return `${who} <span class="feed-pts feed-pts--neg">lost ${e.points} possible pts</span> — ${team} can no longer win the series`;
+    case 'games_dead':
+      return `${who} <span class="feed-pts feed-pts--neg">lost ${e.points} possible pts</span> — ${team} in ${e.pickedGames} is no longer possible`;
+  }
+  return '';
+}
+
+function populateFeedBracketFilter() {
+  const sel = document.getElementById('feed-bracket-filter');
+  if (!sel) return;
+  const brackets = (appData.brackets || []).slice().sort((a, b) =>
+    (a.bracketName || a.name || '').localeCompare(b.bracketName || b.name || '')
+  );
+  const current = state.feedFilter.bracketId;
+  sel.innerHTML = `<option value="">All brackets</option>` + brackets.map(b => {
+    const label = (b.bracketName || b.name || '') + (b.playerName ? ` · ${b.playerName}` : '');
+    return `<option value="${esc(b.id)}"${b.id === current ? ' selected' : ''}>${esc(label)}</option>`;
+  }).join('');
+}
+
+function populateFeedTeamFilter(events) {
+  const sel = document.getElementById('feed-team-filter');
+  if (!sel) return;
+  const teamSet = new Set();
+  for (const e of events) {
+    if (e.team) teamSet.add(e.team);
+    if (e.opponent) teamSet.add(e.opponent);
+    if (e.actualWinner) teamSet.add(e.actualWinner);
+  }
+  const teams = [...teamSet].sort();
+  const current = state.feedFilter.team;
+  sel.innerHTML = `<option value="">All teams</option>` + teams.map(t =>
+    `<option value="${esc(t)}"${t === current ? ' selected' : ''}>${esc(t)}</option>`
+  ).join('');
+}
+
+function renderHomeFeed() {
+  const list = document.getElementById('feed-list');
+  if (!list) return;
+  const events = buildFeedEvents();
+
+  populateFeedBracketFilter();
+  populateFeedTeamFilter(events);
+
+  const { bracketId, team } = state.feedFilter;
+  const filtered = events.filter(e =>
+    (!bracketId || e.bracketId === bracketId) &&
+    (!team || e.team === team || e.opponent === team || e.actualWinner === team)
+  );
+
+  if (filtered.length === 0) {
+    const hasFilter = bracketId || team;
+    list.innerHTML = `<div class="feed-empty">No events yet${hasFilter ? ' for the selected filter' : ''}.</div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(e =>
+    `<div class="feed-item feed-item--${e.type}" data-bracket-id="${esc(e.bracketId)}">
+       <div class="feed-item-msg">${feedMessage(e)}</div>
+       <div class="feed-item-meta">${esc(e.seriesAbbr)} · ${ROUND_NAMES[e.round]}</div>
+     </div>`
+  ).join('');
+}
+
+function bindFeedFilters() {
+  const bSel = document.getElementById('feed-bracket-filter');
+  const tSel = document.getElementById('feed-team-filter');
+  if (bSel && !bSel.dataset.bound) {
+    bSel.addEventListener('change', () => {
+      state.feedFilter.bracketId = bSel.value;
+      renderHomeFeed();
+    });
+    bSel.dataset.bound = '1';
+  }
+  if (tSel && !tSel.dataset.bound) {
+    tSel.addEventListener('change', () => {
+      state.feedFilter.team = tSel.value;
+      renderHomeFeed();
+    });
+    tSel.dataset.bound = '1';
+  }
 }
 
 // ── Navigation ─────────────────────────────────────────────
@@ -1313,10 +1504,13 @@ function closeSeriesModal() {
 // ── Home ───────────────────────────────────────────────────
 
 function renderHome() {
+  renderHomeFeed();
+  bindFeedFilters();
   renderCountdown();
-  renderHeroCard();
   renderTodayGames();
-  renderActualBracket(); // async — fires and updates when done
+  // Bracket render fetches apiSeriesWins; re-render the feed once that's available
+  // so games_dead / eliminated events appear without waiting for the next refresh.
+  renderActualBracket().then(() => renderHomeFeed()).catch(() => {});
   renderHomeLeaderboard();
 }
 
@@ -2482,14 +2676,18 @@ function renderStats() {
   const results  = getResults();
   const teams    = getTeams();
 
-  // Kick off non-blocking data fetches so Playoffs tab can render real stats.
-  if (!state._statsApiWinsFetched && Object.keys(state.apiSeriesWins || {}).length === 0) {
+  // Kick off non-blocking data fetches; re-render once when fresh data lands.
+  if (!state._statsApiWinsFetched) {
     state._statsApiWinsFetched = true;
     fetchApiSeriesWins().then(() => { if (state.view === 'stats') renderStats(); }).catch(()=>{});
   }
-  if (!state._statsApiGamesFetched && Object.keys(state.apiGames || {}).length === 0) {
-    state._statsApiGamesFetched = true;
-    fetchAllPlayoffGames().then(() => { if (state.view === 'stats') renderStats(); }).catch(()=>{});
+  if (!state._statsApiGamesInflight && !state._statsApiGamesDone) {
+    state._statsApiGamesInflight = true;
+    fetchAllPlayoffGames().then(() => {
+      state._statsApiGamesInflight = false;
+      state._statsApiGamesDone = true;
+      if (state.view === 'stats') renderStats();
+    }).catch(() => { state._statsApiGamesInflight = false; });
   }
 
   // ── Eliminated teams ─────────────────────────────────────
@@ -3077,8 +3275,10 @@ function renderStats() {
   el.querySelectorAll('.stats-leader-row[data-bid]').forEach(row => {
     row.addEventListener('click', () => {
       const bid = row.dataset.bid;
-      showView('bracket');
-      if (typeof renderViewer === 'function') renderViewer(bid);
+      state.viewingId = bid;
+      showView('viewer');
+      renderViewer(bid);
+      drawBracket(bid);
     });
   });
 

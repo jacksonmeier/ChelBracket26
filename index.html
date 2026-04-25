@@ -75,8 +75,20 @@
           <button class="btn btn-outline btn-lg" data-view="leaderboard">View Standings</button>
         </div>
       </div>
-      <div class="hero-right" id="heroPoolCard">
-        <!-- Populated by renderHeroCard() -->
+      <div class="hero-right home-feed" id="home-feed">
+        <div class="hero-card-hdr">
+          <div class="hero-card-title">Live Feed</div>
+          <div class="hero-card-meta">What just happened</div>
+        </div>
+        <div class="feed-filters">
+          <select id="feed-bracket-filter" class="feed-select" aria-label="Filter by bracket">
+            <option value="">All brackets</option>
+          </select>
+          <select id="feed-team-filter" class="feed-select" aria-label="Filter by team">
+            <option value="">All teams</option>
+          </select>
+        </div>
+        <div class="feed-list" id="feed-list"></div>
       </div>
     </div>
 
@@ -406,6 +418,6 @@
 </div>
 
 <script src="config.js"></script>
-<script src="app.js?v=66"></script>
+<script src="app.js?v=67"></script>
 </body>
 </html>
