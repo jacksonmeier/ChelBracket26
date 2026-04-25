@@ -6,7 +6,7 @@
   <title>Bracket Challenge 26 — NHL Playoff Pool</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=49">
+  <link rel="stylesheet" href="style.css?v=50">
   <link rel="stylesheet" href="predictions/style.css?v=12">
   <style>
     /* Critical: loading overlay — inlined to avoid cache issues */
@@ -41,6 +41,7 @@
     <button class="nav-btn" data-view="schedule">Schedule</button>
     <button class="nav-btn" data-view="stats">Stats</button>
     <button class="nav-btn" data-view="predictions">Predictions</button>
+    <button class="nav-btn" data-view="whatif">What If</button>
     <button class="nav-btn" data-view="commissioner">Commish</button>
     <button class="nav-cta" data-view="entry">My Bracket →</button>
   </div>
@@ -57,6 +58,7 @@
   <button class="nav-btn" data-view="schedule">Schedule</button>
   <button class="nav-btn" data-view="stats">Stats</button>
   <button class="nav-btn" data-view="predictions">Predictions</button>
+  <button class="nav-btn" data-view="whatif">What If</button>
   <button class="nav-btn" data-view="commissioner">Commissioner</button>
 </div>
 
@@ -391,6 +393,72 @@
     <div id="statsContent"><div class="scores-loading">Loading stats…</div></div>
   </section>
 
+  <!-- ════════════════════════════ WHAT IF ═════════════════════════════ -->
+  <section class="view" id="view-whatif">
+    <div class="view-hdr">
+      <div class="view-hdr-left">
+        <div class="view-kicker">Scenario Explorer · 5,000 sims</div>
+        <h2 class="view-title">What If</h2>
+      </div>
+    </div>
+    <p class="view-sub" style="margin-bottom:1.25rem;color:var(--text-2)">
+      Fill in a hypothetical bracket — see what the standings would look like and how likely the scenario is.
+    </p>
+
+    <div class="whatif-toolbar">
+      <div class="whatif-mode" role="tablist" aria-label="Starting state">
+        <button class="whatif-mode-btn active" data-mode="scratch" role="tab">From scratch</button>
+        <button class="whatif-mode-btn" data-mode="current" role="tab">From current state</button>
+      </div>
+      <button class="btn btn-sm btn-ghost" id="whatIfResetBtn">↺ Reset</button>
+    </div>
+
+    <div class="whatif-stats" id="whatIfStatsTop">
+      <div class="whatif-stat">
+        <div class="whatif-stat-val" id="whatIfProbVal">—</div>
+        <div class="whatif-stat-lbl">Scenario probability</div>
+        <div class="whatif-stat-sub" id="whatIfProbSub">Make picks to compute</div>
+      </div>
+      <div class="whatif-stat">
+        <div class="whatif-stat-val" id="whatIfPicksVal">0 / 15</div>
+        <div class="whatif-stat-lbl">Series filled</div>
+        <div class="whatif-stat-sub" id="whatIfPicksSub">Pick winners + game lengths</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-num">01 — Hypothetical Bracket</div>
+          <div class="sec-title">Your scenario</div>
+        </div>
+      </div>
+      <div class="bracket-scroll-wrap">
+        <div class="bracket-canvas" id="whatIfCanvas"></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-num">02 — If This Happened…</div>
+          <div class="sec-title">Pool standings</div>
+        </div>
+      </div>
+      <div id="whatIfStandings"><div class="empty-state">Pick at least one series to see how standings change.</div></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-num">03 — Pick the Series</div>
+          <div class="sec-title">Build your scenario</div>
+        </div>
+      </div>
+      <div id="whatIfRounds"></div>
+    </div>
+  </section>
+
 </main>
 
 <div class="rink-line thin"></div>
@@ -418,6 +486,6 @@
 </div>
 
 <script src="config.js"></script>
-<script src="app.js?v=67"></script>
+<script src="app.js?v=68"></script>
 </body>
 </html>
