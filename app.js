@@ -210,6 +210,8 @@ const state = {
   apiGames:      {}, // dateStr → [game objects] — cached playoff game data
   gameById:      {}, // gameId → game object (for modal lookup)
   feedFilter:    { bracketId: '', team: '' },
+  whatIfPicks:   {}, // sid → {winner, games}
+  whatIfMode:    'scratch', // 'scratch' | 'current'
 };
 
 // In-memory data store (loaded from GitHub on startup)
@@ -688,6 +690,7 @@ function showView(name) {
   if (name === 'schedule')     renderSchedule();
   if (name === 'stats')        renderStats();
   if (name === 'predictions')  renderPredictions();
+  if (name === 'whatif')       renderWhatIf();
   if (name === 'commissioner') renderCommissioner();
 }
 
@@ -2475,9 +2478,10 @@ async function drawBracket(bid) {
   buildBracketCanvas(bracket.picks, results, teams, breakdown);
 }
 
-function buildBracketCanvas(picks, results, teams, breakdown) {
-  const canvas = document.getElementById('bracketCanvas');
+function buildBracketCanvas(picks, results, teams, breakdown, canvasId) {
+  const canvas = document.getElementById(canvasId || 'bracketCanvas');
   if (!canvas) return;
+  canvas.innerHTML = '';
   canvas.style.width = CW + 'px';
   canvas.style.height = CH + 'px';
 
@@ -3290,6 +3294,265 @@ function renderStats() {
   });
 }
 
+// ── What If ────────────────────────────────────────────────
+
+function buildWhatIfSeriesCard(s, teams) {
+  const [t1, t2] = getSeriesTeams(s.id, state.whatIfPicks, teams);
+  const a1 = TEAM_ABBR[t1] || t1.split(' ').pop().toUpperCase().slice(0, 3);
+  const a2 = TEAM_ABBR[t2] || t2.split(' ').pop().toUpperCase().slice(0, 3);
+  const n1 = t1 === 'TBD' ? '' : (TEAM_CITY[t1] || t1);
+  const n2 = t2 === 'TBD' ? '' : (TEAM_CITY[t2] || t2);
+  return `
+    <div class="series-card" id="wcard-${s.id}" data-sid="${s.id}">
+      <div class="sc-top series-card-label"><span>${esc(s.abbr)}</span></div>
+      <div class="sc-pick-row team-picks">
+        <button class="sc-pick wif-team-btn" data-sid="${s.id}" data-team="t1">
+          <div class="sc-pick-abbr team-abbr-txt">${esc(a1)}</div>
+          ${n1 ? `<div class="sc-pick-name team-name-txt">${esc(n1)}</div>` : ''}
+        </button>
+        <div class="sc-vs">vs</div>
+        <button class="sc-pick wif-team-btn" data-sid="${s.id}" data-team="t2">
+          <div class="sc-pick-abbr team-abbr-txt">${esc(a2)}</div>
+          ${n2 ? `<div class="sc-pick-name team-name-txt">${esc(n2)}</div>` : ''}
+        </button>
+      </div>
+      <div class="sc-games-lbl games-label">Series Length</div>
+      <div class="sc-games games-btns">
+        ${[4,5,6,7].map(g=>`<button class="sc-g wif-game-btn" data-sid="${s.id}" data-games="${g}">${g}</button>`).join('')}
+      </div>
+    </div>`;
+}
+
+function renderWhatIfPicker() {
+  const teams = getTeams();
+  const byRound = {};
+  SERIES.forEach(s => {
+    if (!byRound[s.round]) byRound[s.round] = { East:[], West:[], Final:[] };
+    byRound[s.round][s.conf].push(s);
+  });
+  let html = '';
+  for (let round = 1; round <= 4; round++) {
+    const pts = ROUND_PTS[round];
+    html += `<div class="entry-round-header">
+      <span class="entry-round-title">${ROUND_NAMES[round]}</span>
+      <span class="entry-round-pts">${pts.w} pts / ${pts.g} bonus for games</span>
+    </div>`;
+    const confs = round < 4 ? ['East','West'] : ['Final'];
+    for (const conf of confs) {
+      const confSeries = byRound[round][conf] || [];
+      if (!confSeries.length) continue;
+      if (round < 4) {
+        const label = round < 3 ? `${conf}ern Conference` : `${conf}ern Conference Final`;
+        html += `<div class="entry-conf-label">${label}</div>`;
+      }
+      html += `<div class="entry-series-grid">`;
+      confSeries.forEach(s => { html += buildWhatIfSeriesCard(s, teams); });
+      html += `</div>`;
+    }
+  }
+  const el = document.getElementById('whatIfRounds');
+  if (el) el.innerHTML = html;
+  syncWhatIfPicksToDOM();
+}
+
+function syncWhatIfPicksToDOM() {
+  const teams = getTeams();
+  for (const s of SERIES) {
+    if (s.round === 1) continue;
+    const [t1, t2] = getSeriesTeams(s.id, state.whatIfPicks, teams);
+    const card = document.getElementById('wcard-' + s.id);
+    if (!card) continue;
+    const btns = card.querySelectorAll('.wif-team-btn');
+    setTeamBtn(btns[0], t1);
+    setTeamBtn(btns[1], t2);
+  }
+  for (const s of SERIES) {
+    const card = document.getElementById('wcard-' + s.id);
+    if (!card) continue;
+    const pick = state.whatIfPicks[s.id];
+    const [t1, t2] = getSeriesTeams(s.id, state.whatIfPicks, teams);
+    card.querySelectorAll('.wif-team-btn').forEach(btn => {
+      const teamVal = btn.dataset.team === 't1' ? t1 : t2;
+      const sel = !!pick && teamVal === pick.winner;
+      btn.classList.toggle('selected', sel);
+    });
+    card.querySelectorAll('.wif-game-btn').forEach(btn => {
+      btn.classList.toggle('selected', !!pick && parseInt(btn.dataset.games) === pick.games);
+    });
+    card.classList.toggle('complete', !!(pick && pick.winner && pick.games));
+  }
+}
+
+function clearDependentWhatIfPicks(changedSid) {
+  for (const s of SERIES) {
+    if (s.from && s.from.includes(changedSid)) {
+      delete state.whatIfPicks[s.id];
+      clearDependentWhatIfPicks(s.id);
+    }
+  }
+}
+
+function handleWhatIfPick(sid, winnerTeam, games) {
+  if (!state.whatIfPicks[sid]) state.whatIfPicks[sid] = {};
+  if (winnerTeam !== undefined) {
+    if (state.whatIfPicks[sid].winner !== winnerTeam) {
+      state.whatIfPicks[sid].winner = winnerTeam;
+      clearDependentWhatIfPicks(sid);
+    }
+  }
+  if (games !== undefined) state.whatIfPicks[sid].games = games;
+  // Re-render dependent cards (R2+ teams may have changed) and refresh stats/canvas.
+  renderWhatIfPicker();
+  renderWhatIfBracket();
+  renderWhatIfStats();
+}
+
+function prefillWhatIfFromCurrent() {
+  state.whatIfPicks = {};
+  const results = appData.results || {};
+  for (const s of SERIES) {
+    const r = results[s.id];
+    if (r && r.completed && r.winner) {
+      state.whatIfPicks[s.id] = { winner: r.winner, games: r.games };
+    }
+  }
+}
+
+function buildWhatIfResults(picks) {
+  const out = { ...(appData.results || {}) };
+  for (const s of SERIES) {
+    const p = picks[s.id];
+    if (!p || !p.winner) continue;
+    out[s.id] = { completed: true, winner: p.winner, games: p.games || null };
+  }
+  return out;
+}
+
+function countFilledPicks(picks) {
+  let n = 0;
+  for (const s of SERIES) if (picks[s.id] && picks[s.id].winner) n++;
+  return n;
+}
+
+function computeWhatIfProbability(picks, samplesData) {
+  const samples = (samplesData && samplesData.samples) || [];
+  if (!samples.length) return null;
+  const filled = SERIES.filter(s => picks[s.id] && picks[s.id].winner);
+  if (!filled.length) return { matches: samples.length, n: samples.length, prob: 1 };
+  let matches = 0;
+  outer: for (let i = 0; i < samples.length; i++) {
+    const sample = samples[i];
+    for (const s of filled) {
+      const p = picks[s.id];
+      const out = sample[s.id];
+      if (!out) continue outer;
+      const winnerAbbr = out[0];
+      const games = out[1];
+      const pickAbbr = TEAM_ABBR[p.winner] || p.winner;
+      if (pickAbbr !== winnerAbbr) continue outer;
+      if (p.games != null && p.games !== games) continue outer;
+    }
+    matches++;
+  }
+  return { matches, n: samples.length, prob: matches / samples.length };
+}
+
+function fmtWhatIfProb(prob) {
+  if (prob == null) return '—';
+  if (prob === 0) return '<0.02%';
+  if (prob >= 0.9999) return '100%';
+  if (prob >= 0.01) return (prob * 100).toFixed(1) + '%';
+  if (prob >= 0.0001) return (prob * 100).toFixed(2) + '%';
+  return (prob * 100).toFixed(3) + '%';
+}
+
+function renderWhatIfBracket() {
+  const results = buildWhatIfResults(state.whatIfPicks);
+  buildBracketCanvas(state.whatIfPicks, results, getTeams(), {}, 'whatIfCanvas');
+}
+
+function renderWhatIfStats() {
+  const filled = countFilledPicks(state.whatIfPicks);
+  const filledEl = document.getElementById('whatIfPicksVal');
+  if (filledEl) filledEl.textContent = `${filled} / ${SERIES.length}`;
+  const subEl = document.getElementById('whatIfPicksSub');
+  if (subEl) {
+    const withGames = SERIES.filter(s => state.whatIfPicks[s.id] && state.whatIfPicks[s.id].games).length;
+    subEl.textContent = withGames === filled
+      ? (filled === 0 ? 'Pick winners + game lengths' : `${withGames} with game length`)
+      : `${withGames} with game length, ${filled - withGames} winner-only`;
+  }
+
+  // Probability tile
+  const probEl = document.getElementById('whatIfProbVal');
+  const probSubEl = document.getElementById('whatIfProbSub');
+  if (probEl && probSubEl) {
+    if (!state._predSamples) {
+      probEl.textContent = '—';
+      probSubEl.textContent = 'Loading simulation data…';
+    } else {
+      const r = computeWhatIfProbability(state.whatIfPicks, state._predSamples);
+      if (!r) {
+        probEl.textContent = '—';
+        probSubEl.textContent = 'No simulation data';
+      } else if (filled === 0) {
+        probEl.textContent = '100%';
+        probSubEl.textContent = 'Empty bracket — fill in picks';
+      } else {
+        probEl.textContent = fmtWhatIfProb(r.prob);
+        probSubEl.textContent = `${r.matches.toLocaleString()} of ${r.n.toLocaleString()} sims match`;
+      }
+    }
+  }
+
+  // Standings
+  const standingsEl = document.getElementById('whatIfStandings');
+  if (!standingsEl) return;
+  const brackets = getBrackets();
+  if (!brackets.length) {
+    standingsEl.innerHTML = '<div class="empty-state">No pool entries yet.</div>';
+    return;
+  }
+  if (filled === 0) {
+    standingsEl.innerHTML = '<div class="empty-state">Pick at least one series to see how standings change.</div>';
+    return;
+  }
+  const whatIfResults = buildWhatIfResults(state.whatIfPicks);
+  const ranked = rankBrackets(brackets, whatIfResults);
+  standingsEl.innerHTML = buildLeaderboardTable(ranked, whatIfResults, false, brackets.length);
+}
+
+function setWhatIfMode(mode) {
+  state.whatIfMode = mode;
+  document.querySelectorAll('.whatif-mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  if (mode === 'current') prefillWhatIfFromCurrent();
+  else state.whatIfPicks = {};
+  renderWhatIfPicker();
+  renderWhatIfBracket();
+  renderWhatIfStats();
+}
+
+async function renderWhatIf() {
+  // Lazy-load Monte Carlo samples if Predictions hasn't already loaded them.
+  if (!state._predSamples && !state._whatIfSamplesInflight) {
+    state._whatIfSamplesInflight = true;
+    fetch('data/bracket_samples.json', { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null)
+      .then(j => { state._predSamples = j; if (state.view === 'whatif') renderWhatIfStats(); })
+      .catch(() => {})
+      .finally(() => { state._whatIfSamplesInflight = false; });
+  }
+  // Ensure live series wins are loaded (used by buildBracketCanvas live score labels).
+  if (Object.keys(state.apiSeriesWins).length === 0) {
+    fetchApiSeriesWins().then(() => { if (state.view === 'whatif') renderWhatIfBracket(); }).catch(()=>{});
+  }
+  renderWhatIfPicker();
+  renderWhatIfBracket();
+  renderWhatIfStats();
+}
+
 // ── Commissioner ───────────────────────────────────────────
 
 function renderCommissioner() {
@@ -3538,6 +3801,32 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('submitBracketBtn').addEventListener('click', submitBracket);
+
+  // What-If picks (delegated)
+  document.getElementById('whatIfRounds').addEventListener('click', e => {
+    const teamBtn = e.target.closest('.wif-team-btn');
+    if (teamBtn) {
+      const [t1, t2] = getSeriesTeams(teamBtn.dataset.sid, state.whatIfPicks, getTeams());
+      handleWhatIfPick(teamBtn.dataset.sid, teamBtn.dataset.team==='t1'?t1:t2, undefined);
+      return;
+    }
+    const gameBtn = e.target.closest('.wif-game-btn');
+    if (gameBtn) handleWhatIfPick(gameBtn.dataset.sid, undefined, parseInt(gameBtn.dataset.games));
+  });
+
+  // What-If mode toggle
+  document.querySelectorAll('.whatif-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => setWhatIfMode(btn.dataset.mode));
+  });
+
+  // What-If reset
+  document.getElementById('whatIfResetBtn').addEventListener('click', () => {
+    if (state.whatIfMode === 'current') prefillWhatIfFromCurrent();
+    else state.whatIfPicks = {};
+    renderWhatIfPicker();
+    renderWhatIfBracket();
+    renderWhatIfStats();
+  });
 
   document.getElementById('viewMyBracketBtn').addEventListener('click', e => {
     const bid = e.target.dataset.bid;
