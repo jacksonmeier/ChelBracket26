@@ -2441,6 +2441,40 @@ function renderLeaderboard() {
 
 // ── Stats ──────────────────────────────────────────────────
 
+function allPlayoffFinalGames() {
+  return Object.values(state.apiGames || {}).flat().filter(g =>
+    g && (g.gameState === 'FINAL' || g.gameState === 'OFF')
+  );
+}
+
+function teamGameRecord(abbr, games) {
+  let gp=0, w=0, l=0, gf=0, ga=0, otW=0, otL=0, homeW=0, homeL=0, roadW=0, roadL=0;
+  for (const g of games) {
+    const isAway = g.awayTeam?.abbrev === abbr;
+    const isHome = g.homeTeam?.abbrev === abbr;
+    if (!isAway && !isHome) continue;
+    const myScore  = isAway ? (g.awayTeam.score ?? 0) : (g.homeTeam.score ?? 0);
+    const oppScore = isAway ? (g.homeTeam.score ?? 0) : (g.awayTeam.score ?? 0);
+    const pt = g.periodDescriptor?.periodType;
+    const isOT = pt === 'OT' || pt === 'SO';
+    gp++; gf += myScore; ga += oppScore;
+    if (myScore > oppScore) { w++; if (isOT) otW++; if (isHome) homeW++; else roadW++; }
+    else                    { l++; if (isOT) otL++; if (isHome) homeL++; else roadL++; }
+  }
+  return { gp, w, l, gf, ga, diff: gf-ga, otW, otL, homeW, homeL, roadW, roadL };
+}
+
+function seriesGamesForSid(sid, games, results, teams) {
+  const [t1, t2] = getActualTeams(sid, results, teams);
+  if (t1 === 'TBD' || t2 === 'TBD') return [];
+  const a1 = TEAM_ABBR[t1], a2 = TEAM_ABBR[t2];
+  if (!a1 || !a2) return [];
+  return games.filter(g => {
+    const ga = g.awayTeam?.abbrev, gh = g.homeTeam?.abbrev;
+    return (ga === a1 || ga === a2) && (gh === a1 || gh === a2);
+  }).sort((a, b) => (a.startTimeUTC || '').localeCompare(b.startTimeUTC || ''));
+}
+
 function renderStats() {
   const el = document.getElementById('statsContent');
   if (!el) return;
@@ -2448,19 +2482,17 @@ function renderStats() {
   const results  = getResults();
   const teams    = getTeams();
 
-  if (!brackets.length) {
-    el.innerHTML = '<div class="empty-state">No entries yet.</div>';
-    return;
+  // Kick off non-blocking data fetches so Playoffs tab can render real stats.
+  if (!state._statsApiWinsFetched && Object.keys(state.apiSeriesWins || {}).length === 0) {
+    state._statsApiWinsFetched = true;
+    fetchApiSeriesWins().then(() => { if (state.view === 'stats') renderStats(); }).catch(()=>{});
+  }
+  if (!state._statsApiGamesFetched && Object.keys(state.apiGames || {}).length === 0) {
+    state._statsApiGamesFetched = true;
+    fetchAllPlayoffGames().then(() => { if (state.view === 'stats') renderStats(); }).catch(()=>{});
   }
 
-  // ── Pool Pulse aggregates ──────────────────────────────
-  const seriesDone = SERIES.filter(s => results[s.id]?.completed).length;
-  const scores     = brackets.map(b => scoreOneBracket(b, results).pts);
-  const avgScore   = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-  const topScore   = Math.max(...scores);
-
-  // ── Figure out eliminated teams ────────────────────────
-  // A team is eliminated if they lost a completed series
+  // ── Eliminated teams ─────────────────────────────────────
   const eliminated = new Set();
   for (const s of SERIES) {
     const r = results[s.id];
@@ -2471,43 +2503,7 @@ function renderStats() {
     }
   }
 
-  // ── Stanley Cup pick counts ────────────────────────────
-  const cupCounts = {};
-  for (const b of brackets) {
-    const w = b.picks?.SCF?.winner;
-    if (w) cupCounts[w] = (cupCounts[w] || 0) + 1;
-  }
-  const cupEntries = Object.entries(cupCounts).sort((a, b) => b[1] - a[1]);
-  const total = brackets.length;
-
-  // ── Per-series pick counts ─────────────────────────────
-  const pickCounts = {}; // sid → { team1Name: count, team2Name: count }
-  for (const s of SERIES) {
-    const [t1, t2] = getActualTeams(s.id, results, teams);
-    let c1 = 0, c2 = 0;
-    for (const b of brackets) {
-      const w = b.picks?.[s.id]?.winner;
-      if (w === t1) c1++;
-      else if (w === t2) c2++;
-    }
-    pickCounts[s.id] = { t1, t2, c1, c2 };
-  }
-
-  // ── Round accuracy ─────────────────────────────────────
-  const roundStats = {}; // round → { done, total, correct }
-  for (const s of SERIES) {
-    if (!roundStats[s.round]) roundStats[s.round] = { done: 0, total: 0, correct: 0 };
-    roundStats[s.round].total++;
-    const r = results[s.id];
-    if (r?.completed) {
-      roundStats[s.round].done++;
-      for (const b of brackets) {
-        if (b.picks?.[s.id]?.winner === r.winner) roundStats[s.round].correct++;
-      }
-    }
-  }
-
-  // ── Series live status ─────────────────────────────────
+  // ── Common helpers ───────────────────────────────────────
   function seriesStatusText(sid) {
     const r = results[sid];
     if (r?.completed) return `<span class="stats-badge stats-badge-done">Final</span>`;
@@ -2523,127 +2519,551 @@ function renderStats() {
     return `<span class="stats-badge stats-badge-live">${leader} leads ${wl}-${ll}</span>`;
   }
 
-  // ── Build HTML ─────────────────────────────────────────
+  // ── Aggregates ───────────────────────────────────────────
+  const total      = brackets.length;
+  const seriesDone = SERIES.filter(s => results[s.id]?.completed).length;
+  const scores     = brackets.map(b => scoreOneBracket(b, results).pts);
+  const avgScore   = total ? Math.round(scores.reduce((a, b) => a + b, 0) / total) : 0;
+  const topScore   = total ? Math.max(...scores) : 0;
 
-  // Section 1: Pool Pulse
+  // Points earned / possible pool-wide so far
+  let ptsEarned = 0, ptsAvailable = 0;
+  for (const s of SERIES) {
+    const r = results[s.id];
+    if (!r?.completed) continue;
+    ptsAvailable += total * ROUND_PTS[s.round].max;
+    for (const b of brackets) {
+      const pick = b.picks?.[s.id];
+      if (!pick) continue;
+      if (pick.winner === r.winner) {
+        ptsEarned += ROUND_PTS[s.round].w;
+        if (+pick.games === +r.games) ptsEarned += ROUND_PTS[s.round].g;
+      }
+    }
+  }
+
+  // Perfect series % across completed series picks
+  let perfectPicks = 0, totalCompletedPicks = 0;
+  for (const s of SERIES) {
+    const r = results[s.id];
+    if (!r?.completed) continue;
+    for (const b of brackets) {
+      const pick = b.picks?.[s.id];
+      if (!pick || !pick.winner) continue;
+      totalCompletedPicks++;
+      if (pick.winner === r.winner && +pick.games === +r.games) perfectPicks++;
+    }
+  }
+  const perfectPct = totalCompletedPicks ? Math.round((perfectPicks / totalCompletedPicks) * 100) : 0;
+
+  // Playoff-game aggregates from NHL API cache
+  const apiGames = allPlayoffFinalGames();
+  const gamesPlayed = apiGames.length;
+  const gamesRemaining = Math.max(0, 15 * 7 - gamesPlayed);
+
+  // ── Per-series pick counts ───────────────────────────────
+  const pickCounts = {};
+  for (const s of SERIES) {
+    const [t1, t2] = getActualTeams(s.id, results, teams);
+    let c1 = 0, c2 = 0;
+    const gamesBy = { [t1]: {4:0,5:0,6:0,7:0}, [t2]: {4:0,5:0,6:0,7:0} };
+    for (const b of brackets) {
+      const p = b.picks?.[s.id];
+      if (!p?.winner) continue;
+      if (p.winner === t1) { c1++; if (p.games && gamesBy[t1][p.games] != null) gamesBy[t1][p.games]++; }
+      else if (p.winner === t2) { c2++; if (p.games && gamesBy[t2][p.games] != null) gamesBy[t2][p.games]++; }
+    }
+    pickCounts[s.id] = { t1, t2, c1, c2, gamesBy };
+  }
+
+  // ── Cup pick counts ──────────────────────────────────────
+  const cupCounts = {};
+  for (const b of brackets) {
+    const w = b.picks?.SCF?.winner;
+    if (w) cupCounts[w] = (cupCounts[w] || 0) + 1;
+  }
+  const cupEntries = Object.entries(cupCounts).sort((a, b) => b[1] - a[1]);
+
+  // ── Round stats with points + max remaining ──────────────
+  const roundStats = {};
+  for (const s of SERIES) {
+    const rs = roundStats[s.round] || (roundStats[s.round] = { done: 0, totalSeries: 0, correct: 0, perfect: 0, earned: 0, maxRemaining: 0 });
+    rs.totalSeries++;
+    const r = results[s.id];
+    if (r?.completed) {
+      rs.done++;
+      for (const b of brackets) {
+        const p = b.picks?.[s.id];
+        if (p?.winner === r.winner) {
+          rs.correct++;
+          rs.earned += ROUND_PTS[s.round].w;
+          if (p && +p.games === +r.games) { rs.perfect++; rs.earned += ROUND_PTS[s.round].g; }
+        }
+      }
+    } else {
+      // max remaining per entry for this series
+      for (const b of brackets) {
+        const [t1, t2] = getActualTeams(s.id, results, teams);
+        const p = b.picks?.[s.id];
+        if (!p?.winner) continue;
+        // if the picked team hasn't been eliminated, full max still available
+        if (!eliminated.has(p.winner)) {
+          const loser = p.winner === t1 ? t2 : t1;
+          const loserWins = (TEAM_ABBR[loser] && state.apiSeriesWins[TEAM_ABBR[loser]]) || 0;
+          if (!isGamesImpossible(p.games, loserWins)) rs.maxRemaining += ROUND_PTS[s.round].max;
+          else rs.maxRemaining += ROUND_PTS[s.round].w;
+        }
+      }
+    }
+  }
+
+  const rounds = [1, 2, 3, 4];
+
+  // ── Pool Pulse (8 pills) ─────────────────────────────────
   const pulseHtml = `
-    <div class="stats-pulse">
+    <div class="stats-pulse stats-pulse-lg">
       <div class="stats-pill"><div class="stats-pill-val">${total}</div><div class="stats-pill-lbl">Entries</div></div>
       <div class="stats-pill"><div class="stats-pill-val">${seriesDone}<span class="stats-pill-denom">/15</span></div><div class="stats-pill-lbl">Series Done</div></div>
-      <div class="stats-pill"><div class="stats-pill-val">${total > 0 ? avgScore : '—'}</div><div class="stats-pill-lbl">Avg Score</div></div>
-      <div class="stats-pill"><div class="stats-pill-val">${topScore}</div><div class="stats-pill-lbl">Top Score</div></div>
+      <div class="stats-pill"><div class="stats-pill-val">${gamesPlayed}</div><div class="stats-pill-lbl">Games Played</div></div>
+      <div class="stats-pill"><div class="stats-pill-val">${avgScore || '—'}</div><div class="stats-pill-lbl">Avg Score</div></div>
+      <div class="stats-pill"><div class="stats-pill-val">${topScore || '—'}</div><div class="stats-pill-lbl">Top Score</div></div>
+      <div class="stats-pill"><div class="stats-pill-val">${ptsEarned}<span class="stats-pill-denom">/${ptsAvailable || 0}</span></div><div class="stats-pill-lbl">Pts Earned / Possible</div></div>
+      <div class="stats-pill"><div class="stats-pill-val">${totalCompletedPicks ? perfectPct + '%' : '—'}</div><div class="stats-pill-lbl">Perfect Series %</div></div>
+      <div class="stats-pill"><div class="stats-pill-val">${gamesRemaining}</div><div class="stats-pill-lbl">Games Remaining</div></div>
     </div>`;
 
-  // Section 2: Cup Picks
-  let cupHtml = `<div class="stats-section"><div class="stats-sec-title">Stanley Cup Picks</div><div class="stats-cup-list">`;
-  if (!cupEntries.length) {
-    cupHtml += '<div class="empty-state" style="padding:1rem 0">No Cup picks yet.</div>';
-  } else {
-    for (const [team, count] of cupEntries) {
-      const pct = Math.round((count / total) * 100);
-      const abbr = TEAM_ABBR[team] || team.split(' ').pop().toUpperCase().slice(0, 3);
-      const logo = logoImg(team, 'stats-cup-logo');
-      const dead = eliminated.has(team);
-      cupHtml += `
-        <div class="stats-cup-row${dead ? ' stats-cup-dead' : ''}">
-          <div class="stats-cup-team">${logo}<span class="stats-cup-abbr">${abbr}</span><span class="stats-cup-name">${team}</span></div>
-          <div class="stats-bar-wrap"><div class="stats-bar-fill${dead ? ' stats-bar-dead' : ''}" style="width:${pct}%"></div></div>
-          <div class="stats-cup-count">${count} <span class="stats-cup-pct">(${pct}%)</span></div>
-        </div>`;
-    }
+  // ── Tab strip ────────────────────────────────────────────
+  if (!state.statsTab || (state.statsTab === 'pool' && !total)) {
+    state.statsTab = total ? 'pool' : 'playoffs';
   }
-  cupHtml += '</div></div>';
+  const defaultTab = state.statsTab;
+  const tabsHtml = `
+    <div class="stats-tabs">
+      <button class="stats-tab${defaultTab==='pool' ? ' active' : ''}" data-tab="pool"${total ? '' : ' disabled'}>Pool</button>
+      <button class="stats-tab${defaultTab==='playoffs' ? ' active' : ''}" data-tab="playoffs">Playoffs</button>
+    </div>`;
 
-  // Section 3: Series Breakdown by round (tabbed)
-  const rounds = [1, 2, 3, 4];
-  const roundPills = rounds.map(r =>
-    `<button class="stats-round-pill${r === 1 ? ' active' : ''}" data-round="${r}">${ROUND_NAMES[r]}</button>`
-  ).join('');
+  // ── Pool tab ─────────────────────────────────────────────
+  let poolHtml = '';
+  if (!total) {
+    poolHtml = '<div class="stats-section"><div class="empty-state">Submit a bracket to see pool stats.</div></div>';
+  } else {
+    // Cup Picks
+    let cupHtml = `<div class="stats-section"><div class="stats-sec-title">Stanley Cup Picks</div><div class="stats-cup-list">`;
+    if (!cupEntries.length) {
+      cupHtml += '<div class="empty-state" style="padding:1rem 0">No Cup picks yet.</div>';
+    } else {
+      for (const [team, count] of cupEntries) {
+        const pct = Math.round((count / total) * 100);
+        const abbr = TEAM_ABBR[team] || team.split(' ').pop().toUpperCase().slice(0, 3);
+        const logo = logoImg(team, 'stats-cup-logo');
+        const dead = eliminated.has(team);
+        cupHtml += `
+          <div class="stats-cup-row${dead ? ' stats-cup-dead' : ''}">
+            <div class="stats-cup-team">${logo}<span class="stats-cup-abbr">${abbr}</span><span class="stats-cup-name">${team}</span></div>
+            <div class="stats-bar-wrap"><div class="stats-bar-fill${dead ? ' stats-bar-dead' : ''}" style="width:${pct}%"></div></div>
+            <div class="stats-cup-count">${count} <span class="stats-cup-pct">(${pct}%)</span></div>
+          </div>`;
+      }
+    }
+    cupHtml += '</div></div>';
 
-  let roundGrids = '';
-  for (const round of rounds) {
-    const roundSeries = SERIES.filter(s => s.round === round);
-    let cards = '';
-    for (const s of roundSeries) {
+    // Series Breakdown (tabbed by round)
+    const roundPills = rounds.map(r =>
+      `<button class="stats-round-pill${r === 1 ? ' active' : ''}" data-round="${r}">${ROUND_NAMES[r]}</button>`
+    ).join('');
+
+    let roundGrids = '';
+    for (const round of rounds) {
+      const roundSeries = SERIES.filter(s => s.round === round);
+      let cards = '';
+      for (const s of roundSeries) {
+        const { t1, t2, c1, c2, gamesBy } = pickCounts[s.id];
+        const r = results[s.id];
+        const a1 = TEAM_ABBR[t1] || (t1 !== 'TBD' ? t1.split(' ').pop().toUpperCase().slice(0,3) : '?');
+        const a2 = TEAM_ABBR[t2] || (t2 !== 'TBD' ? t2.split(' ').pop().toUpperCase().slice(0,3) : '?');
+        const logo1 = t1 !== 'TBD' ? logoImg(t1, 'stats-sc-logo') : '';
+        const logo2 = t2 !== 'TBD' ? logoImg(t2, 'stats-sc-logo') : '';
+        const totalPicks = c1 + c2;
+        const pct1 = totalPicks ? Math.round((c1 / totalPicks) * 100) : 50;
+        const pct2 = totalPicks ? Math.round((c2 / totalPicks) * 100) : 50;
+        const statusBadge = seriesStatusText(s.id);
+
+        // Most-picked games length line
+        let lenLine = '';
+        if (totalPicks) {
+          const all = [4,5,6,7].map(g => ({ g, n: (gamesBy[t1]?.[g]||0) + (gamesBy[t2]?.[g]||0) }));
+          const top = all.sort((x,y)=>y.n-x.n)[0];
+          if (top && top.n) {
+            const pctG = Math.round((top.n / totalPicks) * 100);
+            lenLine = `<div class="stats-sc-length">Most-picked length: <b>${top.g} games</b> (${pctG}%)</div>`;
+          }
+        }
+
+        let resultLine = '';
+        if (r?.completed) {
+          const correctCount = brackets.filter(b => b.picks?.[s.id]?.winner === r.winner).length;
+          const correctPct = Math.round((correctCount / total) * 100);
+          resultLine = `<div class="stats-sc-result">
+            <span class="stats-sc-winner">${TEAM_ABBR[r.winner] || r.winner} won in ${r.games}</span>
+            <span class="stats-sc-accuracy">${correctCount}/${total} correct (${correctPct}%)</span>
+          </div>`;
+        }
+        cards += `
+          <div class="stats-sc-card" data-series-id="${s.id}" style="cursor:pointer">
+            <div class="stats-sc-header">
+              <div class="stats-sc-teams">
+                ${logo1}<span class="stats-sc-abbr">${a1}</span>
+                <span class="stats-sc-vs">vs</span>
+                <span class="stats-sc-abbr">${a2}</span>${logo2}
+              </div>
+              ${statusBadge}
+            </div>
+            <div class="stats-sc-picks">
+              <div class="stats-sc-pick-row">
+                <span class="stats-sc-pick-lbl">${a1}</span>
+                <div class="stats-bar-wrap stats-bar-sm"><div class="stats-bar-fill" style="width:${pct1}%"></div></div>
+                <span class="stats-sc-pick-cnt">${c1}</span>
+              </div>
+              <div class="stats-sc-pick-row">
+                <span class="stats-sc-pick-lbl">${a2}</span>
+                <div class="stats-bar-wrap stats-bar-sm"><div class="stats-bar-fill" style="width:${pct2}%"></div></div>
+                <span class="stats-sc-pick-cnt">${c2}</span>
+              </div>
+            </div>
+            ${lenLine}
+            ${resultLine}
+          </div>`;
+      }
+      roundGrids += `<div class="stats-series-grid${round === 1 ? '' : ' hidden'}" data-round-grid="${round}">${cards}</div>`;
+    }
+
+    const seriesHtml = `<div class="stats-section">
+      <div class="stats-sec-hdr-row">
+        <div class="stats-sec-title">Series Breakdown</div>
+        <div class="stats-round-pills">${roundPills}</div>
+      </div>
+      ${roundGrids}
+    </div>`;
+
+    // Round Performance
+    let accHtml = `<div class="stats-section"><div class="stats-sec-title">Round-by-Round Performance</div>
+      <div class="stats-ledger-wrap">
+      <table class="stats-acc-table">
+        <thead><tr><th>Round</th><th>Series Done</th><th>Correct</th><th>Accuracy</th><th>Pts Earned</th><th>Max Remaining</th><th>Perfect</th></tr></thead>
+        <tbody>`;
+    for (const round of rounds) {
+      const rs = roundStats[round] || { done: 0, totalSeries: 0, correct: 0, perfect: 0, earned: 0, maxRemaining: 0 };
+      const maxCorrect = rs.done * total;
+      const accPct = maxCorrect ? Math.round((rs.correct / maxCorrect) * 100) : null;
+      accHtml += `<tr>
+        <td>${ROUND_NAMES[round]}</td>
+        <td>${rs.done}/${rs.totalSeries}</td>
+        <td>${rs.done ? rs.correct : '—'}</td>
+        <td>${accPct !== null ? accPct + '%' : '—'}</td>
+        <td>${rs.done ? rs.earned : '—'}</td>
+        <td>${rs.maxRemaining || '—'}</td>
+        <td>${rs.done ? rs.perfect : '—'}</td>
+      </tr>`;
+    }
+    accHtml += '</tbody></table></div></div>';
+
+    // Rooting Interest Map
+    const aliveTeams = new Map(); // team → { cupPicks, alivePicks }
+    for (const b of brackets) {
+      // Cup pick
+      const cupW = b.picks?.SCF?.winner;
+      if (cupW && !eliminated.has(cupW)) {
+        const r = aliveTeams.get(cupW) || { cupPicks: 0, alivePicks: 0 };
+        r.cupPicks++;
+        aliveTeams.set(cupW, r);
+      }
+      // Any non-eliminated winning pick
+      const seenForThisBracket = new Set();
+      for (const s of SERIES) {
+        const p = b.picks?.[s.id];
+        const rr = results[s.id];
+        if (!p?.winner) continue;
+        if (rr?.completed) continue; // only future/ongoing
+        if (eliminated.has(p.winner)) continue;
+        if (!seenForThisBracket.has(p.winner)) {
+          seenForThisBracket.add(p.winner);
+          const r = aliveTeams.get(p.winner) || { cupPicks: 0, alivePicks: 0 };
+          r.alivePicks++;
+          aliveTeams.set(p.winner, r);
+        }
+      }
+    }
+    const aliveArr = Array.from(aliveTeams.entries()).sort((a,b)=> b[1].alivePicks - a[1].alivePicks || b[1].cupPicks - a[1].cupPicks);
+    let rootHtml = `<div class="stats-section"><div class="stats-sec-title">Rooting Interest</div>`;
+    if (!aliveArr.length) {
+      rootHtml += '<div class="empty-state" style="padding:1rem 0">No live rooting interests yet.</div>';
+    } else {
+      rootHtml += '<div class="stats-root-list">';
+      for (const [team, stats] of aliveArr) {
+        const abbr = TEAM_ABBR[team] || team.split(' ').pop().toUpperCase().slice(0,3);
+        const pct = Math.round((stats.alivePicks / total) * 100);
+        rootHtml += `
+          <div class="stats-root-row">
+            <div class="stats-root-team">${logoImg(team,'stats-root-logo')}<span class="stats-root-abbr">${abbr}</span><span class="stats-root-name">${team}</span></div>
+            <div class="stats-bar-wrap"><div class="stats-bar-fill" style="width:${pct}%"></div></div>
+            <div class="stats-root-meta">${stats.alivePicks} alive · ${stats.cupPicks} Cup</div>
+          </div>`;
+      }
+      rootHtml += '</div>';
+    }
+    rootHtml += '</div>';
+
+    // Consensus & Divergence
+    const seriesWithPicks = SERIES.map(s => {
       const { t1, t2, c1, c2 } = pickCounts[s.id];
-      const r = results[s.id];
-      const a1 = TEAM_ABBR[t1] || (t1 !== 'TBD' ? t1.split(' ').pop().toUpperCase().slice(0,3) : '?');
-      const a2 = TEAM_ABBR[t2] || (t2 !== 'TBD' ? t2.split(' ').pop().toUpperCase().slice(0,3) : '?');
-      const logo1 = t1 !== 'TBD' ? logoImg(t1, 'stats-sc-logo') : '';
-      const logo2 = t2 !== 'TBD' ? logoImg(t2, 'stats-sc-logo') : '';
-      const totalPicks = c1 + c2;
-      const pct1 = totalPicks ? Math.round((c1 / totalPicks) * 100) : 50;
-      const pct2 = totalPicks ? Math.round((c2 / totalPicks) * 100) : 50;
-      const statusBadge = seriesStatusText(s.id);
-      let resultLine = '';
-      if (r?.completed) {
-        const correctCount = brackets.filter(b => b.picks?.[s.id]?.winner === r.winner).length;
-        const correctPct = Math.round((correctCount / total) * 100);
-        resultLine = `<div class="stats-sc-result">
-          <span class="stats-sc-winner">${TEAM_ABBR[r.winner] || r.winner} won in ${r.games}</span>
-          <span class="stats-sc-accuracy">${correctCount}/${total} correct (${correctPct}%)</span>
+      const totalP = c1 + c2;
+      if (!totalP || t1 === 'TBD' || t2 === 'TBD') return null;
+      const majorPct = Math.round(Math.max(c1, c2) / totalP * 100);
+      const majorTeam = c1 >= c2 ? t1 : t2;
+      const minorTeam = c1 >= c2 ? t2 : t1;
+      const minorCount = Math.min(c1, c2);
+      return { s, t1, t2, c1, c2, totalP, majorPct, majorTeam, minorTeam, minorCount };
+    }).filter(Boolean);
+
+    const unanimous = [...seriesWithPicks].sort((a,b)=> b.majorPct - a.majorPct).slice(0,3);
+    const split = [...seriesWithPicks].sort((a,b)=> Math.abs(a.majorPct-50) - Math.abs(b.majorPct-50)).slice(0,3);
+
+    const consRow = (row) => {
+      const aMaj = TEAM_ABBR[row.majorTeam] || row.majorTeam.split(' ').pop().toUpperCase().slice(0,3);
+      const aMin = TEAM_ABBR[row.minorTeam] || row.minorTeam.split(' ').pop().toUpperCase().slice(0,3);
+      return `<div class="stats-consensus-row">
+        <div class="stats-consensus-lbl">${row.s.abbr}</div>
+        <div class="stats-consensus-detail">${logoImg(row.majorTeam,'stats-consensus-logo')}<b>${aMaj}</b> ${row.majorPct}% <span class="stats-consensus-min">vs ${aMin} ${100-row.majorPct}% (${row.minorCount})</span></div>
+      </div>`;
+    };
+
+    let consHtml = `<div class="stats-section"><div class="stats-sec-title">Consensus &amp; Divergence</div>
+      <div class="stats-consensus-grid">
+        <div class="stats-consensus-col">
+          <div class="stats-consensus-hd">Most Unanimous</div>
+          ${unanimous.length ? unanimous.map(consRow).join('') : '<div class="empty-state" style="padding:0.75rem 0">—</div>'}
+        </div>
+        <div class="stats-consensus-col">
+          <div class="stats-consensus-hd">Most Split</div>
+          ${split.length ? split.map(consRow).join('') : '<div class="empty-state" style="padding:0.75rem 0">—</div>'}
+        </div>
+      </div>
+    </div>`;
+
+    // Full Leaderboard
+    const ranked = rankBrackets(brackets, results);
+    const leaderTop = ranked.length ? ranked[0].pts : 0;
+    let lbHtml = `<div class="stats-section"><div class="stats-sec-title">Full Leaderboard</div>
+      <div class="stats-ledger-wrap">
+      <table class="stats-acc-table stats-leader-table">
+        <thead><tr><th>#</th><th>Bracket</th><th>Player</th><th>Pts</th><th>Max</th><th>Cup Pick</th><th></th></tr></thead>
+        <tbody>`;
+    ranked.forEach((b, i) => {
+      const cup = b.picks?.SCF?.winner;
+      const cupAbbr = cup ? (TEAM_ABBR[cup] || cup.split(' ').pop().toUpperCase().slice(0,3)) : '—';
+      const cupDead = cup && eliminated.has(cup);
+      const cupHtml = cup
+        ? `<span class="stats-leader-cup${cupDead ? ' stats-leader-cup-dead' : ''}">${logoImg(cup,'stats-leader-logo')}<span>${cupAbbr}</span></span>`
+        : '<span class="stats-leader-cup">—</span>';
+      const alive = b.proj >= leaderTop;
+      const aliveBadge = alive
+        ? '<span class="stats-badge stats-badge-live">Alive</span>'
+        : '<span class="stats-badge">Out</span>';
+      lbHtml += `<tr class="stats-leader-row${alive ? '' : ' stats-row-dim'}" data-bid="${esc(b.id)}" style="cursor:pointer">
+        <td>${i+1}</td>
+        <td><b>${esc(b.name||'Untitled')}</b></td>
+        <td>${esc(b.player||'—')}</td>
+        <td>${b.pts}</td>
+        <td>${b.proj}</td>
+        <td>${cupHtml}</td>
+        <td>${aliveBadge}</td>
+      </tr>`;
+    });
+    lbHtml += '</tbody></table></div></div>';
+
+    poolHtml = cupHtml + seriesHtml + accHtml + rootHtml + consHtml + lbHtml;
+  }
+
+  // ── Playoffs tab ─────────────────────────────────────────
+  let playoffsHtml = '';
+  if (!gamesPlayed) {
+    playoffsHtml = '<div class="stats-section"><div class="empty-state">Loading playoff game history…</div></div>';
+  } else {
+    // Playoffs at a Glance
+    let otGames = 0, soGames = 0, oneGoal = 0, totalGoals = 0, homeW = 0, roadW = 0;
+    let biggest = { margin: -1, game: null };
+    for (const g of apiGames) {
+      const hs = g.homeTeam?.score ?? 0, as = g.awayTeam?.score ?? 0;
+      const pt = g.periodDescriptor?.periodType;
+      totalGoals += hs + as;
+      if (pt === 'OT') otGames++;
+      if (pt === 'SO') soGames++;
+      if (Math.abs(hs - as) === 1) oneGoal++;
+      if (hs > as) homeW++; else roadW++;
+      const margin = Math.abs(hs - as);
+      if (margin > biggest.margin) biggest = { margin, game: g };
+    }
+    const avgGoals = gamesPlayed ? (totalGoals / gamesPlayed).toFixed(2) : '—';
+    const homePct = gamesPlayed ? Math.round(homeW / gamesPlayed * 100) : 0;
+    const roadPct = gamesPlayed ? Math.round(roadW / gamesPlayed * 100) : 0;
+    const biggestLabel = biggest.game
+      ? `${biggest.game.awayTeam?.abbrev} ${biggest.game.awayTeam?.score}–${biggest.game.homeTeam?.score} ${biggest.game.homeTeam?.abbrev}`
+      : '—';
+
+    const glanceHtml = `
+      <div class="stats-section">
+        <div class="stats-sec-title">Playoffs at a Glance</div>
+        <div class="stats-pulse stats-pulse-lg">
+          <div class="stats-pill"><div class="stats-pill-val">${gamesPlayed}</div><div class="stats-pill-lbl">Games Played</div></div>
+          <div class="stats-pill"><div class="stats-pill-val">${otGames}</div><div class="stats-pill-lbl">OT Games</div></div>
+          <div class="stats-pill"><div class="stats-pill-val">${soGames}</div><div class="stats-pill-lbl">Shootouts</div></div>
+          <div class="stats-pill"><div class="stats-pill-val">${avgGoals}</div><div class="stats-pill-lbl">Avg Goals / Game</div></div>
+          <div class="stats-pill"><div class="stats-pill-val">${oneGoal}</div><div class="stats-pill-lbl">1-Goal Games</div></div>
+          <div class="stats-pill"><div class="stats-pill-val">${biggest.margin >= 0 ? biggest.margin : '—'}</div><div class="stats-pill-lbl">Biggest Margin</div></div>
+          <div class="stats-pill"><div class="stats-pill-val">${homePct}%</div><div class="stats-pill-lbl">Home Win %</div></div>
+          <div class="stats-pill"><div class="stats-pill-val">${roadPct}%</div><div class="stats-pill-lbl">Road Win %</div></div>
+        </div>
+      </div>`;
+
+    // Team Ledger
+    const teamAbbrs = new Set();
+    apiGames.forEach(g => {
+      if (g.homeTeam?.abbrev) teamAbbrs.add(g.homeTeam.abbrev);
+      if (g.awayTeam?.abbrev) teamAbbrs.add(g.awayTeam.abbrev);
+    });
+    const eliminatedAbbrs = new Set();
+    eliminated.forEach(t => { const a = TEAM_ABBR[t]; if (a) eliminatedAbbrs.add(a); });
+
+    const rows = Array.from(teamAbbrs).map(abbr => {
+      const rec = teamGameRecord(abbr, apiGames);
+      return { abbr, ...rec, out: eliminatedAbbrs.has(abbr) };
+    }).sort((a, b) => b.diff - a.diff || b.w - a.w);
+
+    let ledgerHtml = `<div class="stats-section"><div class="stats-sec-title">Team Ledger</div>
+      <div class="stats-ledger-wrap">
+      <table class="stats-acc-table stats-ledger-table">
+        <thead><tr><th>Team</th><th>GP</th><th>W</th><th>L</th><th>GF</th><th>GA</th><th>Diff</th><th>OT</th><th>Home</th><th>Road</th><th>Status</th></tr></thead>
+        <tbody>`;
+    for (const r of rows) {
+      const diffCls = r.diff > 0 ? 'stats-pos' : r.diff < 0 ? 'stats-neg' : '';
+      ledgerHtml += `<tr${r.out ? ' class="stats-row-dim"' : ''}>
+        <td class="stats-ledger-team"><img src="${logoUrlForAbbr(r.abbr)}" class="stats-ledger-logo" onerror="this.style.display='none'"><b>${r.abbr}</b></td>
+        <td>${r.gp}</td><td>${r.w}</td><td>${r.l}</td>
+        <td>${r.gf}</td><td>${r.ga}</td>
+        <td class="${diffCls}">${r.diff > 0 ? '+'+r.diff : r.diff}</td>
+        <td>${r.otW}-${r.otL}</td>
+        <td>${r.homeW}-${r.homeL}</td>
+        <td>${r.roadW}-${r.roadL}</td>
+        <td>${r.out ? '<span class="stats-badge">Out</span>' : '<span class="stats-badge stats-badge-live">In</span>'}</td>
+      </tr>`;
+    }
+    ledgerHtml += '</tbody></table></div></div>';
+
+    // Series State Board
+    let boardHtml = `<div class="stats-section"><div class="stats-sec-title">Series State Board</div>`;
+    for (const round of rounds) {
+      const roundSeries = SERIES.filter(s => s.round === round);
+      const visible = roundSeries.filter(s => {
+        const [t1, t2] = getActualTeams(s.id, results, teams);
+        return t1 !== 'TBD' && t2 !== 'TBD';
+      });
+      if (!visible.length) continue;
+      boardHtml += `<div class="stats-board-round-hd">${ROUND_NAMES[round]}</div><div class="stats-board-list">`;
+      for (const s of visible) {
+        const [t1, t2] = getActualTeams(s.id, results, teams);
+        const a1 = TEAM_ABBR[t1], a2 = TEAM_ABBR[t2];
+        const sg = seriesGamesForSid(s.id, apiGames, results, teams);
+        let gf1 = 0, gf2 = 0;
+        for (const g of sg) {
+          const hs = g.homeTeam?.score ?? 0, as = g.awayTeam?.score ?? 0;
+          if (g.homeTeam?.abbrev === a1) { gf1 += hs; gf2 += as; }
+          else { gf1 += as; gf2 += hs; }
+        }
+        const r = results[s.id];
+        const badge = seriesStatusText(s.id);
+        let extraBadge = '';
+        if (r?.completed) {
+          if (+r.games === 4) extraBadge = '<span class="stats-badge stats-badge-done">Sweep</span>';
+          else if (+r.games === 7) extraBadge = '<span class="stats-badge stats-badge-live">Went 7</span>';
+        }
+        boardHtml += `<div class="stats-board-row">
+          <div class="stats-board-label">${s.abbr}</div>
+          <div class="stats-board-matchup">
+            ${logoImg(t1,'stats-board-logo')}<b>${a1}</b>
+            <span class="stats-board-score">${gf1}–${gf2}</span>
+            <b>${a2}</b>${logoImg(t2,'stats-board-logo')}
+          </div>
+          <div class="stats-board-gp">${sg.length} gp</div>
+          <div class="stats-board-badges">${badge}${extraBadge}</div>
         </div>`;
       }
-      cards += `
-        <div class="stats-sc-card" data-series-id="${s.id}" style="cursor:pointer">
-          <div class="stats-sc-header">
-            <div class="stats-sc-teams">
-              ${logo1}<span class="stats-sc-abbr">${a1}</span>
-              <span class="stats-sc-vs">vs</span>
-              <span class="stats-sc-abbr">${a2}</span>${logo2}
-            </div>
-            ${statusBadge}
-          </div>
-          <div class="stats-sc-picks">
-            <div class="stats-sc-pick-row">
-              <span class="stats-sc-pick-lbl">${a1}</span>
-              <div class="stats-bar-wrap stats-bar-sm"><div class="stats-bar-fill" style="width:${pct1}%"></div></div>
-              <span class="stats-sc-pick-cnt">${c1}</span>
-            </div>
-            <div class="stats-sc-pick-row">
-              <span class="stats-sc-pick-lbl">${a2}</span>
-              <div class="stats-bar-wrap stats-bar-sm"><div class="stats-bar-fill" style="width:${pct2}%"></div></div>
-              <span class="stats-sc-pick-cnt">${c2}</span>
-            </div>
-          </div>
-          ${resultLine}
-        </div>`;
+      boardHtml += '</div>';
     }
-    roundGrids += `<div class="stats-series-grid${round === 1 ? '' : ' hidden'}" data-round-grid="${round}">${cards}</div>`;
+    boardHtml += '</div>';
+
+    // Notable Games: biggest blowout, highest-scoring, longest
+    const blowout = biggest.game;
+    let highest = null, highestGoals = -1;
+    let longest = null, longestPeriod = -1;
+    for (const g of apiGames) {
+      const hs = g.homeTeam?.score ?? 0, as = g.awayTeam?.score ?? 0;
+      if (hs + as > highestGoals) { highestGoals = hs + as; highest = g; }
+      const pt = g.periodDescriptor?.periodType;
+      if (pt === 'OT' || pt === 'SO') {
+        const num = g.periodDescriptor?.number || 4;
+        if (num > longestPeriod) { longestPeriod = num; longest = g; }
+      }
+    }
+    const gameCardHtml = (g, title, sub) => {
+      if (!g) return `<div class="stats-notable-card"><div class="stats-notable-title">${title}</div><div class="empty-state" style="padding:0.75rem 0">—</div></div>`;
+      const a = g.awayTeam, h = g.homeTeam;
+      const dateStr = (g.gameDate || '').slice(0, 10);
+      const pt = g.periodDescriptor?.periodType;
+      const ptNum = g.periodDescriptor?.number || 0;
+      const otLabel = pt === 'OT' ? (ptNum > 4 ? `${ptNum - 3}OT` : 'OT') : pt === 'SO' ? 'SO' : '';
+      return `<div class="stats-notable-card" data-game-id="${g.id || ''}" style="${g.id ? 'cursor:pointer' : ''}">
+        <div class="stats-notable-title">${title}</div>
+        <div class="stats-notable-teams">
+          <div class="stats-notable-team">${logoImg(a.abbrev==='UTA'?'Utah Mammoth':(a.name?.default||a.abbrev),'stats-notable-logo')}<b>${a.abbrev}</b><span class="stats-notable-score">${a.score}</span></div>
+          <div class="stats-notable-team">${logoImg(h.abbrev==='UTA'?'Utah Mammoth':(h.name?.default||h.abbrev),'stats-notable-logo')}<b>${h.abbrev}</b><span class="stats-notable-score">${h.score}</span></div>
+        </div>
+        <div class="stats-notable-sub">${sub}${otLabel ? ' · '+otLabel : ''}${dateStr ? ' · '+dateStr : ''}</div>
+      </div>`;
+    };
+
+    const notableHtml = `<div class="stats-section"><div class="stats-sec-title">Notable Games</div>
+      <div class="stats-notable-grid">
+        ${gameCardHtml(blowout, 'Biggest Blowout', `Margin of ${blowout ? biggest.margin : '—'}`)}
+        ${gameCardHtml(highest, 'Highest-Scoring', `${highestGoals > 0 ? highestGoals : '—'} total goals`)}
+        ${gameCardHtml(longest, 'Longest Game', longest ? (longest.periodDescriptor?.periodType === 'SO' ? 'Shootout finish' : `Ended in ${longest.periodDescriptor?.number > 4 ? (longest.periodDescriptor.number - 3) + 'OT' : 'OT'}`) : 'No OT games yet')}
+      </div>
+    </div>`;
+
+    playoffsHtml = glanceHtml + ledgerHtml + boardHtml + notableHtml;
   }
 
-  let seriesHtml = `<div class="stats-section">
-    <div class="stats-sec-hdr-row">
-      <div class="stats-sec-title">Series Breakdown</div>
-      <div class="stats-round-pills">${roundPills}</div>
-    </div>
-    ${roundGrids}
-  </div>`;
+  // ── Assemble ─────────────────────────────────────────────
+  el.innerHTML = pulseHtml + tabsHtml +
+    `<div class="stats-tab-pane${defaultTab==='pool' ? ' active' : ''}" data-pane="pool">${poolHtml}</div>` +
+    `<div class="stats-tab-pane${defaultTab==='playoffs' ? ' active' : ''}" data-pane="playoffs">${playoffsHtml}</div>`;
 
-  // Section 4: Round Accuracy
-  let accHtml = `<div class="stats-section"><div class="stats-sec-title">Round Accuracy</div>
-    <table class="stats-acc-table">
-      <thead><tr><th>Round</th><th>Series Done</th><th>Correct Picks</th><th>Accuracy</th></tr></thead>
-      <tbody>`;
-  for (const round of rounds) {
-    const rs = roundStats[round] || { done: 0, total: 0, correct: 0 };
-    const maxCorrect = rs.done * total;
-    const accPct = maxCorrect ? Math.round((rs.correct / maxCorrect) * 100) : null;
-    accHtml += `<tr>
-      <td>${ROUND_NAMES[round]}</td>
-      <td>${rs.done}/${rs.total}</td>
-      <td>${rs.done ? rs.correct : '—'}</td>
-      <td>${accPct !== null ? accPct + '%' : '—'}</td>
-    </tr>`;
-  }
-  accHtml += '</tbody></table></div>';
+  // Wire tabs
+  el.querySelectorAll('.stats-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      if (tab.disabled) return;
+      state.statsTab = tab.dataset.tab;
+      el.querySelectorAll('.stats-tab').forEach(t => t.classList.toggle('active', t === tab));
+      el.querySelectorAll('.stats-tab-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === tab.dataset.tab));
+    });
+  });
 
-  el.innerHTML = pulseHtml + cupHtml + seriesHtml + accHtml;
-
+  // Wire series cards
   el.querySelectorAll('.stats-sc-card[data-series-id]').forEach(card => {
     card.addEventListener('click', () => showSeriesModal(card.dataset.seriesId));
   });
 
+  // Wire round pills
   el.querySelectorAll('.stats-round-pill').forEach(pill => {
     pill.addEventListener('click', () => {
       el.querySelectorAll('.stats-round-pill').forEach(p => p.classList.remove('active'));
@@ -2651,6 +3071,22 @@ function renderStats() {
       const round = pill.dataset.round;
       el.querySelectorAll('[data-round-grid]').forEach(g => g.classList.toggle('hidden', g.dataset.roundGrid !== round));
     });
+  });
+
+  // Wire leaderboard rows → bracket viewer
+  el.querySelectorAll('.stats-leader-row[data-bid]').forEach(row => {
+    row.addEventListener('click', () => {
+      const bid = row.dataset.bid;
+      showView('bracket');
+      if (typeof renderViewer === 'function') renderViewer(bid);
+    });
+  });
+
+  // Wire notable-game cards → game modal
+  el.querySelectorAll('.stats-notable-card[data-game-id]').forEach(card => {
+    const gid = card.dataset.gameId;
+    if (!gid) return;
+    card.addEventListener('click', () => showGameModal(gid));
   });
 }
 
@@ -2998,6 +3434,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   setInterval(() => {
     if (state.view === 'home') renderTodayGames();
     if (state.view === 'schedule') fetchScheduleGames(state.scheduleDate);
+    if (state.view === 'stats') {
+      fetchApiSeriesWins().then(() => { if (state.view === 'stats') renderStats(); }).catch(()=>{});
+    }
   }, 30000);
 
   // Auto-refresh bracket data every 60 seconds

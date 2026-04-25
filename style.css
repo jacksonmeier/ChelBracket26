@@ -2664,11 +2664,209 @@ body {
 .stats-acc-table td:first-child { color: var(--text); font-weight: 500; }
 .stats-acc-table tr:last-child td { border-bottom: none; }
 
+/* ── Stats v2 additions ─────────────────────────────────── */
+
+/* Expanded 8-pill pulse */
+.stats-pulse-lg { grid-template-columns: repeat(4, 1fr); }
+.stats-pulse-lg .stats-pill { padding: 0.9rem 1rem; }
+.stats-pulse-lg .stats-pill-val { font-size: 1.5rem; }
+
+/* Tab strip */
+.stats-tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 0.25rem;
+  margin-bottom: 1.5rem;
+}
+.stats-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-2);
+  font-family: var(--font-m);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.55rem 1.2rem;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.stats-tab:hover:not(:disabled) { color: var(--text); }
+.stats-tab.active { background: var(--ice); color: #fff; }
+.stats-tab:disabled { opacity: 0.45; cursor: not-allowed; }
+.stats-tab-pane { display: none; }
+.stats-tab-pane.active { display: block; }
+
+/* Rooting Interest list */
+.stats-root-list { display: flex; flex-direction: column; gap: 0.55rem; }
+.stats-root-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+.stats-root-team {
+  display: flex; align-items: center; gap: 0.5rem; min-width: 0;
+}
+.stats-root-logo { height: 24px; width: 24px; object-fit: contain; flex-shrink: 0; }
+.stats-root-abbr {
+  font-family: var(--font-m); font-size: 0.72rem; font-weight: 700; color: var(--text); flex-shrink: 0;
+}
+.stats-root-name {
+  font-size: 0.78rem; color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.stats-root-meta {
+  font-family: var(--font-m); font-size: 0.68rem; font-weight: 600;
+  color: var(--text-3); white-space: nowrap;
+}
+
+/* Consensus & divergence */
+.stats-consensus-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+.stats-consensus-col { display: flex; flex-direction: column; gap: 0.55rem; }
+.stats-consensus-hd {
+  font-family: var(--font-m); font-size: 0.6rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3);
+  padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+}
+.stats-consensus-row {
+  display: grid; grid-template-columns: auto 1fr; gap: 0.75rem; align-items: center;
+}
+.stats-consensus-lbl {
+  font-family: var(--font-m); font-size: 0.7rem; font-weight: 700;
+  color: var(--text-3); min-width: 2.5rem;
+}
+.stats-consensus-detail {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.82rem; color: var(--text);
+}
+.stats-consensus-logo { height: 20px; width: 20px; object-fit: contain; }
+.stats-consensus-min { color: var(--text-3); font-size: 0.72rem; }
+
+/* Leaderboard table */
+.stats-ledger-wrap { overflow-x: auto; }
+.stats-leader-table td { padding: 0.6rem 0.75rem; }
+.stats-leader-row:hover { background: var(--bg-3); }
+.stats-leader-cup {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-family: var(--font-m); font-size: 0.75rem; font-weight: 700;
+}
+.stats-leader-logo { height: 20px; width: 20px; object-fit: contain; }
+.stats-leader-cup-dead { text-decoration: line-through; opacity: 0.5; }
+.stats-row-dim { opacity: 0.55; }
+
+/* Team ledger */
+.stats-ledger-team {
+  display: flex; align-items: center; gap: 0.45rem; white-space: nowrap;
+}
+.stats-ledger-logo { height: 22px; width: 22px; object-fit: contain; }
+.stats-pos { color: var(--green); }
+.stats-neg { color: var(--red); }
+
+/* Series State Board */
+.stats-board-round-hd {
+  font-family: var(--font-m); font-size: 0.62rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3);
+  margin: 1rem 0 0.5rem;
+}
+.stats-board-round-hd:first-child { margin-top: 0; }
+.stats-board-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.stats-board-row {
+  display: grid;
+  grid-template-columns: 2.25rem 1fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.55rem 0.75rem;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+}
+.stats-board-label {
+  font-family: var(--font-m); font-size: 0.7rem; font-weight: 700; color: var(--text-3);
+}
+.stats-board-matchup {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-family: var(--font-m); font-size: 0.8rem; color: var(--text);
+  flex-wrap: wrap;
+}
+.stats-board-logo { height: 22px; width: 22px; object-fit: contain; }
+.stats-board-score {
+  font-family: var(--font-mono, var(--font-m)); font-size: 0.9rem;
+  font-weight: 700; color: var(--ice);
+  padding: 0 0.35rem;
+}
+.stats-board-gp {
+  font-family: var(--font-m); font-size: 0.68rem; color: var(--text-3);
+  white-space: nowrap;
+}
+.stats-board-badges {
+  display: flex; gap: 0.3rem; align-items: center; flex-wrap: wrap;
+}
+
+/* Notable Games */
+.stats-notable-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;
+}
+.stats-notable-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 0.9rem 1rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  transition: background 0.15s;
+}
+.stats-notable-card:hover { background: var(--bg-3); }
+.stats-notable-title {
+  font-family: var(--font-m); font-size: 0.6rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ice);
+}
+.stats-notable-teams { display: flex; flex-direction: column; gap: 0.35rem; }
+.stats-notable-team {
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.stats-notable-logo { height: 22px; width: 22px; object-fit: contain; }
+.stats-notable-score {
+  margin-left: auto;
+  font-family: var(--font-mono, var(--font-m)); font-size: 1.1rem;
+  font-weight: 700; color: var(--text);
+}
+.stats-notable-sub {
+  font-size: 0.7rem; color: var(--text-3);
+  padding-top: 0.4rem; border-top: 1px solid var(--border);
+}
+
+/* Series-card most-picked-length line */
+.stats-sc-length {
+  font-size: 0.7rem; color: var(--text-3);
+  padding-top: 0.4rem; border-top: 1px solid var(--border);
+}
+.stats-sc-length b { color: var(--text); }
+
+@media (max-width: 900px) {
+  .stats-pulse-lg { grid-template-columns: repeat(4, 1fr); }
+  .stats-notable-grid { grid-template-columns: 1fr; }
+  .stats-consensus-grid { grid-template-columns: 1fr; }
+}
 @media (max-width: 760px) {
   .stats-pulse { grid-template-columns: repeat(2, 1fr); }
+  .stats-pulse-lg { grid-template-columns: repeat(2, 1fr); }
+  .stats-root-row { grid-template-columns: 1fr auto; }
+  .stats-root-row .stats-bar-wrap { grid-column: 1 / -1; }
+  .stats-board-row { grid-template-columns: 1fr; }
+  .stats-board-label { display: none; }
 }
 @media (max-width: 500px) {
   .stats-cup-row { grid-template-columns: 1fr 1fr auto; }
   .stats-cup-name { display: none; }
   .stats-series-grid { grid-template-columns: 1fr; }
+  .stats-tabs { display: flex; width: 100%; }
+  .stats-tab { flex: 1; padding: 0.5rem 0.75rem; }
 }
