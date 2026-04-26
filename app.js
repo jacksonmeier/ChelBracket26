@@ -484,13 +484,105 @@ function maxPossible(bracket, results) {
   return max;
 }
 
+// ── Auto-apply completed series from live NHL API ──────────
+//
+// Derives completed-series results from `state.apiSeriesWins` so that
+// points, leaderboard, live bracket, and live feed update automatically
+// the moment a series clinches — no Commish intervention required.
+//
+// A series is considered complete when either team has reached 4 wins
+// in the live series-status payload. Games count is `4 + loserWins`.
+// Already-completed entries in `results` are left untouched.
+function autoApplyCompletedSeries() {
+  if (!state.apiSeriesWins || Object.keys(state.apiSeriesWins).length === 0) return false;
+  const results = { ...getResults() };
+  const teams   = getTeams();
+  let changed = false;
+
+  for (const s of SERIES) {
+    if (results[s.id]?.completed) continue;
+    const [t1, t2] = getActualTeams(s.id, results, teams);
+    if (!t1 || !t2 || t1 === 'TBD' || t2 === 'TBD') continue;
+    const a1 = TEAM_ABBR[t1], a2 = TEAM_ABBR[t2];
+    if (!a1 || !a2) continue;
+    const w1 = state.apiSeriesWins[a1];
+    const w2 = state.apiSeriesWins[a2];
+    if (w1 == null || w2 == null) continue;
+
+    let winner = null, loserWins = null;
+    if (w1 >= 4 && w1 > w2) { winner = t1; loserWins = w2; }
+    else if (w2 >= 4 && w2 > w1) { winner = t2; loserWins = w1; }
+    if (!winner) continue;
+
+    const games = 4 + Math.max(0, Math.min(3, loserWins));
+    results[s.id] = { winner, games, completed: true };
+    changed = true;
+  }
+
+  if (changed) saveResults(results);
+  return changed;
+}
+
 // ── Live Feed ──────────────────────────────────────────────
+
+// Per-series chronological game progression with running wins after
+// each FINAL/OFF game. Used to figure out exactly which game made
+// each feed event "true" so we can hide redundant repeats.
+//
+// Returns { a1, a2, games: [{ time, w1, w2 }, …] } or null.
+function seriesProgression(sid, results, teams) {
+  const [t1, t2] = getActualTeams(sid, results, teams);
+  if (!t1 || !t2 || t1 === 'TBD' || t2 === 'TBD') return null;
+  const a1 = TEAM_ABBR[t1], a2 = TEAM_ABBR[t2];
+  if (!a1 || !a2) return null;
+  const games = [];
+  for (const arr of Object.values(state.apiGames || {})) {
+    for (const g of arr || []) {
+      const ga = g.awayTeam?.abbrev, gh = g.homeTeam?.abbrev;
+      if ((ga !== a1 && ga !== a2) || (gh !== a1 && gh !== a2)) continue;
+      const isDone = g.gameState === 'FINAL' || g.gameState === 'OFF';
+      if (!isDone) continue;
+      games.push(g);
+    }
+  }
+  games.sort((g1, g2) => (g1.startTimeUTC || '').localeCompare(g2.startTimeUTC || ''));
+
+  let w1 = 0, w2 = 0;
+  const out = [];
+  for (const g of games) {
+    const ha = g.homeTeam?.abbrev, aa = g.awayTeam?.abbrev;
+    const hScore = g.homeTeam?.score ?? 0;
+    const aScore = g.awayTeam?.score ?? 0;
+    const winnerAbbr = hScore > aScore ? ha : aa;
+    if (winnerAbbr === a1) w1++;
+    else if (winnerAbbr === a2) w2++;
+    out.push({ time: g.startTimeUTC, w1, w2 });
+  }
+  return { a1, a2, games: out };
+}
+
+// Earliest game in `progression` that satisfied the predicate. Returns
+// the game's startTimeUTC, or null if no games in our window satisfy it.
+function determinedAtTime(prog, predicate) {
+  if (!prog) return null;
+  for (const g of prog.games) {
+    if (predicate(g.w1, g.w2)) return g.time;
+  }
+  return null;
+}
 
 function buildFeedEvents() {
   const brackets = appData.brackets || [];
   const results  = appData.results  || {};
   const teams    = getTeams();
   const events   = [];
+
+  // Cache per-series progression so we don't rebuild it for every bracket.
+  const progBySeries = {};
+  const progFor = sid => {
+    if (!(sid in progBySeries)) progBySeries[sid] = seriesProgression(sid, results, teams);
+    return progBySeries[sid];
+  };
 
   for (const b of brackets) {
     for (let i = 0; i < SERIES.length; i++) {
@@ -499,6 +591,7 @@ function buildFeedEvents() {
       if (!pick?.winner) continue;
       const result = results[s.id];
       const p = ROUND_PTS[s.round];
+      const prog = progFor(s.id);
       const base = {
         bracketId: b.id,
         bracketName: b.bracketName || b.name,
@@ -512,6 +605,9 @@ function buildFeedEvents() {
       };
 
       if (result?.completed) {
+        const winnerAbbr = TEAM_ABBR[result.winner];
+        const isW1 = winnerAbbr === prog?.a1;
+        const clinchTime = determinedAtTime(prog, (w1, w2) => (isW1 ? w1 : w2) >= 4);
         if (pick.winner === result.winner) {
           const gamesMatch = pick.games === result.games;
           events.push({
@@ -521,6 +617,7 @@ function buildFeedEvents() {
             points: p.w + (gamesMatch ? p.g : 0),
             gamesMatch,
             actualGames: result.games,
+            when: clinchTime,
           });
         } else {
           events.push({
@@ -529,6 +626,7 @@ function buildFeedEvents() {
             team: pick.winner,
             actualWinner: result.winner,
             points: p.max,
+            when: clinchTime,
           });
         }
         continue;
@@ -541,36 +639,56 @@ function buildFeedEvents() {
       if (!opponent) continue;
       const oppAbbr = TEAM_ABBR[opponent];
       const oppWins = oppAbbr ? (state.apiSeriesWins[oppAbbr] ?? 0) : 0;
+      const oppIsW1 = oppAbbr === prog?.a1;
 
       if (oppWins >= 4) {
+        const when = determinedAtTime(prog, (w1, w2) => (oppIsW1 ? w1 : w2) >= 4);
         events.push({
           ...base,
           type: 'eliminated',
           team: pick.winner,
           opponent,
           points: p.max,
+          when,
         });
       } else if (pick.games && isGamesImpossible(pick.games, oppWins)) {
+        const threshold = pick.games - 3; // opp wins that make pickedGames impossible
+        const when = determinedAtTime(prog, (w1, w2) => (oppIsW1 ? w1 : w2) >= threshold);
         events.push({
           ...base,
           type: 'games_dead',
           team: pick.winner,
           opponent,
           points: p.g,
+          when,
         });
       }
     }
   }
 
-  // Newest-feeling first: later rounds, then later series, losses before gains for drama
+  // "What's new" filter: drop events whose determining game isn't the
+  // most recent game played in that series. A pick that was killed
+  // back at game 3 shouldn't reappear in the feed every time game 4,
+  // 5, 6 finishes. Events without a known timestamp (the determining
+  // game predates our cached game window) are also dropped — the user
+  // would have already seen those.
+  const fresh = events.filter(e => {
+    if (!e.when) return false;
+    const prog = progBySeries[e.seriesId];
+    const lastTime = prog?.games?.length ? prog.games[prog.games.length - 1].time : null;
+    return lastTime && e.when === lastTime;
+  });
+
+  // Most-recent game first.
   const typeRank = { eliminated: 0, games_dead: 1, missed: 2, won: 3 };
-  events.sort((a, b) =>
-    (b.round - a.round) ||
-    (b.seriesIndex - a.seriesIndex) ||
-    (typeRank[a.type] - typeRank[b.type]) ||
-    a.bracketName.localeCompare(b.bracketName)
-  );
-  return events;
+  fresh.sort((a, b) => {
+    if (a.when !== b.when) return (b.when || '').localeCompare(a.when || '');
+    return (b.round - a.round) ||
+           (b.seriesIndex - a.seriesIndex) ||
+           (typeRank[a.type] - typeRank[b.type]) ||
+           a.bracketName.localeCompare(b.bracketName);
+  });
+  return fresh;
 }
 
 function feedTeamChip(name) {
@@ -1511,10 +1629,20 @@ function renderHome() {
   bindFeedFilters();
   renderCountdown();
   renderTodayGames();
-  // Bracket render fetches apiSeriesWins; re-render the feed once that's available
-  // so games_dead / eliminated events appear without waiting for the next refresh.
-  renderActualBracket().then(() => renderHomeFeed()).catch(() => {});
   renderHomeLeaderboard();
+  // Bracket render fetches apiSeriesWins (which auto-applies completed series);
+  // re-render dependents once that's available so feed events, leaderboard
+  // points, and series-done counts all reflect the latest live data.
+  renderActualBracket().then(() => {
+    renderHomeFeed();
+    renderHomeLeaderboard();
+  }).catch(() => {});
+  // Pull full playoff game history so the feed can compute the exact
+  // determining game for each event (so old "X in N is no longer
+  // possible" messages don't reappear every time a series plays again).
+  fetchAllPlayoffGames().then(() => {
+    if (state.view === 'home') renderHomeFeed();
+  }).catch(() => {});
 }
 
 function renderHeroCard() {
@@ -1619,7 +1747,10 @@ async function fetchApiSeriesWins() {
       if (!state.apiGames[dateStr]) state.apiGames[dateStr] = games;
     } catch (_) {}
   }
-  if (Object.keys(wins).length > 0) state.apiSeriesWins = wins;
+  if (Object.keys(wins).length > 0) {
+    state.apiSeriesWins = wins;
+    autoApplyCompletedSeries();
+  }
 }
 
 // Fetch ALL playoff games from season start to today, caching by date.
@@ -2640,6 +2771,14 @@ function renderLeaderboard() {
   const el = document.getElementById('leaderboardContent');
   if (!brackets.length) { el.innerHTML = '<div class="empty-state">No entries yet.</div>'; return; }
   el.innerHTML = buildLeaderboardTable(rankBrackets(brackets, results), results, false, brackets.length);
+  // Pull fresh series wins so any series that just clinched gets auto-applied,
+  // then re-render once if results changed.
+  fetchApiSeriesWins().then(() => {
+    if (state.view !== 'leaderboard') return;
+    const r2 = getResults();
+    const ranked = rankBrackets(getBrackets(), r2);
+    el.innerHTML = buildLeaderboardTable(ranked, r2, false, getBrackets().length);
+  }).catch(() => {});
 }
 
 // ── Stats ──────────────────────────────────────────────────
@@ -3925,10 +4064,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Refresh NHL scores every 30s while on home or schedule view
   setInterval(() => {
-    if (state.view === 'home') renderTodayGames();
+    if (state.view === 'home') {
+      renderTodayGames();
+      // Refresh series wins so newly-clinched series auto-apply without a reload.
+      fetchApiSeriesWins().then(() => {
+        if (state.view !== 'home') return;
+        renderActualBracket();
+        renderHomeFeed();
+        renderHomeLeaderboard();
+      }).catch(() => {});
+    }
     if (state.view === 'schedule') fetchScheduleGames(state.scheduleDate);
     if (state.view === 'stats') {
       fetchApiSeriesWins().then(() => { if (state.view === 'stats') renderStats(); }).catch(()=>{});
+    }
+    if (state.view === 'leaderboard') {
+      fetchApiSeriesWins().then(() => { if (state.view === 'leaderboard') renderLeaderboard(); }).catch(() => {});
     }
   }, 30000);
 
