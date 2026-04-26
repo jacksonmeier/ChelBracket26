@@ -1,164 +1,144 @@
 {
   "teams": [
     {
-      "team": "COL",
-      "name": "Colorado Avalanche",
-      "round1_win_pct": 0.9788,
-      "round2_win_pct": 0.7815,
-      "round3_win_pct": 0.6704,
-      "cup_win_pct": 0.4153,
-      "current_series": "3-0",
-      "opponent": "LAK"
-    },
-    {
-      "team": "CAR",
-      "name": "Carolina Hurricanes",
-      "round1_win_pct": 1.0,
-      "round2_win_pct": 0.7775,
-      "round3_win_pct": 0.4269,
-      "cup_win_pct": 0.226,
-      "current_series": "4-0",
-      "opponent": "OTT"
-    },
-    {
-      "team": "TBL",
-      "name": "Tampa Bay Lightning",
-      "round1_win_pct": 0.5855,
-      "round2_win_pct": 0.3237,
-      "round3_win_pct": 0.1952,
-      "cup_win_pct": 0.0983,
-      "current_series": "1-2",
-      "opponent": "MTL"
-    },
-    {
       "team": "BUF",
       "name": "Buffalo Sabres",
-      "round1_win_pct": 0.7507,
-      "round2_win_pct": 0.3735,
-      "round3_win_pct": 0.171,
-      "cup_win_pct": 0.0644,
+      "round1_win_pct": 0.7518,
+      "round2_win_pct": 0.3819,
+      "round3_win_pct": 0.0,
+      "cup_win_pct": 0.0,
       "current_series": "2-1",
       "opponent": "BOS"
     },
     {
-      "team": "DAL",
-      "name": "Dallas Stars",
-      "round1_win_pct": 0.819,
-      "round2_win_pct": 0.1825,
-      "round3_win_pct": 0.1212,
-      "cup_win_pct": 0.0495,
+      "team": "BOS",
+      "name": "Boston Bruins",
+      "round1_win_pct": 0.2482,
+      "round2_win_pct": 0.1028,
+      "round3_win_pct": 0.0,
+      "cup_win_pct": 0.0,
       "current_series": "2-1",
-      "opponent": "MIN"
+      "opponent": "BUF"
+    },
+    {
+      "team": "TBL",
+      "name": "Tampa Bay Lightning",
+      "round1_win_pct": 0.586,
+      "round2_win_pct": 0.3222,
+      "round3_win_pct": 0.0,
+      "cup_win_pct": 0.0,
+      "current_series": "1-2",
+      "opponent": "MTL"
     },
     {
       "team": "MTL",
       "name": "Montr\u00e9al Canadiens",
-      "round1_win_pct": 0.4145,
-      "round2_win_pct": 0.1969,
-      "round3_win_pct": 0.085,
-      "cup_win_pct": 0.0331,
-      "current_series": "2-1",
-      "opponent": "TBL"
-    },
-    {
-      "team": "PHI",
-      "name": "Philadelphia Flyers",
-      "round1_win_pct": 0.9381,
-      "round2_win_pct": 0.2135,
-      "round3_win_pct": 0.0822,
-      "cup_win_pct": 0.0326,
-      "current_series": "3-0",
-      "opponent": "PIT"
-    },
-    {
-      "team": "UTA",
-      "name": "Utah Mammoth",
-      "round1_win_pct": 0.6895,
-      "round2_win_pct": 0.423,
-      "round3_win_pct": 0.088,
-      "cup_win_pct": 0.0284,
-      "current_series": "2-1",
-      "opponent": "VGK"
-    },
-    {
-      "team": "VGK",
-      "name": "Vegas Golden Knights",
-      "round1_win_pct": 0.3105,
-      "round2_win_pct": 0.2094,
-      "round3_win_pct": 0.0462,
-      "cup_win_pct": 0.0202,
-      "current_series": "1-2",
-      "opponent": "UTA"
-    },
-    {
-      "team": "BOS",
-      "name": "Boston Bruins",
-      "round1_win_pct": 0.2493,
-      "round2_win_pct": 0.1058,
-      "round3_win_pct": 0.036,
-      "cup_win_pct": 0.0123,
-      "current_series": "1-2",
-      "opponent": "BUF"
-    },
-    {
-      "team": "ANA",
-      "name": "Anaheim Ducks",
-      "round1_win_pct": 0.6871,
-      "round2_win_pct": 0.2626,
-      "round3_win_pct": 0.0361,
-      "cup_win_pct": 0.0076,
-      "current_series": "2-1",
-      "opponent": "EDM"
-    },
-    {
-      "team": "EDM",
-      "name": "Edmonton Oilers",
-      "round1_win_pct": 0.313,
-      "round2_win_pct": 0.1051,
-      "round3_win_pct": 0.0187,
-      "cup_win_pct": 0.0055,
-      "current_series": "1-2",
-      "opponent": "ANA"
-    },
-    {
-      "team": "MIN",
-      "name": "Minnesota Wild",
-      "round1_win_pct": 0.181,
-      "round2_win_pct": 0.0243,
-      "round3_win_pct": 0.0118,
-      "cup_win_pct": 0.0036,
-      "current_series": "1-2",
-      "opponent": "DAL"
-    },
-    {
-      "team": "OTT",
-      "name": "Ottawa Senators",
-      "round1_win_pct": 0.0,
-      "round2_win_pct": 0.0,
+      "round1_win_pct": 0.4139,
+      "round2_win_pct": 0.193,
       "round3_win_pct": 0.0,
       "cup_win_pct": 0.0,
-      "current_series": "0-4",
-      "opponent": "CAR"
-    },
-    {
-      "team": "LAK",
-      "name": "Los Angeles Kings",
-      "round1_win_pct": 0.0211,
-      "round2_win_pct": 0.0117,
-      "round3_win_pct": 0.0075,
-      "cup_win_pct": 0.0022,
-      "current_series": "0-3",
-      "opponent": "COL"
+      "current_series": "1-2",
+      "opponent": "TBL"
     },
     {
       "team": "PIT",
       "name": "Pittsburgh Penguins",
-      "round1_win_pct": 0.0619,
-      "round2_win_pct": 0.0091,
-      "round3_win_pct": 0.0037,
-      "cup_win_pct": 0.001,
-      "current_series": "0-3",
+      "round1_win_pct": 0.1242,
+      "round2_win_pct": 0.0,
+      "round3_win_pct": 0.0,
+      "cup_win_pct": 0.0,
+      "current_series": "1-3",
       "opponent": "PHI"
+    },
+    {
+      "team": "PHI",
+      "name": "Philadelphia Flyers",
+      "round1_win_pct": 0.8758,
+      "round2_win_pct": 0.0,
+      "round3_win_pct": 0.0,
+      "cup_win_pct": 0.0,
+      "current_series": "1-3",
+      "opponent": "PIT"
+    },
+    {
+      "team": "COL",
+      "name": "Colorado Avalanche",
+      "round1_win_pct": 0.9812,
+      "round2_win_pct": 0.7894,
+      "round3_win_pct": 0.6764,
+      "cup_win_pct": 0.0,
+      "current_series": "3-0",
+      "opponent": "LAK"
+    },
+    {
+      "team": "LAK",
+      "name": "Los Angeles Kings",
+      "round1_win_pct": 0.0187,
+      "round2_win_pct": 0.01,
+      "round3_win_pct": 0.0066,
+      "cup_win_pct": 0.0,
+      "current_series": "3-0",
+      "opponent": "COL"
+    },
+    {
+      "team": "DAL",
+      "name": "Dallas Stars",
+      "round1_win_pct": 0.6861,
+      "round2_win_pct": 0.1555,
+      "round3_win_pct": 0.1047,
+      "cup_win_pct": 0.0,
+      "current_series": "2-2",
+      "opponent": "MIN"
+    },
+    {
+      "team": "MIN",
+      "name": "Minnesota Wild",
+      "round1_win_pct": 0.3139,
+      "round2_win_pct": 0.0452,
+      "round3_win_pct": 0.0261,
+      "cup_win_pct": 0.0,
+      "current_series": "2-2",
+      "opponent": "DAL"
+    },
+    {
+      "team": "VGK",
+      "name": "Vegas Golden Knights",
+      "round1_win_pct": 0.3061,
+      "round2_win_pct": 0.2059,
+      "round3_win_pct": 0.0437,
+      "cup_win_pct": 0.0,
+      "current_series": "1-2",
+      "opponent": "UTA"
+    },
+    {
+      "team": "UTA",
+      "name": "Utah Mammoth",
+      "round1_win_pct": 0.6939,
+      "round2_win_pct": 0.4277,
+      "round3_win_pct": 0.0838,
+      "cup_win_pct": 0.0,
+      "current_series": "1-2",
+      "opponent": "VGK"
+    },
+    {
+      "team": "EDM",
+      "name": "Edmonton Oilers",
+      "round1_win_pct": 0.3098,
+      "round2_win_pct": 0.1037,
+      "round3_win_pct": 0.0203,
+      "cup_win_pct": 0.0,
+      "current_series": "1-2",
+      "opponent": "ANA"
+    },
+    {
+      "team": "ANA",
+      "name": "Anaheim Ducks",
+      "round1_win_pct": 0.6902,
+      "round2_win_pct": 0.2627,
+      "round3_win_pct": 0.0384,
+      "cup_win_pct": 0.0,
+      "current_series": "1-2",
+      "opponent": "EDM"
     }
   ]
 }
