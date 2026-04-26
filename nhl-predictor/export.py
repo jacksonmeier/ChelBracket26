@@ -769,7 +769,11 @@ def _series_p_from_game(p_game: float) -> float:
 def _compose_payload(series_list: list[dict]) -> dict:
     """Run series + bracket simulations and build the four output dicts."""
     # 1. Series-level simulations for every active round-1 series.
-    active_series = [s for s in series_list if (s.get("round") == 1) and (s["home_wins"] < 4 and s["away_wins"] < 4)]
+    # `r1_all` includes finished series too — the bracket simulator needs them
+    # to advance R1 winners into R2 and to keep the Cup table populated for
+    # already-decided teams (e.g. a sweep winner waiting on a R2 opponent).
+    r1_all = [s for s in series_list if s.get("round") == 1]
+    active_series = [s for s in r1_all if s["home_wins"] < 4 and s["away_wins"] < 4]
     today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     starter_map = _probable_starters(active_series)
 
@@ -831,12 +835,14 @@ def _compose_payload(series_list: list[dict]) -> dict:
         }
 
     # 2. Full bracket Monte Carlo for Cup odds + sample retention for pool scoring.
-    bracket_result = _full_bracket_sim(active_series, n_sims=20_000, n_samples_keep=5_000,
+    # Pass every R1 series (including decided ones) so the simulator can
+    # propagate sweep winners into R2/R3/Final.
+    bracket_result = _full_bracket_sim(r1_all, n_sims=20_000, n_samples_keep=5_000,
                                        team_quality=team_quality)
     bracket_probs = bracket_result["probs"]
     raw_samples = bracket_result["samples"]
     cup_rows = []
-    for s in active_series:
+    for s in r1_all:
         for side in ("home", "away"):
             abbrev = s[side]; name = s[f"{side}_name"]
             probs = bracket_probs.get(abbrev, {"r1": 0, "r2": 0, "r3": 0, "cup": 0})
