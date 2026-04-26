@@ -1,75 +1,6 @@
 {
   "upcoming": [
     {
-      "game_id": 2025030134,
-      "date": "2026-04-25T19:00:00Z",
-      "home": {
-        "team": "OTT",
-        "name": "Ottawa",
-        "win_pct": 0.62,
-        "goalie": "L. Ullmark",
-        "goalie_score": 0.495,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "CAR",
-        "name": "Carolina",
-        "win_pct": 0.38,
-        "goalie": "F. Andersen",
-        "goalie_score": 0.523,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
-      "game_id": 2025030164,
-      "date": "2026-04-25T21:30:00Z",
-      "home": {
-        "team": "MIN",
-        "name": "Minnesota",
-        "win_pct": 0.4653,
-        "goalie": "J. Wallstedt",
-        "goalie_score": 0.48,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "DAL",
-        "name": "Dallas",
-        "win_pct": 0.5347,
-        "goalie": "J. Oettinger",
-        "goalie_score": 0.456,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
-      "game_id": 2025030144,
-      "date": "2026-04-26T00:00:00Z",
-      "home": {
-        "team": "PHI",
-        "name": "Philadelphia",
-        "win_pct": 0.616,
-        "goalie": "D. Vladar",
-        "goalie_score": 0.507,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "PIT",
-        "name": "Pittsburgh",
-        "win_pct": 0.384,
-        "goalie": "S. Skinner",
-        "goalie_score": 0.441,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
       "game_id": 2025030114,
       "date": "2026-04-26T18:00:00Z",
       "home": {
@@ -156,6 +87,52 @@
         "win_pct": 0.4614,
         "goalie": "C. Ingram",
         "goalie_score": 0.42,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030145,
+      "date": "2026-04-27T23:00:00Z",
+      "home": {
+        "team": "PIT",
+        "name": "Pittsburgh",
+        "win_pct": 0.6169,
+        "goalie": "S. Skinner",
+        "goalie_score": 0.441,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "PHI",
+        "name": "Philadelphia",
+        "win_pct": 0.3831,
+        "goalie": "D. Vladar",
+        "goalie_score": 0.495,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030174,
+      "date": "2026-04-28T01:30:00Z",
+      "home": {
+        "team": "UTA",
+        "name": "Utah",
+        "win_pct": 0.6113,
+        "goalie": "K. Vejmelka",
+        "goalie_score": 0.48,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "VGK",
+        "name": "Vegas",
+        "win_pct": 0.3887,
+        "goalie": "C. Hart",
+        "goalie_score": 0.458,
         "goalie_confirmed": true,
         "rest_days": 2
       },
