@@ -840,6 +840,8 @@ def _compose_payload(series_list: list[dict]) -> dict:
         for side in ("home", "away"):
             abbrev = s[side]; name = s[f"{side}_name"]
             probs = bracket_probs.get(abbrev, {"r1": 0, "r2": 0, "r3": 0, "cup": 0})
+            team_wins = s["home_wins"] if side == "home" else s["away_wins"]
+            opp_wins  = s["away_wins"] if side == "home" else s["home_wins"]
             cup_rows.append({
                 "team": abbrev,
                 "name": name,
@@ -847,7 +849,7 @@ def _compose_payload(series_list: list[dict]) -> dict:
                 "round2_win_pct": round(probs["r2"], 4),
                 "round3_win_pct": round(probs["r3"], 4),
                 "cup_win_pct":    round(probs["cup"], 4),
-                "current_series": f'{s["home_wins"]}-{s["away_wins"]}',
+                "current_series": f'{team_wins}-{opp_wins}',
                 "opponent": s["away"] if side == "home" else s["home"],
             })
     cup_rows.sort(key=lambda r: -r["cup_win_pct"])
