@@ -3062,14 +3062,18 @@ function renderStats() {
               <span class="stats-impact-result">${winAbbr} in ${games}</span>
             </div>
             <div class="stats-impact-side stats-impact-lost">
-              <span class="stats-impact-val stats-neg">${lost ? '−' + lost : '0'}</span>
-              <div class="stats-impact-bar"><span class="stats-impact-fill stats-impact-fill-lost" style="width:${lostPct}%"></span></div>
+              <div class="stats-impact-bargroup">
+                <span class="stats-impact-val stats-neg">${lost ? '−' + lost : '0'}</span>
+                <div class="stats-impact-bar"><span class="stats-impact-fill stats-impact-fill-lost" style="width:${lostPct}%"></span></div>
+              </div>
             </div>
             <div class="stats-impact-side stats-impact-won">
-              <div class="stats-impact-bar"><span class="stats-impact-fill stats-impact-fill-won" style="width:${wonPct}%"></span></div>
-              <span class="stats-impact-val stats-pos">${won ? '+' + won : '0'}</span>
+              <div class="stats-impact-bargroup">
+                <div class="stats-impact-bar"><span class="stats-impact-fill stats-impact-fill-won" style="width:${wonPct}%"></span></div>
+                <span class="stats-impact-val stats-pos">${won ? '+' + won : '0'}</span>
+              </div>
             </div>
-            <div class="stats-impact-net ${netCls}">${netStr}</div>
+            <div class="stats-impact-net ${netCls}"><span class="stats-impact-net-val">${netStr}</span></div>
           </div>`;
       }
       impactHtml = `

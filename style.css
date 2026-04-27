@@ -2946,9 +2946,16 @@ body {
   white-space: nowrap;
 }
 .stats-impact-side {
-  display: flex; align-items: center; gap: 0.5rem; min-width: 0;
+  display: flex; align-items: center; min-width: 0;
 }
-.stats-impact-lost { flex-direction: row-reverse; }
+.stats-impact-bargroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+.stats-impact-lost .stats-impact-bargroup { flex-direction: row-reverse; }
 .stats-impact-bar {
   flex: 1; height: 8px;
   background: var(--bg-3);
@@ -2999,16 +3006,45 @@ body {
 @media (max-width: 760px) {
   .stats-impact-head { display: none; }
   .stats-impact-row {
-    grid-template-columns: 1fr 1fr 72px;
+    grid-template-columns: 1fr 1fr 64px;
     grid-template-areas:
       "series series net"
       "lost   won    net";
-    gap: 0.35rem 0.6rem;
+    gap: 0.4rem 0.55rem;
+    align-items: stretch;
   }
   .stats-impact-series { grid-area: series; }
   .stats-impact-lost   { grid-area: lost; }
   .stats-impact-won    { grid-area: won; }
-  .stats-impact-net    { grid-area: net; align-self: center; }
+  .stats-impact-net    { grid-area: net; }
+
+  /* Inline column labels on mobile */
+  .stats-impact-side {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.2rem;
+    justify-content: center;
+  }
+  .stats-impact-side::before,
+  .stats-impact-net::before {
+    font-family: var(--font-m);
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    display: block;
+  }
+  .stats-impact-lost::before { content: "Lost"; text-align: right; }
+  .stats-impact-won::before  { content: "Won";  text-align: right; }
+  .stats-impact-net {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+  }
+  .stats-impact-net::before { content: "Net"; text-align: center; }
 }
 @media (max-width: 500px) {
   .stats-cup-row { grid-template-columns: 1fr 1fr auto; }
