@@ -2868,127 +2868,167 @@ body {
 }
 .stats-sc-length b { color: var(--text); }
 
-/* Team Impact (pool points won/lost per team) */
+/* Pool Points by Series (cards) */
 .stats-impact-legend {
   display: flex; flex-wrap: wrap; gap: 0.35rem 1.25rem;
-  margin-bottom: 0.9rem;
+  margin-bottom: 1rem;
   font-size: 0.7rem; color: var(--text-2);
 }
 .stats-impact-legend-item { display: inline-flex; align-items: center; gap: 0.45rem; }
 .stats-impact-swatch {
   width: 10px; height: 10px; border-radius: 2px; display: inline-block;
 }
-.stats-impact-head {
-  display: grid;
-  grid-template-columns: minmax(220px, 2fr) 1fr 1fr 72px;
-  gap: 0.5rem 0.75rem;
-  padding: 0 0.4rem 0.55rem;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 0.6rem;
-  font-family: var(--font-m);
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-.stats-impact-head-cell { white-space: nowrap; }
-.stats-impact-head-lost,
-.stats-impact-head-won  { text-align: right; }
-.stats-impact-head-net  { text-align: center; }
 
-.stats-impact-list { display: flex; flex-direction: column; gap: 0.55rem; }
-.stats-impact-row {
+.stats-impact-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 2fr) 1fr 1fr 72px;
-  align-items: center;
-  gap: 0.5rem 0.75rem;
-  transition: background 0.15s;
-  border-radius: var(--r);
-  padding: 0.25rem 0.4rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+  gap: 0.85rem;
 }
-.stats-impact-row[data-series-id]:hover { background: var(--bg-2); }
-.stats-impact-series {
-  display: flex; align-items: center; gap: 0.5rem; min-width: 0; flex-wrap: wrap;
+.stats-impact-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 1rem 1.1rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.stats-impact-card:hover {
+  background: var(--bg-3);
+  border-color: var(--border-2);
+  transform: translateY(-1px);
+}
+
+/* Card header */
+.stats-impact-card-hdr {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+}
+.stats-impact-card-title {
+  display: flex; align-items: center; gap: 0.55rem; min-width: 0; flex-wrap: wrap;
 }
 .stats-impact-sid {
   font-family: var(--font-m);
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--text-3);
   background: var(--bg-3);
-  padding: 0.2rem 0.45rem;
+  padding: 0.22rem 0.5rem;
   border-radius: 4px;
   flex-shrink: 0;
 }
-.stats-impact-matchup {
-  display: inline-flex; align-items: center; gap: 0.35rem;
-  flex-shrink: 0;
+.stats-impact-card-round {
+  font-family: var(--font-m);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
 }
+
+/* Matchup row */
+.stats-impact-card-matchup {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.stats-impact-card-logo { height: 24px; width: 24px; object-fit: contain; flex-shrink: 0; }
 .stats-impact-vs {
   font-size: 0.65rem; color: var(--text-3); font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.05em;
 }
-.stats-impact-logo { height: 20px; width: 20px; object-fit: contain; flex-shrink: 0; }
 .stats-impact-abbr {
   font-family: var(--font-m);
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--text-2);
   flex-shrink: 0;
 }
 .stats-impact-winner { color: var(--text); }
-.stats-impact-result {
+.stats-impact-card-result {
+  margin-left: auto;
   font-family: var(--font-m);
-  font-size: 0.66rem;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-weight: 700;
   color: var(--ice);
   white-space: nowrap;
 }
-.stats-impact-side {
-  display: flex; align-items: center; min-width: 0;
+
+/* Bars row (divergent: lost half on left, won half on right) */
+.stats-impact-card-bars {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem 0.85rem;
 }
-.stats-impact-bargroup {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-  min-width: 0;
+.stats-impact-card-side {
+  display: flex; flex-direction: column; gap: 0.4rem; min-width: 0;
 }
-.stats-impact-lost .stats-impact-bargroup { flex-direction: row-reverse; }
+.stats-impact-card-rowtop {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem;
+}
+/* Desktop divergent layout: lost val sits at right edge (near center),
+   won val sits at left edge (near center) so they meet in the middle */
+.stats-impact-card-lost .stats-impact-card-rowtop { flex-direction: row; }
+.stats-impact-card-won  .stats-impact-card-rowtop { flex-direction: row; }
+.stats-impact-card-lbl {
+  font-family: var(--font-m);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.stats-impact-val {
+  font-family: var(--font-m);
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
 .stats-impact-bar {
-  flex: 1; height: 8px;
+  height: 8px;
   background: var(--bg-3);
   border-radius: 4px;
   overflow: hidden;
   display: flex;
 }
-.stats-impact-lost .stats-impact-bar { justify-content: flex-end; }
+.stats-impact-card-lost .stats-impact-bar { justify-content: flex-end; }
+.stats-impact-card-won  .stats-impact-bar { justify-content: flex-start; }
 .stats-impact-fill {
   height: 100%; border-radius: 4px; min-width: 2px;
-  transition: width 0.3s ease;
-  display: block;
+  transition: width 0.4s ease; display: block;
 }
 .stats-impact-fill-won  { background: var(--green); }
 .stats-impact-fill-lost { background: var(--red); }
-.stats-impact-val {
-  font-family: var(--font-m);
-  font-size: 0.74rem;
-  font-weight: 700;
-  min-width: 38px;
-  text-align: center;
-  flex-shrink: 0;
+.stats-impact-card-meta {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  line-height: 1.35;
 }
-.stats-impact-net {
-  font-family: var(--font-m);
-  font-size: 0.82rem;
-  font-weight: 700;
-  text-align: center;
-  white-space: nowrap;
-  align-self: center;
+.stats-impact-card-lost .stats-impact-card-meta { text-align: left; }
+.stats-impact-card-won  .stats-impact-card-meta { text-align: right; }
+
+/* Net footer */
+.stats-impact-card-net {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
 }
-.stats-impact-out { opacity: 0.55; }
-.stats-impact-out .stats-impact-name { text-decoration: line-through; }
+.stats-impact-card-net-lbl {
+  font-family: var(--font-m);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.stats-impact-card-net-val {
+  font-family: var(--font-m);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
 
 @media (max-width: 900px) {
   .stats-pulse-lg { grid-template-columns: repeat(4, 1fr); }
@@ -3003,48 +3043,18 @@ body {
   .stats-board-row { grid-template-columns: 1fr; }
   .stats-board-label { display: none; }
 }
-@media (max-width: 760px) {
-  .stats-impact-head { display: none; }
-  .stats-impact-row {
-    grid-template-columns: 1fr 1fr 64px;
-    grid-template-areas:
-      "series series net"
-      "lost   won    net";
-    gap: 0.4rem 0.55rem;
-    align-items: stretch;
+@media (max-width: 500px) {
+  .stats-impact-card { padding: 0.85rem 0.9rem; }
+  .stats-impact-card-result {
+    width: 100%; margin-left: 0; padding-top: 0.25rem;
   }
-  .stats-impact-series { grid-area: series; }
-  .stats-impact-lost   { grid-area: lost; }
-  .stats-impact-won    { grid-area: won; }
-  .stats-impact-net    { grid-area: net; }
-
-  /* Inline column labels on mobile */
-  .stats-impact-side {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.2rem;
-    justify-content: center;
-  }
-  .stats-impact-side::before,
-  .stats-impact-net::before {
-    font-family: var(--font-m);
-    font-size: 0.55rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-3);
-    display: block;
-  }
-  .stats-impact-lost::before { content: "Lost"; text-align: right; }
-  .stats-impact-won::before  { content: "Won";  text-align: right; }
-  .stats-impact-net {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.2rem;
-  }
-  .stats-impact-net::before { content: "Net"; text-align: center; }
+  /* Stack the lost/won bar groups vertically; both follow [LABEL    VALUE] */
+  .stats-impact-card-bars { grid-template-columns: 1fr; gap: 0.7rem; }
+  .stats-impact-card-won .stats-impact-card-rowtop { flex-direction: row-reverse; }
+  .stats-impact-card-lost .stats-impact-bar { justify-content: flex-start; }
+  .stats-impact-card-won  .stats-impact-card-meta { text-align: left; }
+  .stats-impact-val { font-size: 0.9rem; }
+  .stats-impact-card-meta { font-size: 0.7rem; }
 }
 @media (max-width: 500px) {
   .stats-cup-row { grid-template-columns: 1fr 1fr auto; }
@@ -3052,7 +3062,6 @@ body {
   .stats-series-grid { grid-template-columns: 1fr; }
   .stats-tabs { display: flex; width: 100%; }
   .stats-tab { flex: 1; padding: 0.5rem 0.75rem; }
-  .stats-impact-result { display: none; }
 }
 
 /* ── Live Feed (home page, hero-right slot) ────────────── */
