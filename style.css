@@ -2868,6 +2868,121 @@ body {
 }
 .stats-sc-length b { color: var(--text); }
 
+/* Team Impact (pool points won/lost per team) */
+.stats-impact-legend {
+  display: flex; flex-wrap: wrap; gap: 0.35rem 1.25rem;
+  margin-bottom: 0.9rem;
+  font-size: 0.7rem; color: var(--text-2);
+}
+.stats-impact-legend-item { display: inline-flex; align-items: center; gap: 0.45rem; }
+.stats-impact-swatch {
+  width: 10px; height: 10px; border-radius: 2px; display: inline-block;
+}
+.stats-impact-head {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) 1fr 1fr 72px;
+  gap: 0.5rem 0.75rem;
+  padding: 0 0.4rem 0.55rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.6rem;
+  font-family: var(--font-m);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.stats-impact-head-cell { white-space: nowrap; }
+.stats-impact-head-lost,
+.stats-impact-head-won  { text-align: right; }
+.stats-impact-head-net  { text-align: center; }
+
+.stats-impact-list { display: flex; flex-direction: column; gap: 0.55rem; }
+.stats-impact-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) 1fr 1fr 72px;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  transition: background 0.15s;
+  border-radius: var(--r);
+  padding: 0.25rem 0.4rem;
+}
+.stats-impact-row[data-series-id]:hover { background: var(--bg-2); }
+.stats-impact-series {
+  display: flex; align-items: center; gap: 0.5rem; min-width: 0; flex-wrap: wrap;
+}
+.stats-impact-sid {
+  font-family: var(--font-m);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  background: var(--bg-3);
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.stats-impact-matchup {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  flex-shrink: 0;
+}
+.stats-impact-vs {
+  font-size: 0.65rem; color: var(--text-3); font-weight: 500;
+}
+.stats-impact-logo { height: 20px; width: 20px; object-fit: contain; flex-shrink: 0; }
+.stats-impact-abbr {
+  font-family: var(--font-m);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+.stats-impact-winner { color: var(--text); }
+.stats-impact-result {
+  font-family: var(--font-m);
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--ice);
+  white-space: nowrap;
+}
+.stats-impact-side {
+  display: flex; align-items: center; gap: 0.5rem; min-width: 0;
+}
+.stats-impact-lost { flex-direction: row-reverse; }
+.stats-impact-bar {
+  flex: 1; height: 8px;
+  background: var(--bg-3);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+}
+.stats-impact-lost .stats-impact-bar { justify-content: flex-end; }
+.stats-impact-fill {
+  height: 100%; border-radius: 4px; min-width: 2px;
+  transition: width 0.3s ease;
+  display: block;
+}
+.stats-impact-fill-won  { background: var(--green); }
+.stats-impact-fill-lost { background: var(--red); }
+.stats-impact-val {
+  font-family: var(--font-m);
+  font-size: 0.74rem;
+  font-weight: 700;
+  min-width: 38px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.stats-impact-net {
+  font-family: var(--font-m);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  align-self: center;
+}
+.stats-impact-out { opacity: 0.55; }
+.stats-impact-out .stats-impact-name { text-decoration: line-through; }
+
 @media (max-width: 900px) {
   .stats-pulse-lg { grid-template-columns: repeat(4, 1fr); }
   .stats-notable-grid { grid-template-columns: 1fr; }
@@ -2881,12 +2996,27 @@ body {
   .stats-board-row { grid-template-columns: 1fr; }
   .stats-board-label { display: none; }
 }
+@media (max-width: 760px) {
+  .stats-impact-head { display: none; }
+  .stats-impact-row {
+    grid-template-columns: 1fr 1fr 72px;
+    grid-template-areas:
+      "series series net"
+      "lost   won    net";
+    gap: 0.35rem 0.6rem;
+  }
+  .stats-impact-series { grid-area: series; }
+  .stats-impact-lost   { grid-area: lost; }
+  .stats-impact-won    { grid-area: won; }
+  .stats-impact-net    { grid-area: net; align-self: center; }
+}
 @media (max-width: 500px) {
   .stats-cup-row { grid-template-columns: 1fr 1fr auto; }
   .stats-cup-name { display: none; }
   .stats-series-grid { grid-template-columns: 1fr; }
   .stats-tabs { display: flex; width: 100%; }
   .stats-tab { flex: 1; padding: 0.5rem 0.75rem; }
+  .stats-impact-result { display: none; }
 }
 
 /* ── Live Feed (home page, hero-right slot) ────────────── */

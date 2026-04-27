@@ -3014,6 +3014,81 @@ function renderStats() {
     }
     cupHtml += '</div></div>';
 
+    // ── Series Impact: pool points won/lost per completed series ──
+    const seriesImpact = [];
+    for (const s of SERIES) {
+      const r = results[s.id];
+      if (!r?.completed) continue;
+      const [t1, t2] = getActualTeams(s.id, results, teams);
+      const winnerTeam = r.winner;
+      const loserTeam  = winnerTeam === t1 ? t2 : t1;
+      let won = 0, lost = 0;
+      for (const b of brackets) {
+        const pick = b.picks?.[s.id];
+        if (!pick?.winner) continue;
+        if (pick.winner === winnerTeam) {
+          won += ROUND_PTS[s.round].w;
+          if (+pick.games === +r.games) won += ROUND_PTS[s.round].g;
+        } else if (pick.winner === loserTeam) {
+          lost += ROUND_PTS[s.round].max;
+        }
+      }
+      seriesImpact.push({ s, t1, t2, winnerTeam, loserTeam, games: r.games, won, lost, net: won - lost });
+    }
+    seriesImpact.sort((a, b) => b.net - a.net || b.won - a.won);
+
+    let impactHtml = '';
+    if (seriesImpact.length) {
+      const maxAbs = Math.max(1, ...seriesImpact.flatMap(x => [x.won, x.lost]));
+      let rows = '';
+      for (const item of seriesImpact) {
+        const { s, t1, t2, winnerTeam, games, won, lost, net } = item;
+        const a1 = TEAM_ABBR[t1] || t1.split(' ').pop().toUpperCase().slice(0,3);
+        const a2 = TEAM_ABBR[t2] || t2.split(' ').pop().toUpperCase().slice(0,3);
+        const winAbbr = TEAM_ABBR[winnerTeam] || winnerTeam.split(' ').pop().toUpperCase().slice(0,3);
+        const wonPct  = (won  / maxAbs) * 100;
+        const lostPct = (lost / maxAbs) * 100;
+        const netCls = net > 0 ? 'stats-pos' : net < 0 ? 'stats-neg' : '';
+        const netStr = (net > 0 ? '+' : '') + net;
+        rows += `
+          <div class="stats-impact-row" data-series-id="${s.id}" style="cursor:pointer">
+            <div class="stats-impact-series">
+              <span class="stats-impact-sid">${s.abbr}</span>
+              <span class="stats-impact-matchup">
+                ${logoImg(t1,'stats-impact-logo')}<span class="stats-impact-abbr${winnerTeam===t1?' stats-impact-winner':''}">${a1}</span>
+                <span class="stats-impact-vs">vs</span>
+                ${logoImg(t2,'stats-impact-logo')}<span class="stats-impact-abbr${winnerTeam===t2?' stats-impact-winner':''}">${a2}</span>
+              </span>
+              <span class="stats-impact-result">${winAbbr} in ${games}</span>
+            </div>
+            <div class="stats-impact-side stats-impact-lost">
+              <span class="stats-impact-val stats-neg">${lost ? '−' + lost : '0'}</span>
+              <div class="stats-impact-bar"><span class="stats-impact-fill stats-impact-fill-lost" style="width:${lostPct}%"></span></div>
+            </div>
+            <div class="stats-impact-side stats-impact-won">
+              <div class="stats-impact-bar"><span class="stats-impact-fill stats-impact-fill-won" style="width:${wonPct}%"></span></div>
+              <span class="stats-impact-val stats-pos">${won ? '+' + won : '0'}</span>
+            </div>
+            <div class="stats-impact-net ${netCls}">${netStr}</div>
+          </div>`;
+      }
+      impactHtml = `
+        <div class="stats-section">
+          <div class="stats-sec-title">Pool Points by Series</div>
+          <div class="stats-impact-legend">
+            <span class="stats-impact-legend-item"><span class="stats-impact-swatch stats-impact-fill-lost"></span>Points lost (brackets picked the loser — max points denied)</span>
+            <span class="stats-impact-legend-item"><span class="stats-impact-swatch stats-impact-fill-won"></span>Points won (brackets picked the winner — points earned)</span>
+          </div>
+          <div class="stats-impact-head">
+            <div class="stats-impact-head-cell">Series</div>
+            <div class="stats-impact-head-cell stats-impact-head-lost">Lost</div>
+            <div class="stats-impact-head-cell stats-impact-head-won">Won</div>
+            <div class="stats-impact-head-cell stats-impact-head-net">Net</div>
+          </div>
+          <div class="stats-impact-list">${rows}</div>
+        </div>`;
+    }
+
     // Series Breakdown (tabbed by round)
     const roundPills = rounds.map(r =>
       `<button class="stats-round-pill${r === 1 ? ' active' : ''}" data-round="${r}">${ROUND_NAMES[r]}</button>`
@@ -3228,7 +3303,7 @@ function renderStats() {
     });
     lbHtml += '</tbody></table></div></div>';
 
-    poolHtml = cupHtml + seriesHtml + accHtml + rootHtml + consHtml + lbHtml;
+    poolHtml = cupHtml + impactHtml + seriesHtml + accHtml + rootHtml + consHtml + lbHtml;
   }
 
   // ── Playoffs tab ─────────────────────────────────────────
@@ -3407,6 +3482,11 @@ function renderStats() {
   // Wire series cards
   el.querySelectorAll('.stats-sc-card[data-series-id]').forEach(card => {
     card.addEventListener('click', () => showSeriesModal(card.dataset.seriesId));
+  });
+
+  // Wire impact rows → series modal
+  el.querySelectorAll('.stats-impact-row[data-series-id]').forEach(row => {
+    row.addEventListener('click', () => showSeriesModal(row.dataset.seriesId));
   });
 
   // Wire round pills
