@@ -6,7 +6,7 @@
       "home": {
         "team": "PIT",
         "name": "Pittsburgh",
-        "win_pct": 0.6169,
+        "win_pct": 0.2329,
         "goalie": "S. Skinner",
         "goalie_score": 0.441,
         "goalie_confirmed": true,
@@ -15,7 +15,7 @@
       "away": {
         "team": "PHI",
         "name": "Philadelphia",
-        "win_pct": 0.3831,
+        "win_pct": 0.7671,
         "goalie": "D. Vladar",
         "goalie_score": 0.495,
         "goalie_confirmed": true,
@@ -29,7 +29,7 @@
       "home": {
         "team": "UTA",
         "name": "Utah",
-        "win_pct": 0.6113,
+        "win_pct": 0.4037,
         "goalie": "K. Vejmelka",
         "goalie_score": 0.48,
         "goalie_confirmed": true,
@@ -38,7 +38,7 @@
       "away": {
         "team": "VGK",
         "name": "Vegas",
-        "win_pct": 0.3887,
+        "win_pct": 0.5963,
         "goalie": "C. Hart",
         "goalie_score": 0.458,
         "goalie_confirmed": true,
@@ -52,7 +52,7 @@
       "home": {
         "team": "BUF",
         "name": "Buffalo",
-        "win_pct": 0.6125,
+        "win_pct": 0.4137,
         "goalie": "A. Lyon",
         "goalie_score": 0.523,
         "goalie_confirmed": false,
@@ -61,7 +61,7 @@
       "away": {
         "team": "BOS",
         "name": "Boston",
-        "win_pct": 0.3875,
+        "win_pct": 0.5863,
         "goalie": "J. Swayman",
         "goalie_score": 0.464,
         "goalie_confirmed": true,
@@ -75,7 +75,7 @@
       "home": {
         "team": "DAL",
         "name": "Dallas",
-        "win_pct": 0.6688,
+        "win_pct": 0.6025,
         "goalie": "J. Oettinger",
         "goalie_score": 0.466,
         "goalie_confirmed": true,
@@ -84,7 +84,7 @@
       "away": {
         "team": "MIN",
         "name": "Minnesota",
-        "win_pct": 0.3312,
+        "win_pct": 0.3975,
         "goalie": "J. Wallstedt",
         "goalie_score": 0.499,
         "goalie_confirmed": true,
@@ -98,7 +98,7 @@
       "home": {
         "team": "EDM",
         "name": "Edmonton",
-        "win_pct": 0.6174,
+        "win_pct": 0.5779,
         "goalie": "C. Ingram",
         "goalie_score": 0.42,
         "goalie_confirmed": true,
@@ -107,7 +107,7 @@
       "away": {
         "team": "ANA",
         "name": "Anaheim",
-        "win_pct": 0.3826,
+        "win_pct": 0.4221,
         "goalie": "L. Dostal",
         "goalie_score": 0.438,
         "goalie_confirmed": true,
