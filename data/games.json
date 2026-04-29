@@ -1,75 +1,6 @@
 {
   "upcoming": [
     {
-      "game_id": 2025030115,
-      "date": "2026-04-28T23:30:00Z",
-      "home": {
-        "team": "BUF",
-        "name": "Buffalo",
-        "win_pct": 0.4137,
-        "goalie": "A. Lyon",
-        "goalie_score": 0.523,
-        "goalie_confirmed": false,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "BOS",
-        "name": "Boston",
-        "win_pct": 0.5863,
-        "goalie": "J. Swayman",
-        "goalie_score": 0.464,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": true
-    },
-    {
-      "game_id": 2025030165,
-      "date": "2026-04-29T00:00:00Z",
-      "home": {
-        "team": "DAL",
-        "name": "Dallas",
-        "win_pct": 0.6025,
-        "goalie": "J. Oettinger",
-        "goalie_score": 0.466,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "MIN",
-        "name": "Minnesota",
-        "win_pct": 0.3975,
-        "goalie": "J. Wallstedt",
-        "goalie_score": 0.499,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
-      "game_id": 2025030185,
-      "date": "2026-04-29T02:00:00Z",
-      "home": {
-        "team": "EDM",
-        "name": "Edmonton",
-        "win_pct": 0.5779,
-        "goalie": "C. Ingram",
-        "goalie_score": 0.42,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "ANA",
-        "name": "Anaheim",
-        "win_pct": 0.4221,
-        "goalie": "L. Dostal",
-        "goalie_score": 0.438,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
       "game_id": 2025030125,
       "date": "2026-04-29T23:00:00Z",
       "home": {
@@ -133,6 +64,52 @@
         "win_pct": 0.2454,
         "goalie": "K. Vejmelka",
         "goalie_score": 0.463,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030166,
+      "date": "2026-04-30T23:30:00Z",
+      "home": {
+        "team": "MIN",
+        "name": "Minnesota",
+        "win_pct": 0.1062,
+        "goalie": "J. Wallstedt",
+        "goalie_score": 0.502,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "DAL",
+        "name": "Dallas",
+        "win_pct": 0.8938,
+        "goalie": "J. Oettinger",
+        "goalie_score": 0.461,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030186,
+      "date": "2026-05-01T02:00:00Z",
+      "home": {
+        "team": "ANA",
+        "name": "Anaheim",
+        "win_pct": 0.5853,
+        "goalie": "L. Dostal",
+        "goalie_score": 0.408,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "EDM",
+        "name": "Edmonton",
+        "win_pct": 0.4147,
+        "goalie": "C. Ingram",
+        "goalie_score": 0.438,
         "goalie_confirmed": true,
         "rest_days": 2
       },
