@@ -460,6 +460,18 @@ function isGamesImpossible(pickedGames, loserCurrentWins) {
 
 function maxPossible(bracket, results) {
   const teams = getTeams();
+
+  // Teams eliminated in any completed series can't win any future series,
+  // so picks of them in later rounds contribute 0 to the max.
+  const eliminated = new Set();
+  for (const s of SERIES) {
+    const r = results[s.id];
+    if (!r?.completed) continue;
+    const [t1, t2] = getActualTeams(s.id, results, teams);
+    if (r.winner === t1) eliminated.add(t2);
+    else if (r.winner === t2) eliminated.add(t1);
+  }
+
   let max = 0;
   for (const s of SERIES) {
     const pick = bracket.picks?.[s.id];
@@ -469,6 +481,8 @@ function maxPossible(bracket, results) {
     if (result && result.completed) {
       if (pick.winner === result.winner) max += p.w + (pick.games === result.games ? p.g : 0);
     } else {
+      // Picked team is already out — they can't win this series, so 0 max.
+      if (pick.winner && eliminated.has(pick.winner)) continue;
       // Check if the games pick is still achievable given current series state
       let gamesOk = true;
       if (pick.winner && pick.games) {
