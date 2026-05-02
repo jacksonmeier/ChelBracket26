@@ -1,108 +1,44 @@
 {
   "active": [
     {
-      "series_id": "BUF-BOS",
-      "round": 1,
-      "seed": "D1 vs WC1",
-      "home": {
-        "team": "BUF",
-        "name": "Buffalo Sabres",
-        "wins": 3,
-        "series_win_pct": 0.8811
-      },
-      "away": {
-        "team": "BOS",
-        "name": "Boston Bruins",
-        "wins": 2,
-        "series_win_pct": 0.1189
-      },
-      "length_distribution": {
-        "4": 0.0,
-        "5": 0.0,
-        "6": 0.743125,
-        "7": 0.256875
-      },
-      "joint_distribution": {
-        "home": {
-          "4": 0.0,
-          "5": 0.0,
-          "6": 0.743125,
-          "7": 0.138
-        },
-        "away": {
-          "4": 0.0,
-          "5": 0.0,
-          "6": 0.0,
-          "7": 0.118875
-        }
-      },
-      "most_likely": {
-        "winner": "BUF",
-        "games": "6"
-      },
-      "drivers": [
-        {
-          "feature": "a_sf",
-          "label": "Away shots-for/gm",
-          "shap": 0.0963,
-          "favors": "home",
-          "value": 26.896
-        },
-        {
-          "feature": "h_ga",
-          "label": "Home goals-against/gm",
-          "shap": -0.0318,
-          "favors": "away",
-          "value": 3.07
-        },
-        {
-          "feature": "a_pk",
-          "label": "Away penalty kill %",
-          "shap": 0.0303,
-          "favors": "home",
-          "value": 0.768
-        }
-      ]
-    },
-    {
       "series_id": "TBL-MTL",
       "round": 1,
       "seed": "D2 vs D3",
       "home": {
         "team": "TBL",
         "name": "Tampa Bay Lightning",
-        "wins": 2,
-        "series_win_pct": 0.2575
+        "wins": 3,
+        "series_win_pct": 0.7504
       },
       "away": {
         "team": "MTL",
         "name": "Montr\u00e9al Canadiens",
         "wins": 3,
-        "series_win_pct": 0.7425
+        "series_win_pct": 0.2496
       },
       "length_distribution": {
         "4": 0.0,
         "5": 0.0,
-        "6": 0.49075,
-        "7": 0.50925
+        "6": 0.0,
+        "7": 1.0
       },
       "joint_distribution": {
         "home": {
           "4": 0.0,
           "5": 0.0,
           "6": 0.0,
-          "7": 0.2575
+          "7": 0.750375
         },
         "away": {
           "4": 0.0,
           "5": 0.0,
-          "6": 0.49075,
-          "7": 0.25175
+          "6": 0.0,
+          "7": 0.249625
         }
       },
       "most_likely": {
-        "winner": "MTL",
-        "games": "6"
+        "winner": "TBL",
+        "games": "7"
       },
       "drivers": [
         {
@@ -125,70 +61,6 @@
           "shap": 0.0203,
           "favors": "home",
           "value": 27.067
-        }
-      ]
-    },
-    {
-      "series_id": "VGK-UTA",
-      "round": 1,
-      "seed": "D1 vs WC1",
-      "home": {
-        "team": "VGK",
-        "name": "Vegas Golden Knights",
-        "wins": 3,
-        "series_win_pct": 0.9039
-      },
-      "away": {
-        "team": "UTA",
-        "name": "Utah Mammoth",
-        "wins": 2,
-        "series_win_pct": 0.0961
-      },
-      "length_distribution": {
-        "4": 0.0,
-        "5": 0.0,
-        "6": 0.6,
-        "7": 0.4
-      },
-      "joint_distribution": {
-        "home": {
-          "4": 0.0,
-          "5": 0.0,
-          "6": 0.6,
-          "7": 0.303875
-        },
-        "away": {
-          "4": 0.0,
-          "5": 0.0,
-          "6": 0.0,
-          "7": 0.096125
-        }
-      },
-      "most_likely": {
-        "winner": "VGK",
-        "games": "6"
-      },
-      "drivers": [
-        {
-          "feature": "a_sf",
-          "label": "Away shots-for/gm",
-          "shap": 0.0838,
-          "favors": "home",
-          "value": 27.707
-        },
-        {
-          "feature": "h_sa",
-          "label": "Home shots-against/gm",
-          "shap": 0.0313,
-          "favors": "home",
-          "value": 24.82
-        },
-        {
-          "feature": "d_sf",
-          "label": "Shots-for edge",
-          "shap": 0.0264,
-          "favors": "home",
-          "value": 1.601
         }
       ]
     }

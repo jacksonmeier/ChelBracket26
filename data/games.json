@@ -1,75 +1,6 @@
 {
   "upcoming": [
     {
-      "game_id": 2025030126,
-      "date": "2026-05-01T23:00:00Z",
-      "home": {
-        "team": "MTL",
-        "name": "Montr\u00e9al",
-        "win_pct": 0.4832,
-        "goalie": "J. Dobes",
-        "goalie_score": 0.467,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "TBL",
-        "name": "Tampa Bay",
-        "win_pct": 0.5168,
-        "goalie": "A. Vasilevskiy",
-        "goalie_score": 0.432,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
-      "game_id": 2025030116,
-      "date": "2026-05-01T23:30:00Z",
-      "home": {
-        "team": "BOS",
-        "name": "Boston",
-        "win_pct": 0.2616,
-        "goalie": "J. Swayman",
-        "goalie_score": 0.477,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "BUF",
-        "name": "Buffalo",
-        "win_pct": 0.7384,
-        "goalie": "A. Lyon",
-        "goalie_score": 0.528,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
-      "game_id": 2025030176,
-      "date": "2026-05-02T02:00:00Z",
-      "home": {
-        "team": "UTA",
-        "name": "Utah",
-        "win_pct": 0.4037,
-        "goalie": "K. Vejmelka",
-        "goalie_score": 0.45,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "VGK",
-        "name": "Vegas",
-        "win_pct": 0.5963,
-        "goalie": "C. Hart",
-        "goalie_score": 0.444,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
       "game_id": 2025030221,
       "date": "2026-05-03T00:00:00Z",
       "home": {
@@ -87,6 +18,52 @@
         "win_pct": 0.3488,
         "goalie": "D. Vladar",
         "goalie_score": 0.528,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030127,
+      "date": "2026-05-03T22:00:00Z",
+      "home": {
+        "team": "TBL",
+        "name": "Tampa Bay",
+        "win_pct": 0.7448,
+        "goalie": "A. Vasilevskiy",
+        "goalie_score": 0.47,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "MTL",
+        "name": "Montr\u00e9al",
+        "win_pct": 0.2552,
+        "goalie": "J. Dobes",
+        "goalie_score": 0.49,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030231,
+      "date": "2026-05-04T01:00:00Z",
+      "home": {
+        "team": "COL",
+        "name": "Colorado",
+        "win_pct": 0.8949,
+        "goalie": "S. Wedgewood",
+        "goalie_score": 0.524,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "MIN",
+        "name": "Minnesota",
+        "win_pct": 0.1051,
+        "goalie": "J. Wallstedt",
+        "goalie_score": 0.504,
         "goalie_confirmed": true,
         "rest_days": 2
       },
