@@ -206,7 +206,7 @@ const state = {
   viewingId:     null,
   dbConfigured:  false,
   scheduleDate:  new Date().toISOString().slice(0, 10),
-  apiSeriesWins: {}, // abbrev → wins
+  apiSeriesWins: {}, // pairKey('A1','A2') → { A1: wins, A2: wins } — scoped to a single series
   apiGames:      {}, // dateStr → [game objects] — cached playoff game data
   gameById:      {}, // gameId → game object (for modal lookup)
   feedFilter:    { bracketId: '', team: '' },
@@ -474,9 +474,8 @@ function maxPossible(bracket, results) {
       if (pick.winner && pick.games) {
         const [t1, t2] = getActualTeams(s.id, results, teams);
         const loserTeam = pick.winner === t1 ? t2 : t1;
-        const loserAbbr = TEAM_ABBR[loserTeam];
-        const loserWins = loserAbbr ? (state.apiSeriesWins[loserAbbr] ?? 0) : 0;
-        gamesOk = !isGamesImpossible(pick.games, loserWins);
+        const [, lw] = getSeriesWinsByPair(TEAM_ABBR[pick.winner], TEAM_ABBR[loserTeam]);
+        gamesOk = !isGamesImpossible(pick.games, lw ?? 0);
       }
       max += gamesOk ? p.max : p.w;
     }
@@ -505,8 +504,7 @@ function autoApplyCompletedSeries() {
     if (!t1 || !t2 || t1 === 'TBD' || t2 === 'TBD') continue;
     const a1 = TEAM_ABBR[t1], a2 = TEAM_ABBR[t2];
     if (!a1 || !a2) continue;
-    const w1 = state.apiSeriesWins[a1];
-    const w2 = state.apiSeriesWins[a2];
+    const [w1, w2] = getSeriesWinsByPair(a1, a2);
     if (w1 == null || w2 == null) continue;
 
     let winner = null, loserWins = null;
@@ -638,7 +636,8 @@ function buildFeedEvents() {
       const opponent = pick.winner === t1 ? t2 : (pick.winner === t2 ? t1 : null);
       if (!opponent) continue;
       const oppAbbr = TEAM_ABBR[opponent];
-      const oppWins = oppAbbr ? (state.apiSeriesWins[oppAbbr] ?? 0) : 0;
+      const [, oppWinsRaw] = getSeriesWinsByPair(TEAM_ABBR[pick.winner], oppAbbr);
+      const oppWins = oppWinsRaw ?? 0;
       const oppIsW1 = oppAbbr === prog?.a1;
 
       if (oppWins >= 4) {
@@ -1312,11 +1311,13 @@ function buildActualBracketCanvas() {
       seriesScore = `<div class="bk-games bk-series-score">4–${loserWins}</div>`;
     } else if (t1 !== 'TBD' && t2 !== 'TBD') {
       const a1 = TEAM_ABBR[t1], a2 = TEAM_ABBR[t2];
-      const w1 = a1 != null ? (state.apiSeriesWins[a1] ?? null) : null;
-      const w2 = a2 != null ? (state.apiSeriesWins[a2] ?? null) : null;
-      if (w1 != null && w2 != null) {
+      const [w1, w2] = getSeriesWinsByPair(a1, a2);
+      // Only render once a game has actually been played. A scheduled-but-
+      // unplayed game also returns [0, 0] from the score API, and we don't
+      // want CAR/PHI to show "Tied 0-0" while VGK/ANA shows nothing.
+      if (w1 != null && w2 != null && (w1 + w2) > 0) {
         let label;
-        if (w1 === w2) label = w1 === 0 ? 'Series even 0–0' : `Tied ${w1}–${w2}`;
+        if (w1 === w2) label = `Tied ${w1}–${w2}`;
         else if (w1 > w2) label = `${t1.split(' ').pop()} leads ${w1}–${w2}`;
         else              label = `${t2.split(' ').pop()} leads ${w2}–${w1}`;
         seriesScore = `<div class="bk-games bk-series-score">${esc(label)}</div>`;
@@ -1420,8 +1421,8 @@ async function showSeriesModal(sid) {
 
   // Series status
   const r = results[sid];
-  const w1 = a1 ? (state.apiSeriesWins[a1] ?? 0) : 0;
-  const w2 = a2 ? (state.apiSeriesWins[a2] ?? 0) : 0;
+  const [pw1, pw2] = getSeriesWinsByPair(a1, a2);
+  const w1 = pw1 ?? 0, w2 = pw2 ?? 0;
   let statusLine = '';
   if (r?.completed) {
     const score = r.games === 4 ? '4–0' : r.games === 5 ? '4–1' : r.games === 6 ? '4–2' : '4–3';
@@ -1479,8 +1480,8 @@ async function showSeriesModal(sid) {
     const pick = b.picks?.[sid];
     if (!pick?.winner) return;
     const loserTeam = pick.winner === t1 ? t2 : t1;
-    const loserAbbr = TEAM_ABBR[loserTeam];
-    const loserWins = loserAbbr ? (state.apiSeriesWins[loserAbbr] ?? 0) : 0;
+    const [, lw] = getSeriesWinsByPair(TEAM_ABBR[pick.winner], TEAM_ABBR[loserTeam]);
+    const loserWins = lw ?? 0;
     const gamesImpossible = isGamesImpossible(pick.games, loserWins);
     const entry = { id: b.id, bracketLabel: esc(b.bracketName || b.name), byLabel: (b.bracketName && b.playerName) ? esc(b.playerName) : '', games: pick.games ?? null, gamesImpossible };
     if (pick.winner === t1) t1Entries.push(entry);
@@ -1712,20 +1713,40 @@ function ssTopIsAway(ss, away) {
   return ss.topSeedTeamId === away.id;
 }
 
+// Pair-key for a series — keyed by the matchup, not the team, so wins
+// from a previous round (e.g. TOR's R1 sweep of MTL) don't leak into a
+// new series the same team plays (TOR's R2 vs BOS).
+function pairKey(a1, a2) {
+  if (!a1 || !a2) return '';
+  return [a1, a2].sort().join('|');
+}
+
+// Returns [w1, w2] aligned to the order of the inputs, or [null, null]
+// if no game has been played in this specific series yet.
+function getSeriesWinsByPair(a1, a2) {
+  const k = pairKey(a1, a2);
+  if (!k) return [null, null];
+  const entry = state.apiSeriesWins[k];
+  if (!entry) return [null, null];
+  return [entry[a1] ?? null, entry[a2] ?? null];
+}
+
 // Build series wins map from NHL score API games.
 // seriesStatus has topSeedTeamId/topSeedWins/bottomSeedTeamId/bottomSeedWins.
-// Returns { 'TOR': 3, 'BOS': 2, ... }
+// Returns { 'BOS|TOR': { BOS: 1, TOR: 4 }, ... }
 function extractSeriesWins(games) {
   const wins = {};
   (games || []).filter(g => g.gameType === 3).forEach(g => {
     const ss = g.seriesStatus;
     const away = g.awayTeam, home = g.homeTeam;
-    if (!ss || !away || !home) return;
+    if (!ss || !away?.abbrev || !home?.abbrev) return;
     const topIsAway = ssTopIsAway(ss, away);
     const awayWins = topIsAway ? (ss.topSeedWins ?? 0) : (ss.bottomSeedWins ?? 0);
     const homeWins = topIsAway ? (ss.bottomSeedWins ?? 0) : (ss.topSeedWins ?? 0);
-    if (away.abbrev) wins[away.abbrev] = awayWins;
-    if (home.abbrev) wins[home.abbrev] = homeWins;
+    wins[pairKey(away.abbrev, home.abbrev)] = {
+      [away.abbrev]: awayWins,
+      [home.abbrev]: homeWins,
+    };
   });
   return wins;
 }
@@ -1734,7 +1755,9 @@ function extractSeriesWins(games) {
 // Tries today + yesterday so series without games today are still covered.
 // Populates state.apiSeriesWins: { 'TOR': 3, 'BOS': 2, ... }
 async function fetchApiSeriesWins() {
-  const dates = [new Date(), new Date(Date.now() - 86400000), new Date(Date.now() - 2*86400000)];
+  // Iterate oldest → newest so the most recent game's seriesStatus
+  // (highest cumulative wins) wins the Object.assign overwrite.
+  const dates = [new Date(Date.now() - 2*86400000), new Date(Date.now() - 86400000), new Date()];
   const wins = {};
   for (const d of dates) {
     const dateStr = d.toISOString().slice(0, 10);
@@ -2682,10 +2705,9 @@ function buildBracketCanvas(picks, results, teams, breakdown, canvasId, onSeries
     let liveScoreLabel = '';
     if (!(result && result.completed) && actualTeamsKnown) {
       const a1 = TEAM_ABBR[at1], a2 = TEAM_ABBR[at2];
-      const w1 = a1 != null ? (state.apiSeriesWins[a1] ?? null) : null;
-      const w2 = a2 != null ? (state.apiSeriesWins[a2] ?? null) : null;
-      if (w1 != null && w2 != null) {
-        if (w1 === w2) liveScoreLabel = w1 === 0 ? '0–0' : `Tied ${w1}–${w2}`;
+      const [w1, w2] = getSeriesWinsByPair(a1, a2);
+      if (w1 != null && w2 != null && (w1 + w2) > 0) {
+        if (w1 === w2) liveScoreLabel = `Tied ${w1}–${w2}`;
         else if (w1 > w2) liveScoreLabel = `${at1.split(' ').pop()} ${w1}–${w2}`;
         else              liveScoreLabel = `${at2.split(' ').pop()} ${w2}–${w1}`;
       }
@@ -2856,8 +2878,8 @@ function renderStats() {
     const [t1, t2] = getActualTeams(sid, results, teams);
     if (t1 === 'TBD' || t2 === 'TBD') return `<span class="stats-badge">TBD</span>`;
     const a1 = TEAM_ABBR[t1], a2 = TEAM_ABBR[t2];
-    const w1 = a1 ? (state.apiSeriesWins[a1] ?? 0) : 0;
-    const w2 = a2 ? (state.apiSeriesWins[a2] ?? 0) : 0;
+    const [pw1, pw2] = getSeriesWinsByPair(a1, a2);
+    const w1 = pw1 ?? 0, w2 = pw2 ?? 0;
     if (w1 === 0 && w2 === 0) return `<span class="stats-badge">Series even</span>`;
     if (w1 === w2) return `<span class="stats-badge">Tied ${w1}-${w2}</span>`;
     const leader = w1 > w2 ? (a1 || t1) : (a2 || t2);
@@ -2955,7 +2977,8 @@ function renderStats() {
         // if the picked team hasn't been eliminated, full max still available
         if (!eliminated.has(p.winner)) {
           const loser = p.winner === t1 ? t2 : t1;
-          const loserWins = (TEAM_ABBR[loser] && state.apiSeriesWins[TEAM_ABBR[loser]]) || 0;
+          const [, lw] = getSeriesWinsByPair(TEAM_ABBR[p.winner], TEAM_ABBR[loser]);
+          const loserWins = lw ?? 0;
           if (!isGamesImpossible(p.games, loserWins)) rs.maxRemaining += ROUND_PTS[s.round].max;
           else rs.maxRemaining += ROUND_PTS[s.round].w;
         }
@@ -3050,8 +3073,10 @@ function renderStats() {
     let impactHtml = '';
     if (seriesImpact.length) {
       const maxAbs = Math.max(1, ...seriesImpact.flatMap(x => [x.won, x.lost]));
-      let cards = '';
-      for (const item of seriesImpact) {
+      const impactByRound = { 1: [], 2: [], 3: [], 4: [] };
+      for (const item of seriesImpact) impactByRound[item.s.round].push(item);
+
+      const renderImpactCard = (item) => {
         const { s, t1, t2, winnerTeam, loserTeam, games, won, lost, net, wonCount, lostCount, perfectCount } = item;
         const a1 = TEAM_ABBR[t1] || t1.split(' ').pop().toUpperCase().slice(0,3);
         const a2 = TEAM_ABBR[t2] || t2.split(' ').pop().toUpperCase().slice(0,3);
@@ -3067,7 +3092,7 @@ function renderStats() {
         const wonMeta = wonCount
           ? `${wonCount} bracket${wonCount===1?'':'s'} picked ${winAbbr}${perfectCount ? ` · ${perfectCount} perfect` : ''}`
           : `No one picked ${winAbbr}`;
-        cards += `
+        return `
           <div class="stats-impact-card" data-series-id="${s.id}">
             <div class="stats-impact-card-hdr">
               <div class="stats-impact-card-title">
@@ -3105,15 +3130,32 @@ function renderStats() {
               <span class="stats-impact-card-net-val ${netCls}">${netStr}</span>
             </div>
           </div>`;
+      };
+
+      const impactPills = rounds.map(r =>
+        `<button class="stats-round-pill${r === 1 ? ' active' : ''}" data-round="${r}">${ROUND_NAMES[r]}</button>`
+      ).join('');
+
+      let impactGrids = '';
+      for (const round of rounds) {
+        const items = impactByRound[round];
+        const inner = items.length
+          ? `<div class="stats-impact-grid">${items.map(renderImpactCard).join('')}</div>`
+          : '<div class="empty-state" style="padding:1rem 0">No completed series in this round yet.</div>';
+        impactGrids += `<div class="stats-impact-round${round === 1 ? '' : ' hidden'}" data-round-grid="${round}">${inner}</div>`;
       }
+
       impactHtml = `
         <div class="stats-section">
-          <div class="stats-sec-title">Pool Points by Series</div>
+          <div class="stats-sec-hdr-row">
+            <div class="stats-sec-title">Pool Points by Series</div>
+            <div class="stats-round-pills">${impactPills}</div>
+          </div>
           <div class="stats-impact-legend">
             <span class="stats-impact-legend-item"><span class="stats-impact-swatch stats-impact-fill-lost"></span>Points lost (brackets picked the loser — max points denied)</span>
             <span class="stats-impact-legend-item"><span class="stats-impact-swatch stats-impact-fill-won"></span>Points won (brackets picked the winner — points earned)</span>
           </div>
-          <div class="stats-impact-grid">${cards}</div>
+          ${impactGrids}
         </div>`;
     }
 
@@ -3263,20 +3305,18 @@ function renderStats() {
     }
     rootHtml += '</div>';
 
-    // Consensus & Divergence
-    const seriesWithPicks = SERIES.map(s => {
+    // Consensus & Divergence (tabbed by round)
+    const consByRound = { 1: [], 2: [], 3: [], 4: [] };
+    for (const s of SERIES) {
       const { t1, t2, c1, c2 } = pickCounts[s.id];
       const totalP = c1 + c2;
-      if (!totalP || t1 === 'TBD' || t2 === 'TBD') return null;
+      if (!totalP || t1 === 'TBD' || t2 === 'TBD') continue;
       const majorPct = Math.round(Math.max(c1, c2) / totalP * 100);
       const majorTeam = c1 >= c2 ? t1 : t2;
       const minorTeam = c1 >= c2 ? t2 : t1;
       const minorCount = Math.min(c1, c2);
-      return { s, t1, t2, c1, c2, totalP, majorPct, majorTeam, minorTeam, minorCount };
-    }).filter(Boolean);
-
-    const unanimous = [...seriesWithPicks].sort((a,b)=> b.majorPct - a.majorPct).slice(0,3);
-    const split = [...seriesWithPicks].sort((a,b)=> Math.abs(a.majorPct-50) - Math.abs(b.majorPct-50)).slice(0,3);
+      consByRound[s.round].push({ s, t1, t2, c1, c2, totalP, majorPct, majorTeam, minorTeam, minorCount });
+    }
 
     const consRow = (row) => {
       const aMaj = TEAM_ABBR[row.majorTeam] || row.majorTeam.split(' ').pop().toUpperCase().slice(0,3);
@@ -3287,17 +3327,36 @@ function renderStats() {
       </div>`;
     };
 
-    let consHtml = `<div class="stats-section"><div class="stats-sec-title">Consensus &amp; Divergence</div>
-      <div class="stats-consensus-grid">
-        <div class="stats-consensus-col">
-          <div class="stats-consensus-hd">Most Unanimous</div>
-          ${unanimous.length ? unanimous.map(consRow).join('') : '<div class="empty-state" style="padding:0.75rem 0">—</div>'}
-        </div>
-        <div class="stats-consensus-col">
-          <div class="stats-consensus-hd">Most Split</div>
-          ${split.length ? split.map(consRow).join('') : '<div class="empty-state" style="padding:0.75rem 0">—</div>'}
-        </div>
+    const consPills = rounds.map(r =>
+      `<button class="stats-round-pill${r === 1 ? ' active' : ''}" data-round="${r}">${ROUND_NAMES[r]}</button>`
+    ).join('');
+
+    let consGrids = '';
+    for (const round of rounds) {
+      const arr = consByRound[round];
+      const unanimous = [...arr].sort((a,b)=> b.majorPct - a.majorPct).slice(0,3);
+      const split = [...arr].sort((a,b)=> Math.abs(a.majorPct-50) - Math.abs(b.majorPct-50)).slice(0,3);
+      const inner = arr.length
+        ? `<div class="stats-consensus-grid">
+            <div class="stats-consensus-col">
+              <div class="stats-consensus-hd">Most Unanimous</div>
+              ${unanimous.length ? unanimous.map(consRow).join('') : '<div class="empty-state" style="padding:0.75rem 0">—</div>'}
+            </div>
+            <div class="stats-consensus-col">
+              <div class="stats-consensus-hd">Most Split</div>
+              ${split.length ? split.map(consRow).join('') : '<div class="empty-state" style="padding:0.75rem 0">—</div>'}
+            </div>
+          </div>`
+        : '<div class="empty-state" style="padding:1rem 0">No picks for this round yet.</div>';
+      consGrids += `<div class="stats-consensus-round${round === 1 ? '' : ' hidden'}" data-round-grid="${round}">${inner}</div>`;
+    }
+
+    let consHtml = `<div class="stats-section">
+      <div class="stats-sec-hdr-row">
+        <div class="stats-sec-title">Consensus &amp; Divergence</div>
+        <div class="stats-round-pills">${consPills}</div>
       </div>
+      ${consGrids}
     </div>`;
 
     // Full Leaderboard
@@ -3517,13 +3576,16 @@ function renderStats() {
     card.addEventListener('click', () => showSeriesModal(card.dataset.seriesId));
   });
 
-  // Wire round pills
+  // Wire round pills — synced across all stats sections that have round tabs.
+  // Clicking "Round 2" in any section flips Series Breakdown, Pool Points,
+  // and Consensus all to round 2 simultaneously.
   el.querySelectorAll('.stats-round-pill').forEach(pill => {
     pill.addEventListener('click', () => {
-      el.querySelectorAll('.stats-round-pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
       const round = pill.dataset.round;
-      el.querySelectorAll('[data-round-grid]').forEach(g => g.classList.toggle('hidden', g.dataset.roundGrid !== round));
+      el.querySelectorAll('.stats-round-pill').forEach(p =>
+        p.classList.toggle('active', p.dataset.round === round));
+      el.querySelectorAll('[data-round-grid]').forEach(g =>
+        g.classList.toggle('hidden', g.dataset.roundGrid !== round));
     });
   });
 
