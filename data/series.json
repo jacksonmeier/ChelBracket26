@@ -8,13 +8,13 @@
         "team": "TBL",
         "name": "Tampa Bay Lightning",
         "wins": 3,
-        "series_win_pct": 0.7281
+        "series_win_pct": 0.728
       },
       "away": {
         "team": "MTL",
         "name": "Montr\u00e9al Canadiens",
         "wins": 3,
-        "series_win_pct": 0.2719
+        "series_win_pct": 0.272
       },
       "length_distribution": {
         "4": 0.0,
@@ -27,13 +27,13 @@
           "4": 0.0,
           "5": 0.0,
           "6": 0.0,
-          "7": 0.728125
+          "7": 0.728
         },
         "away": {
           "4": 0.0,
           "5": 0.0,
           "6": 0.0,
-          "7": 0.271875
+          "7": 0.272
         }
       },
       "most_likely": {

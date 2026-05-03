@@ -1,29 +1,6 @@
 {
   "upcoming": [
     {
-      "game_id": 2025030221,
-      "date": "2026-05-03T00:00:00Z",
-      "home": {
-        "team": "CAR",
-        "name": "Carolina",
-        "win_pct": 0.7925,
-        "goalie": "F. Andersen",
-        "goalie_score": 0.53,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "PHI",
-        "name": "Philadelphia",
-        "win_pct": 0.2075,
-        "goalie": "D. Vladar",
-        "goalie_score": 0.528,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
       "game_id": 2025030127,
       "date": "2026-05-03T22:00:00Z",
       "home": {
@@ -64,6 +41,52 @@
         "win_pct": 0.2106,
         "goalie": "J. Wallstedt",
         "goalie_score": 0.504,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030222,
+      "date": "2026-05-04T23:00:00Z",
+      "home": {
+        "team": "CAR",
+        "name": "Carolina",
+        "win_pct": 0.7925,
+        "goalie": "F. Andersen",
+        "goalie_score": 0.554,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "PHI",
+        "name": "Philadelphia",
+        "win_pct": 0.2075,
+        "goalie": "D. Vladar",
+        "goalie_score": 0.518,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030241,
+      "date": "2026-05-05T01:30:00Z",
+      "home": {
+        "team": "VGK",
+        "name": "Vegas",
+        "win_pct": 0.6458,
+        "goalie": "C. Hart",
+        "goalie_score": 0.457,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "ANA",
+        "name": "Anaheim",
+        "win_pct": 0.3542,
+        "goalie": "L. Dostal",
+        "goalie_score": 0.414,
         "goalie_confirmed": true,
         "rest_days": 2
       },
