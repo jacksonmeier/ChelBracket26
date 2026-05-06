@@ -1,29 +1,6 @@
 {
   "upcoming": [
     {
-      "game_id": 2025030232,
-      "date": "2026-05-06T00:00:00Z",
-      "home": {
-        "team": "COL",
-        "name": "Colorado",
-        "win_pct": 0.7894,
-        "goalie": "S. Wedgewood",
-        "goalie_score": 0.492,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "MIN",
-        "name": "Minnesota",
-        "win_pct": 0.2106,
-        "goalie": "J. Wallstedt",
-        "goalie_score": 0.466,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
       "game_id": 2025030211,
       "date": "2026-05-06T23:00:00Z",
       "home": {
@@ -64,6 +41,29 @@
         "win_pct": 0.3542,
         "goalie": "L. Dostal",
         "goalie_score": 0.413,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030223,
+      "date": "2026-05-08T00:00:00Z",
+      "home": {
+        "team": "PHI",
+        "name": "Philadelphia",
+        "win_pct": 0.5849,
+        "goalie": "D. Vladar",
+        "goalie_score": 0.525,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "CAR",
+        "name": "Carolina",
+        "win_pct": 0.4151,
+        "goalie": "F. Andersen",
+        "goalie_score": 0.565,
         "goalie_confirmed": true,
         "rest_days": 2
       },
