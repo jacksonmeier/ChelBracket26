@@ -1,52 +1,6 @@
 {
   "upcoming": [
     {
-      "game_id": 2025030213,
-      "date": "2026-05-10T23:00:00Z",
-      "home": {
-        "team": "MTL",
-        "name": "Montr\u00e9al",
-        "win_pct": 0.6245,
-        "goalie": "J. Dobes",
-        "goalie_score": 0.502,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "BUF",
-        "name": "Buffalo",
-        "win_pct": 0.3755,
-        "goalie": "A. Lyon",
-        "goalie_score": 0.531,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
-      "game_id": 2025030244,
-      "date": "2026-05-11T01:30:00Z",
-      "home": {
-        "team": "ANA",
-        "name": "Anaheim",
-        "win_pct": 0.5115,
-        "goalie": "L. Dostal",
-        "goalie_score": 0.392,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "VGK",
-        "name": "Vegas",
-        "win_pct": 0.4885,
-        "goalie": "C. Hart",
-        "goalie_score": 0.497,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
       "game_id": 2025030234,
       "date": "2026-05-12T00:00:00Z",
       "home": {
@@ -64,6 +18,52 @@
         "win_pct": 0.5521,
         "goalie": "S. Wedgewood",
         "goalie_score": 0.483,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030214,
+      "date": "2026-05-12T23:00:00Z",
+      "home": {
+        "team": "MTL",
+        "name": "Montr\u00e9al",
+        "win_pct": 0.6245,
+        "goalie": "J. Dobes",
+        "goalie_score": 0.509,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "BUF",
+        "name": "Buffalo",
+        "win_pct": 0.3755,
+        "goalie": "A. Lyon",
+        "goalie_score": 0.508,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030245,
+      "date": "2026-05-13T01:30:00Z",
+      "home": {
+        "team": "VGK",
+        "name": "Vegas",
+        "win_pct": 0.6458,
+        "goalie": "C. Hart",
+        "goalie_score": 0.479,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "ANA",
+        "name": "Anaheim",
+        "win_pct": 0.3542,
+        "goalie": "L. Dostal",
+        "goalie_score": 0.377,
         "goalie_confirmed": true,
         "rest_days": 2
       },
