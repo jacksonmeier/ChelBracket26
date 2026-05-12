@@ -1,29 +1,6 @@
 {
   "upcoming": [
     {
-      "game_id": 2025030234,
-      "date": "2026-05-12T00:00:00Z",
-      "home": {
-        "team": "MIN",
-        "name": "Minnesota",
-        "win_pct": 0.4479,
-        "goalie": "J. Wallstedt",
-        "goalie_score": 0.489,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "COL",
-        "name": "Colorado",
-        "win_pct": 0.5521,
-        "goalie": "S. Wedgewood",
-        "goalie_score": 0.483,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
       "game_id": 2025030214,
       "date": "2026-05-12T23:00:00Z",
       "home": {
@@ -64,6 +41,29 @@
         "win_pct": 0.3542,
         "goalie": "L. Dostal",
         "goalie_score": 0.377,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030235,
+      "date": "2026-05-14T00:00:00Z",
+      "home": {
+        "team": "COL",
+        "name": "Colorado",
+        "win_pct": 0.7894,
+        "goalie": "S. Wedgewood",
+        "goalie_score": 0.483,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "MIN",
+        "name": "Minnesota",
+        "win_pct": 0.2106,
+        "goalie": "J. Wallstedt",
+        "goalie_score": 0.489,
         "goalie_confirmed": true,
         "rest_days": 2
       },
