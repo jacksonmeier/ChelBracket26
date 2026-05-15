@@ -1,46 +1,23 @@
 {
   "upcoming": [
     {
-      "game_id": 2025030215,
-      "date": "2026-05-14T23:00:00Z",
+      "game_id": 2025030216,
+      "date": "2026-05-17T00:00:00Z",
       "home": {
-        "team": "BUF",
-        "name": "Buffalo",
-        "win_pct": 0.6298,
-        "goalie": "A. Lyon",
-        "goalie_score": 0.508,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
         "team": "MTL",
         "name": "Montr\u00e9al",
-        "win_pct": 0.3702,
+        "win_pct": 0.6245,
         "goalie": "J. Dobes",
-        "goalie_score": 0.5,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
-      "game_id": 2025030246,
-      "date": "2026-05-15T01:30:00Z",
-      "home": {
-        "team": "ANA",
-        "name": "Anaheim",
-        "win_pct": 0.5115,
-        "goalie": "L. Dostal",
-        "goalie_score": 0.381,
+        "goalie_score": 0.502,
         "goalie_confirmed": true,
         "rest_days": 2
       },
       "away": {
-        "team": "VGK",
-        "name": "Vegas",
-        "win_pct": 0.4885,
-        "goalie": "C. Hart",
-        "goalie_score": 0.493,
+        "team": "BUF",
+        "name": "Buffalo",
+        "win_pct": 0.3755,
+        "goalie": "A. Lyon",
+        "goalie_score": 0.502,
         "goalie_confirmed": true,
         "rest_days": 2
       },
