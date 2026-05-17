@@ -1,23 +1,23 @@
 {
   "upcoming": [
     {
-      "game_id": 2025030216,
-      "date": "2026-05-17T00:00:00Z",
+      "game_id": 2025030217,
+      "date": "2026-05-18T23:30:00Z",
       "home": {
-        "team": "MTL",
-        "name": "Montr\u00e9al",
-        "win_pct": 0.6245,
-        "goalie": "J. Dobes",
-        "goalie_score": 0.502,
+        "team": "BUF",
+        "name": "Buffalo",
+        "win_pct": 0.6298,
+        "goalie": "A. Lyon",
+        "goalie_score": 0.467,
         "goalie_confirmed": true,
         "rest_days": 2
       },
       "away": {
-        "team": "BUF",
-        "name": "Buffalo",
-        "win_pct": 0.3755,
-        "goalie": "A. Lyon",
-        "goalie_score": 0.502,
+        "team": "MTL",
+        "name": "Montr\u00e9al",
+        "win_pct": 0.3702,
+        "goalie": "J. Dobes",
+        "goalie_score": 0.474,
         "goalie_confirmed": true,
         "rest_days": 2
       },
