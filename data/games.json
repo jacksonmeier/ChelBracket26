@@ -6,7 +6,7 @@
       "home": {
         "team": "BUF",
         "name": "Buffalo",
-        "win_pct": 0.6298,
+        "win_pct": 0.6354,
         "goalie": "A. Lyon",
         "goalie_score": 0.467,
         "goalie_confirmed": true,
@@ -15,7 +15,7 @@
       "away": {
         "team": "MTL",
         "name": "Montr\u00e9al",
-        "win_pct": 0.3702,
+        "win_pct": 0.3646,
         "goalie": "J. Dobes",
         "goalie_score": 0.474,
         "goalie_confirmed": true,
