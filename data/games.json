@@ -1,23 +1,23 @@
 {
   "upcoming": [
     {
-      "game_id": 2025030217,
-      "date": "2026-05-18T23:30:00Z",
+      "game_id": 2025030321,
+      "date": "2026-05-21T00:00:00Z",
       "home": {
-        "team": "BUF",
-        "name": "Buffalo",
+        "team": "COL",
+        "name": "Colorado",
         "win_pct": 0.6354,
-        "goalie": "A. Lyon",
-        "goalie_score": 0.467,
+        "goalie": "S. Wedgewood",
+        "goalie_score": 0.492,
         "goalie_confirmed": true,
         "rest_days": 2
       },
       "away": {
-        "team": "MTL",
-        "name": "Montr\u00e9al",
+        "team": "VGK",
+        "name": "Vegas",
         "win_pct": 0.3646,
-        "goalie": "J. Dobes",
-        "goalie_score": 0.474,
+        "goalie": "C. Hart",
+        "goalie_score": 0.513,
         "goalie_confirmed": true,
         "rest_days": 2
       },
