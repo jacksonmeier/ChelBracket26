@@ -22,6 +22,29 @@
         "rest_days": 2
       },
       "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030311,
+      "date": "2026-05-22T00:00:00Z",
+      "home": {
+        "team": "CAR",
+        "name": "Carolina",
+        "win_pct": 0.6354,
+        "goalie": "F. Andersen",
+        "goalie_score": 0.578,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "MTL",
+        "name": "Montr\u00e9al",
+        "win_pct": 0.3646,
+        "goalie": "J. Dobes",
+        "goalie_score": 0.491,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
     }
   ]
 }
