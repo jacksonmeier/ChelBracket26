@@ -1,29 +1,6 @@
 {
   "upcoming": [
     {
-      "game_id": 2025030312,
-      "date": "2026-05-23T23:00:00Z",
-      "home": {
-        "team": "CAR",
-        "name": "Carolina",
-        "win_pct": 0.6354,
-        "goalie": "F. Andersen",
-        "goalie_score": 0.543,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "MTL",
-        "name": "Montr\u00e9al",
-        "win_pct": 0.3646,
-        "goalie": "J. Dobes",
-        "goalie_score": 0.497,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
       "game_id": 2025030323,
       "date": "2026-05-25T00:00:00Z",
       "home": {
@@ -41,6 +18,29 @@
         "win_pct": 0.3646,
         "goalie": "S. Wedgewood",
         "goalie_score": 0.491,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030313,
+      "date": "2026-05-26T00:00:00Z",
+      "home": {
+        "team": "MTL",
+        "name": "Montr\u00e9al",
+        "win_pct": 0.6354,
+        "goalie": "J. Dobes",
+        "goalie_score": 0.488,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "CAR",
+        "name": "Carolina",
+        "win_pct": 0.3646,
+        "goalie": "F. Andersen",
+        "goalie_score": 0.536,
         "goalie_confirmed": true,
         "rest_days": 2
       },
