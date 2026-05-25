@@ -1,29 +1,6 @@
 {
   "upcoming": [
     {
-      "game_id": 2025030323,
-      "date": "2026-05-25T00:00:00Z",
-      "home": {
-        "team": "VGK",
-        "name": "Vegas",
-        "win_pct": 0.6354,
-        "goalie": "C. Hart",
-        "goalie_score": 0.55,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "away": {
-        "team": "COL",
-        "name": "Colorado",
-        "win_pct": 0.3646,
-        "goalie": "S. Wedgewood",
-        "goalie_score": 0.491,
-        "goalie_confirmed": true,
-        "rest_days": 2
-      },
-      "uncertain_starter": false
-    },
-    {
       "game_id": 2025030313,
       "date": "2026-05-26T00:00:00Z",
       "home": {
@@ -41,6 +18,29 @@
         "win_pct": 0.3646,
         "goalie": "F. Andersen",
         "goalie_score": 0.536,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "uncertain_starter": false
+    },
+    {
+      "game_id": 2025030324,
+      "date": "2026-05-27T01:00:00Z",
+      "home": {
+        "team": "VGK",
+        "name": "Vegas",
+        "win_pct": 0.6354,
+        "goalie": "C. Hart",
+        "goalie_score": 0.551,
+        "goalie_confirmed": true,
+        "rest_days": 2
+      },
+      "away": {
+        "team": "COL",
+        "name": "Colorado",
+        "win_pct": 0.3646,
+        "goalie": "S. Wedgewood",
+        "goalie_score": 0.467,
         "goalie_confirmed": true,
         "rest_days": 2
       },
