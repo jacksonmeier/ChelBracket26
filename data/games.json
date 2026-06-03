@@ -1,14 +1,14 @@
 {
   "upcoming": [
     {
-      "game_id": 2025030411,
-      "date": "2026-06-03T00:00:00Z",
+      "game_id": 2025030412,
+      "date": "2026-06-05T00:00:00Z",
       "home": {
         "team": "CAR",
         "name": "Carolina",
         "win_pct": 0.6354,
         "goalie": "F. Andersen",
-        "goalie_score": 0.571,
+        "goalie_score": 0.533,
         "goalie_confirmed": true,
         "rest_days": 2
       },
@@ -17,7 +17,7 @@
         "name": "Vegas",
         "win_pct": 0.3646,
         "goalie": "C. Hart",
-        "goalie_score": 0.556,
+        "goalie_score": 0.538,
         "goalie_confirmed": true,
         "rest_days": 2
       },
