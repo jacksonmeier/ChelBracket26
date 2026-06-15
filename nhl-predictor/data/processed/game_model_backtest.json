@@ -1,7 +1,7 @@
 {
   "mode": "walk_forward_game_model",
   "min_target_season": 20152016,
-  "n_games_scored": 563,
+  "n_games_scored": 996,
   "features": [
     "h_point_pct",
     "h_gf",
@@ -37,36 +37,36 @@
   ],
   "aggregate": {
     "model": {
-      "n": 563,
-      "accuracy": 0.5098,
-      "brier": 0.253,
-      "log_loss": 0.6993,
-      "mean_pred": 0.5213,
-      "mean_actual": 0.5027
+      "n": 996,
+      "accuracy": 0.5261,
+      "brier": 0.2519,
+      "log_loss": 0.6976,
+      "mean_pred": 0.5375,
+      "mean_actual": 0.5131
     },
     "prior_only": {
-      "n": 563,
-      "accuracy": 0.5027,
-      "brier": 0.2512,
-      "log_loss": 0.6956,
+      "n": 996,
+      "accuracy": 0.5131,
+      "brier": 0.2504,
+      "log_loss": 0.694,
       "mean_pred": 0.5374,
-      "mean_actual": 0.5027
+      "mean_actual": 0.5131
     },
     "home_0545": {
-      "n": 563,
-      "accuracy": 0.5027,
-      "brier": 0.2518,
-      "log_loss": 0.6967,
+      "n": 996,
+      "accuracy": 0.5131,
+      "brier": 0.2509,
+      "log_loss": 0.6949,
       "mean_pred": 0.545,
-      "mean_actual": 0.5027
+      "mean_actual": 0.5131
     },
     "coin_flip": {
-      "n": 563,
-      "accuracy": 0.5027,
+      "n": 996,
+      "accuracy": 0.5131,
       "brier": 0.25,
       "log_loss": 0.6931,
       "mean_pred": 0.5,
-      "mean_actual": 0.5027
+      "mean_actual": 0.5131
     }
   },
   "calibration_model": [
@@ -89,59 +89,63 @@
         0.2,
         0.3
       ],
-      "n": 0
+      "n": 1,
+      "mean_pred": 0.2832,
+      "actual_rate": 0.0
     },
     {
       "bin": [
         0.3,
         0.4
       ],
-      "n": 14,
-      "mean_pred": 0.3775,
-      "actual_rate": 0.3571
+      "n": 21,
+      "mean_pred": 0.3696,
+      "actual_rate": 0.381
     },
     {
       "bin": [
         0.4,
         0.5
       ],
-      "n": 224,
-      "mean_pred": 0.4697,
-      "actual_rate": 0.5
+      "n": 363,
+      "mean_pred": 0.4665,
+      "actual_rate": 0.4904
     },
     {
       "bin": [
         0.5,
         0.6
       ],
-      "n": 273,
+      "n": 410,
       "mean_pred": 0.5442,
-      "actual_rate": 0.5092
+      "actual_rate": 0.5195
     },
     {
       "bin": [
         0.6,
         0.7
       ],
-      "n": 39,
-      "mean_pred": 0.6457,
-      "actual_rate": 0.4359
+      "n": 150,
+      "mean_pred": 0.6441,
+      "actual_rate": 0.52
     },
     {
       "bin": [
         0.7,
         0.8
       ],
-      "n": 13,
-      "mean_pred": 0.7117,
-      "actual_rate": 0.7692
+      "n": 43,
+      "mean_pred": 0.733,
+      "actual_rate": 0.6512
     },
     {
       "bin": [
         0.8,
         0.9
       ],
-      "n": 0
+      "n": 8,
+      "mean_pred": 0.8408,
+      "actual_rate": 0.75
     },
     {
       "bin": [
@@ -152,31 +156,31 @@
     }
   ],
   "series": {
-    "n_series": 97,
+    "n_series": 172,
     "aggregate": {
       "model": {
-        "n": 97,
-        "accuracy": 0.567,
-        "brier": 0.2412,
-        "log_loss": 0.6741,
-        "mean_pred": 0.5315,
-        "mean_actual": 0.5464
+        "n": 172,
+        "accuracy": 0.564,
+        "brier": 0.2359,
+        "log_loss": 0.6626,
+        "mean_pred": 0.5267,
+        "mean_actual": 0.5756
       },
       "home_ice_058": {
-        "n": 97,
-        "accuracy": 0.5464,
-        "brier": 0.249,
-        "log_loss": 0.6911,
+        "n": 172,
+        "accuracy": 0.5756,
+        "brier": 0.2443,
+        "log_loss": 0.6817,
         "mean_pred": 0.58,
-        "mean_actual": 0.5464
+        "mean_actual": 0.5756
       },
       "coin_flip": {
-        "n": 97,
-        "accuracy": 0.5464,
+        "n": 172,
+        "accuracy": 0.5756,
         "brier": 0.25,
         "log_loss": 0.6931,
         "mean_pred": 0.5,
-        "mean_actual": 0.5464
+        "mean_actual": 0.5756
       }
     },
     "calibration": [
@@ -199,8 +203,8 @@
           0.2,
           0.3
         ],
-        "n": 1,
-        "mean_pred": 0.2903,
+        "n": 4,
+        "mean_pred": 0.2512,
         "actual_rate": 0.0
       },
       {
@@ -208,8 +212,8 @@
           0.3,
           0.4
         ],
-        "n": 3,
-        "mean_pred": 0.352,
+        "n": 9,
+        "mean_pred": 0.3431,
         "actual_rate": 0.3333
       },
       {
@@ -217,43 +221,45 @@
           0.4,
           0.5
         ],
-        "n": 36,
-        "mean_pred": 0.4662,
-        "actual_rate": 0.5
+        "n": 63,
+        "mean_pred": 0.4631,
+        "actual_rate": 0.5714
       },
       {
         "bin": [
           0.5,
           0.6
         ],
-        "n": 40,
-        "mean_pred": 0.543,
-        "actual_rate": 0.575
+        "n": 60,
+        "mean_pred": 0.5441,
+        "actual_rate": 0.55
       },
       {
         "bin": [
           0.6,
           0.7
         ],
-        "n": 9,
-        "mean_pred": 0.6555,
-        "actual_rate": 0.5556
+        "n": 24,
+        "mean_pred": 0.651,
+        "actual_rate": 0.7917
       },
       {
         "bin": [
           0.7,
           0.8
         ],
-        "n": 8,
-        "mean_pred": 0.7259,
-        "actual_rate": 0.75
+        "n": 10,
+        "mean_pred": 0.7356,
+        "actual_rate": 0.6
       },
       {
         "bin": [
           0.8,
           0.9
         ],
-        "n": 0
+        "n": 2,
+        "mean_pred": 0.8534,
+        "actual_rate": 1.0
       },
       {
         "bin": [
@@ -266,49 +272,49 @@
     "by_round": {
       "0": {
         "n": 7,
-        "accuracy": 0.7143,
-        "brier": 0.2328,
-        "log_loss": 0.6585,
-        "mean_pred": 0.4847,
+        "accuracy": 0.5714,
+        "brier": 0.2371,
+        "log_loss": 0.6672,
+        "mean_pred": 0.4842,
         "mean_actual": 0.4286
       },
       "1": {
-        "n": 48,
-        "accuracy": 0.6875,
-        "brier": 0.2246,
-        "log_loss": 0.6393,
-        "mean_pred": 0.5377,
-        "mean_actual": 0.6042
+        "n": 88,
+        "accuracy": 0.6136,
+        "brier": 0.2318,
+        "log_loss": 0.6541,
+        "mean_pred": 0.5345,
+        "mean_actual": 0.6591
       },
       "2": {
-        "n": 24,
-        "accuracy": 0.4583,
-        "brier": 0.2581,
-        "log_loss": 0.709,
-        "mean_pred": 0.521,
+        "n": 44,
+        "accuracy": 0.5227,
+        "brier": 0.2312,
+        "log_loss": 0.6507,
+        "mean_pred": 0.517,
         "mean_actual": 0.5
       },
       "3": {
-        "n": 12,
-        "accuracy": 0.1667,
-        "brier": 0.3003,
-        "log_loss": 0.7979,
-        "mean_pred": 0.5342,
-        "mean_actual": 0.4167
+        "n": 22,
+        "accuracy": 0.4545,
+        "brier": 0.269,
+        "log_loss": 0.7351,
+        "mean_pred": 0.5201,
+        "mean_actual": 0.3636
       },
       "4": {
-        "n": 6,
-        "accuracy": 0.6667,
-        "brier": 0.1979,
-        "log_loss": 0.5836,
-        "mean_pred": 0.5732,
-        "mean_actual": 0.6667
+        "n": 11,
+        "accuracy": 0.5455,
+        "brier": 0.2201,
+        "log_loss": 0.6304,
+        "mean_pred": 0.5435,
+        "mean_actual": 0.7273
       }
     },
     "post_hoc_calibrator": {
       "method": "platt_logit",
-      "a": 0.928743713307337,
-      "b": 0.06977447154953649,
+      "a": 0.9957589051227383,
+      "b": 0.20777818819927757,
       "knots_x": [
         0.02,
         0.03,
@@ -409,109 +415,109 @@
         0.98
       ],
       "knots_y": [
-        0.0281,
-        0.0408,
-        0.0531,
-        0.0651,
-        0.0769,
-        0.0885,
-        0.0999,
-        0.1112,
-        0.1223,
-        0.1333,
-        0.1442,
-        0.155,
-        0.1657,
-        0.1764,
-        0.1869,
-        0.1974,
-        0.2078,
-        0.2181,
-        0.2283,
-        0.2385,
-        0.2487,
-        0.2588,
-        0.2688,
-        0.2788,
-        0.2887,
-        0.2986,
-        0.3084,
-        0.3183,
-        0.328,
-        0.3378,
-        0.3474,
-        0.3571,
-        0.3667,
-        0.3763,
-        0.3859,
-        0.3954,
-        0.4049,
-        0.4144,
-        0.4239,
-        0.4333,
-        0.4428,
-        0.4521,
-        0.4615,
-        0.4709,
-        0.4802,
-        0.4895,
-        0.4989,
-        0.5082,
-        0.5174,
-        0.5267,
-        0.536,
-        0.5452,
-        0.5545,
-        0.5637,
-        0.5729,
-        0.5821,
-        0.5913,
-        0.6006,
-        0.6098,
-        0.619,
-        0.6282,
-        0.6374,
-        0.6466,
-        0.6558,
-        0.665,
-        0.6743,
-        0.6835,
-        0.6927,
-        0.702,
-        0.7112,
-        0.7205,
-        0.7298,
-        0.7391,
-        0.7484,
-        0.7577,
-        0.7671,
-        0.7765,
-        0.7859,
-        0.7953,
-        0.8048,
-        0.8143,
-        0.8238,
-        0.8334,
-        0.843,
-        0.8527,
-        0.8624,
-        0.8722,
-        0.882,
-        0.8919,
-        0.9019,
-        0.912,
-        0.9222,
-        0.9325,
-        0.9429,
-        0.9535,
-        0.9644,
-        0.9755
+        0.0249,
+        0.0372,
+        0.0494,
+        0.0616,
+        0.0736,
+        0.0857,
+        0.0976,
+        0.1095,
+        0.1213,
+        0.1331,
+        0.1448,
+        0.1564,
+        0.168,
+        0.1795,
+        0.191,
+        0.2024,
+        0.2138,
+        0.2251,
+        0.2364,
+        0.2476,
+        0.2587,
+        0.2698,
+        0.2809,
+        0.2919,
+        0.3029,
+        0.3138,
+        0.3246,
+        0.3354,
+        0.3462,
+        0.3569,
+        0.3675,
+        0.3782,
+        0.3887,
+        0.3992,
+        0.4097,
+        0.4201,
+        0.4305,
+        0.4409,
+        0.4512,
+        0.4614,
+        0.4716,
+        0.4818,
+        0.4919,
+        0.502,
+        0.512,
+        0.522,
+        0.532,
+        0.5419,
+        0.5518,
+        0.5616,
+        0.5714,
+        0.5811,
+        0.5908,
+        0.6005,
+        0.6101,
+        0.6197,
+        0.6293,
+        0.6388,
+        0.6483,
+        0.6577,
+        0.6671,
+        0.6765,
+        0.6858,
+        0.6951,
+        0.7044,
+        0.7136,
+        0.7228,
+        0.7319,
+        0.7411,
+        0.7501,
+        0.7592,
+        0.7682,
+        0.7772,
+        0.7861,
+        0.795,
+        0.8039,
+        0.8128,
+        0.8216,
+        0.8304,
+        0.8391,
+        0.8478,
+        0.8565,
+        0.8652,
+        0.8738,
+        0.8824,
+        0.891,
+        0.8995,
+        0.908,
+        0.9165,
+        0.925,
+        0.9334,
+        0.9418,
+        0.9502,
+        0.9585,
+        0.9668,
+        0.9751,
+        0.9834
       ],
-      "n_fit": 97,
-      "brier_pre": 0.2412,
-      "brier_post": 0.2409,
-      "log_loss_pre": 0.6741,
-      "log_loss_post": 0.6736
+      "n_fit": 172,
+      "brier_pre": 0.2359,
+      "brier_post": 0.2333,
+      "log_loss_pre": 0.6626,
+      "log_loss_post": 0.6576
     }
   },
   "per_season": {
@@ -535,9 +541,9 @@
       "series_model": {
         "n": 15,
         "accuracy": 0.6667,
-        "brier": 0.2048,
-        "log_loss": 0.5951,
-        "mean_pred": 0.6241,
+        "brier": 0.2066,
+        "log_loss": 0.5994,
+        "mean_pred": 0.6235,
         "mean_actual": 0.6
       },
       "train_rows": 354,
@@ -564,9 +570,9 @@
       "series_model": {
         "n": 15,
         "accuracy": 0.4,
-        "brier": 0.2656,
-        "log_loss": 0.725,
-        "mean_pred": 0.528,
+        "brier": 0.2636,
+        "log_loss": 0.7207,
+        "mean_pred": 0.5284,
         "mean_actual": 0.6
       },
       "train_rows": 443,
@@ -593,9 +599,9 @@
       "series_model": {
         "n": 15,
         "accuracy": 0.5333,
-        "brier": 0.2511,
-        "log_loss": 0.6953,
-        "mean_pred": 0.5214,
+        "brier": 0.2505,
+        "log_loss": 0.694,
+        "mean_pred": 0.5229,
         "mean_actual": 0.6667
       },
       "train_rows": 534,
@@ -621,10 +627,10 @@
       },
       "series_model": {
         "n": 15,
-        "accuracy": 0.5333,
-        "brier": 0.2531,
-        "log_loss": 0.6993,
-        "mean_pred": 0.4906,
+        "accuracy": 0.6667,
+        "brier": 0.2487,
+        "log_loss": 0.6905,
+        "mean_pred": 0.4931,
         "mean_actual": 0.4667
       },
       "train_rows": 621,
@@ -650,10 +656,10 @@
       },
       "series_model": {
         "n": 22,
-        "accuracy": 0.6364,
-        "brier": 0.2446,
-        "log_loss": 0.6822,
-        "mean_pred": 0.4904,
+        "accuracy": 0.5455,
+        "brier": 0.2475,
+        "log_loss": 0.6881,
+        "mean_pred": 0.4899,
         "mean_actual": 0.5909
       },
       "train_rows": 705,
@@ -679,48 +685,193 @@
       },
       "series_model": {
         "n": 15,
-        "accuracy": 0.6,
-        "brier": 0.2264,
-        "log_loss": 0.644,
-        "mean_pred": 0.5536,
+        "accuracy": 0.5333,
+        "brier": 0.2227,
+        "log_loss": 0.6365,
+        "mean_pred": 0.549,
         "mean_actual": 0.3333
       },
       "train_rows": 792,
       "platt_season": 20192020,
       "temperature": 1.0
+    },
+    "20212022": {
+      "model": {
+        "n": 89,
+        "accuracy": 0.5618,
+        "brier": 0.2459,
+        "log_loss": 0.6849,
+        "mean_pred": 0.5245,
+        "mean_actual": 0.6067
+      },
+      "prior_only": {
+        "n": 89,
+        "accuracy": 0.6067,
+        "brier": 0.2434,
+        "log_loss": 0.6799,
+        "mean_pred": 0.5374,
+        "mean_actual": 0.6067
+      },
+      "series_model": {
+        "n": 15,
+        "accuracy": 0.6,
+        "brier": 0.2343,
+        "log_loss": 0.6612,
+        "mean_pred": 0.5322,
+        "mean_actual": 0.6
+      },
+      "train_rows": 922,
+      "platt_season": 20202021,
+      "temperature": 1.0
+    },
+    "20222023": {
+      "model": {
+        "n": 88,
+        "accuracy": 0.4659,
+        "brier": 0.2729,
+        "log_loss": 0.7411,
+        "mean_pred": 0.6238,
+        "mean_actual": 0.4659
+      },
+      "prior_only": {
+        "n": 88,
+        "accuracy": 0.4659,
+        "brier": 0.254,
+        "log_loss": 0.7011,
+        "mean_pred": 0.5374,
+        "mean_actual": 0.4659
+      },
+      "series_model": {
+        "n": 15,
+        "accuracy": 0.4,
+        "brier": 0.2631,
+        "log_loss": 0.7197,
+        "mean_pred": 0.5293,
+        "mean_actual": 0.7333
+      },
+      "train_rows": 1006,
+      "platt_season": 20212022,
+      "temperature": 1.0
+    },
+    "20232024": {
+      "model": {
+        "n": 88,
+        "accuracy": 0.5227,
+        "brier": 0.252,
+        "log_loss": 0.6972,
+        "mean_pred": 0.4617,
+        "mean_actual": 0.4773
+      },
+      "prior_only": {
+        "n": 88,
+        "accuracy": 0.4773,
+        "brier": 0.2531,
+        "log_loss": 0.6994,
+        "mean_pred": 0.5374,
+        "mean_actual": 0.4773
+      },
+      "series_model": {
+        "n": 15,
+        "accuracy": 0.3333,
+        "brier": 0.2783,
+        "log_loss": 0.7503,
+        "mean_pred": 0.475,
+        "mean_actual": 0.7333
+      },
+      "train_rows": 1095,
+      "platt_season": 20222023,
+      "temperature": 1.0
+    },
+    "20242025": {
+      "model": {
+        "n": 86,
+        "accuracy": 0.6279,
+        "brier": 0.2232,
+        "log_loss": 0.6382,
+        "mean_pred": 0.5485,
+        "mean_actual": 0.6047
+      },
+      "prior_only": {
+        "n": 86,
+        "accuracy": 0.6047,
+        "brier": 0.2436,
+        "log_loss": 0.6803,
+        "mean_pred": 0.5374,
+        "mean_actual": 0.6047
+      },
+      "series_model": {
+        "n": 15,
+        "accuracy": 0.7333,
+        "brier": 0.1743,
+        "log_loss": 0.5319,
+        "mean_pred": 0.4242,
+        "mean_actual": 0.4
+      },
+      "train_rows": 1183,
+      "platt_season": 20232024,
+      "temperature": 1.0
+    },
+    "20252026": {
+      "model": {
+        "n": 82,
+        "accuracy": 0.561,
+        "brier": 0.259,
+        "log_loss": 0.7157,
+        "mean_pred": 0.6402,
+        "mean_actual": 0.4756
+      },
+      "prior_only": {
+        "n": 82,
+        "accuracy": 0.4756,
+        "brier": 0.2532,
+        "log_loss": 0.6996,
+        "mean_pred": 0.5374,
+        "mean_actual": 0.4756
+      },
+      "series_model": {
+        "n": 15,
+        "accuracy": 0.8,
+        "brier": 0.1997,
+        "log_loss": 0.5849,
+        "mean_pred": 0.6436,
+        "mean_actual": 0.6
+      },
+      "train_rows": 1271,
+      "platt_season": 20242025,
+      "temperature": 1.0
     }
   },
   "feature_importance_total_gain": {
-    "a_pk": 409,
-    "d_point_pct": 223,
-    "a_pp": 214,
-    "h_sa": 203,
-    "h_ga": 191,
-    "d_pk": 183,
-    "d_sf": 168,
-    "d_ga": 148,
-    "d_gf": 145,
-    "h_sf": 136,
-    "a_ga": 126,
-    "h_pk": 118,
-    "h_pp": 112,
-    "d_gd": 105,
-    "away_series_wins": 104,
-    "a_sf": 98,
-    "h_gf": 95,
-    "h_point_pct": 93,
-    "d_sa": 93,
-    "d_pp": 86,
-    "h_gd": 80,
-    "a_sa": 77,
-    "a_gf": 63,
-    "home_series_wins": 63,
-    "game_in_series": 51,
-    "a_gd": 42,
-    "round": 31,
-    "a_point_pct": 24,
-    "days_rest_away": 23,
-    "elimination_flag": 14,
-    "days_rest_home": 11
+    "a_pk": 822,
+    "a_pp": 683,
+    "d_sf": 641,
+    "h_ga": 620,
+    "h_sa": 605,
+    "d_pk": 600,
+    "d_point_pct": 581,
+    "d_pp": 557,
+    "h_pk": 551,
+    "h_sf": 521,
+    "d_gd": 510,
+    "d_ga": 503,
+    "d_gf": 494,
+    "d_sa": 456,
+    "a_sf": 449,
+    "a_ga": 415,
+    "h_point_pct": 339,
+    "h_pp": 337,
+    "a_sa": 307,
+    "home_series_wins": 301,
+    "away_series_wins": 265,
+    "h_gd": 252,
+    "a_gf": 227,
+    "h_gf": 220,
+    "a_gd": 205,
+    "game_in_series": 203,
+    "a_point_pct": 200,
+    "round": 174,
+    "days_rest_away": 103,
+    "days_rest_home": 80,
+    "elimination_flag": 58
   }
 }
